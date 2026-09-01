@@ -67,6 +67,10 @@ const GameAudio = (function () {
     playTone([523, 659, 784, 1046], 0.6, 'triangle');
   }
 
+  function playHint() {
+    playTone([440, 660], 0.2, 'triangle');
+  }
+
   // Простая тихая фоновая "подушка" из двух расстроенных тонов —
   // не мелодия в привычном смысле, а мягкий эмбиент-фон.
   function startMusic() {
@@ -115,5 +119,5 @@ const GameAudio = (function () {
     else stopMusic();
   }
 
-  return { init, playCorrect, playWrong, playVictory, startMusic, stopMusic, setMusicOn };
+  return { init, playCorrect, playWrong, playVictory, playHint, startMusic, stopMusic, setMusicOn };
 })();

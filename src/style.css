@@ -626,6 +626,36 @@ body {
   display: none;
 }
 
+.screen {
+  position: relative;
+}
+
+/* Летающие рисованные значки-декорации — фон экранов меню.
+   Лежат позади контента и не мешают нажатиям (pointer-events: none). */
+.doodle-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.screen > *:not(.doodle-field) {
+  position: relative;
+  z-index: 1;
+}
+
+.doodle {
+  position: absolute;
+  opacity: 0.5;
+  animation: doodle-float 6s ease-in-out infinite;
+}
+
+@keyframes doodle-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(10deg); }
+}
+
 .victory-screen {
   position: fixed;
   inset: 0;
@@ -683,6 +713,74 @@ body {
 /* =========================================================
    Маскот — кнопка с фактами о нейровизуализации
    ========================================================= */
+/* Летающая подсказка — зеркальная кнопка маскота, слева внизу */
+.hint-btn {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  width: 56px;
+  height: 56px;
+  padding: 10px;
+  border-radius: 50%;
+  border: var(--border-width) solid var(--border-color);
+  background: var(--bg-primary);
+  box-shadow: var(--doodle-shadow-sm);
+  cursor: pointer;
+  z-index: 20;
+  animation: doodle-float 4.5s ease-in-out infinite;
+}
+
+.hint-btn img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hint-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.hint-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  animation: none;
+}
+
+.hint-btn__count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--bg-primary);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 12px;
+}
+
+/* Пульсирующая подсветка места отличия во время подсказки */
+.hint-marker {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  margin-top: -23px;
+  border-radius: 50%;
+  border: 3px dashed var(--accent);
+  animation: hint-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.5; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
 .mascot-btn {
   position: fixed;
   right: 16px;

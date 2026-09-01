@@ -22,6 +22,13 @@
   </header>
 
   <div id="startScreen" class="screen start-screen">
+    <div class="doodle-field">
+      <img class="doodle" src="assets/doodles/spiral-a.svg" alt="" style="top:6%;left:8%;width:38px;animation-duration:6.5s;" />
+      <img class="doodle" src="assets/doodles/check.svg" alt="" style="top:12%;right:10%;width:30px;animation-duration:5s;animation-delay:.4s;" />
+      <img class="doodle" src="assets/doodles/zigzag.svg" alt="" style="bottom:24%;left:5%;width:50px;animation-duration:7s;animation-delay:.8s;" />
+      <img class="doodle" src="assets/doodles/triangle.svg" alt="" style="bottom:14%;right:8%;width:26px;animation-duration:8s;animation-delay:.2s;" />
+      <img class="doodle" src="assets/doodles/arrow-curve.svg" alt="" style="top:38%;right:4%;width:34px;animation-duration:6s;animation-delay:1.2s;" />
+    </div>
     <img class="start-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
     <img class="start-screen__mascot" src="assets/mascot-hero.webp" alt="" />
     <p class="start-screen__tagline">Найди 5 отличий между рендерами на скорость</p>
@@ -33,6 +40,11 @@
   </div>
 
   <div id="rulesScreen" class="screen rules-screen" hidden>
+    <div class="doodle-field">
+      <img class="doodle" src="assets/doodles/hashtag.svg" alt="" style="top:4%;right:10%;width:30px;animation-duration:6s;" />
+      <img class="doodle" src="assets/doodles/dots.svg" alt="" style="bottom:10%;left:8%;width:40px;animation-duration:7.5s;animation-delay:.5s;" />
+      <img class="doodle" src="assets/doodles/wave.svg" alt="" style="top:45%;right:4%;width:44px;animation-duration:6.8s;animation-delay:1s;" />
+    </div>
     <h2>Как играть</h2>
     <ol class="rules-list">
       <li>Перед вами два похожих рендера — они расположены друг под другом.</li>
@@ -48,6 +60,10 @@
   </div>
 
   <div id="settingsScreen" class="screen settings-screen" hidden>
+    <div class="doodle-field">
+      <img class="doodle" src="assets/doodles/square.svg" alt="" style="top:5%;left:10%;width:28px;animation-duration:6.2s;" />
+      <img class="doodle" src="assets/doodles/cursive-loop.svg" alt="" style="bottom:8%;right:8%;width:46px;animation-duration:7.2s;animation-delay:.6s;" />
+    </div>
     <h2>Настройки</h2>
 
     <div class="settings-row settings-row--column">
@@ -107,6 +123,12 @@
       </div>
     </div>
   </main>
+
+  <!-- Летающая подсказка: тапнуть — подсветится одно из отличий -->
+  <button id="hintBtn" class="hint-btn" aria-label="Подсказка" hidden>
+    <img src="assets/doodles/spiral-c.svg" alt="" />
+    <span class="hint-btn__count" id="hintCount">3</span>
+  </button>
 
   <!-- Маскот: кнопка внизу экрана открывает карточку с фактом -->
   <button id="mascotBtn" class="mascot-btn" aria-label="Факт от Нейро Отличника" hidden>

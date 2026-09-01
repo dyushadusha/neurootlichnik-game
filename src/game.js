@@ -33,12 +33,14 @@
   const victoryScreen = document.getElementById('victoryScreen');
   const mascotBtn = document.getElementById('mascotBtn');
   const mascotBubble = document.getElementById('mascotBubble');
+  const hintBtn = document.getElementById('hintBtn');
 
   function showScreen(screen) {
     [startScreen, rulesScreen, settingsScreen, gameScreen, victoryScreen].forEach((s) => {
       s.hidden = s !== screen;
     });
     mascotBtn.hidden = screen !== gameScreen;
+    hintBtn.hidden = screen !== gameScreen;
     if (screen !== gameScreen) {
       mascotBubble.hidden = true;
     }
@@ -59,13 +61,20 @@
   const foundCountEl = document.getElementById('foundCount');
   const timerEl = document.getElementById('timer');
   const victoryTimeEl = document.getElementById('victoryTime');
+  const hintCountEl = document.getElementById('hintCount');
+
+  const HINTS_PER_LEVEL = 3;
+  let hintsLeft = HINTS_PER_LEVEL;
 
   function resetLevel() {
     found.fill(false);
     foundCount = 0;
     foundCountEl.textContent = `0/${level.differences.length}`;
     timerEl.textContent = '00:00';
-    document.querySelectorAll('.hotspot-marker').forEach((m) => m.remove());
+    document.querySelectorAll('.hotspot-marker, .hint-marker').forEach((m) => m.remove());
+    hintsLeft = HINTS_PER_LEVEL;
+    hintCountEl.textContent = String(hintsLeft);
+    hintBtn.disabled = false;
   }
 
   function startLevel() {
@@ -184,6 +193,38 @@
   document.getElementById('backToMenuBtn').addEventListener('click', () => {
     showScreen(startScreen);
   });
+
+  // ---------- Подсказка: подсвечивает одно не найденное отличие ----------
+  hintBtn.addEventListener('click', () => {
+    if (hintsLeft <= 0) return;
+    const remainingIndexes = level.differences
+      .map((d, i) => i)
+      .filter((i) => !found[i]);
+    if (remainingIndexes.length === 0) return;
+
+    hintsLeft--;
+    hintCountEl.textContent = String(hintsLeft);
+    if (hintsLeft === 0) hintBtn.disabled = true;
+
+    const pick = remainingIndexes[Math.floor(Math.random() * remainingIndexes.length)];
+    showHint(pick);
+    GameAudio.playHint();
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  });
+
+  function showHint(index) {
+    const d = level.differences[index];
+    const markers = [];
+    document.querySelectorAll('.hotspots-layer').forEach((layer) => {
+      const marker = document.createElement('div');
+      marker.className = 'hint-marker';
+      marker.style.left = d.x + '%';
+      marker.style.top = d.y + '%';
+      layer.appendChild(marker);
+      markers.push(marker);
+    });
+    setTimeout(() => markers.forEach((m) => m.remove()), 1600);
+  }
 
   // ---------- Маскот: карточка со случайным фактом ----------
   const mascotFactEl = document.getElementById('mascotFact');
