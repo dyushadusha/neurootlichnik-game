@@ -1,8 +1,6 @@
 /* =========================================================
    ЛОГИКА ИГРЫ «НАЙДИ 5 ОТЛИЧИЙ»
-   Этап 1: один уровень, базовое обнаружение тапов/кликов.
-   (Несколько уровней и нативная кнопка Telegram "Дальше"
-   будут добавлены следующим шагом.)
+   Экраны: главное меню -> (настройки) -> игра -> победа.
    ========================================================= */
 (function () {
   // window.Telegram.WebApp существует только внутри Telegram.
@@ -19,14 +17,31 @@
   if (tg) {
     tg.ready();
     tg.expand();
-    document.documentElement.dataset.tgColorScheme = tg.colorScheme; // фирменная тёмная тема всё равно главнее
-    if (tg.setBackgroundColor) tg.setBackgroundColor('#0a0a0c');
-    if (tg.setHeaderColor) { try { tg.setHeaderColor('#141519'); } catch (e) {} }
+    document.documentElement.dataset.tgColorScheme = tg.colorScheme; // тема из настроек всё равно главнее
     applyViewportHeight();
     tg.onEvent('viewportChanged', applyViewportHeight);
   } else {
     applyViewportHeight();
     window.addEventListener('resize', applyViewportHeight);
+  }
+
+  // ---------- Экраны ----------
+  const startScreen = document.getElementById('startScreen');
+  const rulesScreen = document.getElementById('rulesScreen');
+  const settingsScreen = document.getElementById('settingsScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const victoryScreen = document.getElementById('victoryScreen');
+  const mascotBtn = document.getElementById('mascotBtn');
+  const mascotBubble = document.getElementById('mascotBubble');
+
+  function showScreen(screen) {
+    [startScreen, rulesScreen, settingsScreen, gameScreen, victoryScreen].forEach((s) => {
+      s.hidden = s !== screen;
+    });
+    mascotBtn.hidden = screen !== gameScreen;
+    if (screen !== gameScreen) {
+      mascotBubble.hidden = true;
+    }
   }
 
   // ---------- Состояние уровня ----------
@@ -43,12 +58,25 @@
 
   const foundCountEl = document.getElementById('foundCount');
   const timerEl = document.getElementById('timer');
-  const victoryScreen = document.getElementById('victoryScreen');
   const victoryTimeEl = document.getElementById('victoryTime');
+
+  function resetLevel() {
+    found.fill(false);
+    foundCount = 0;
+    foundCountEl.textContent = `0/${level.differences.length}`;
+    timerEl.textContent = '00:00';
+    document.querySelectorAll('.hotspot-marker').forEach((m) => m.remove());
+  }
+
+  function startLevel() {
+    resetLevel();
+    startTimer();
+  }
 
   // ---------- Таймер (считаем "на скорость", без обратного отсчёта) ----------
   function startTimer() {
     startTime = Date.now();
+    clearInterval(timerInterval);
     timerInterval = setInterval(updateTimer, 250);
   }
   function updateTimer() {
@@ -71,6 +99,8 @@
   });
 
   function handleTap(e, wrapper) {
+    if (gameScreen.hidden) return; // игра ещё не началась / уже пройдена
+
     const img = wrapper.querySelector('img');
     const rect = img.getBoundingClientRect();
     const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
@@ -87,6 +117,7 @@
       markFound(hitIndex);
     } else {
       shake(wrapper);
+      GameAudio.playWrong();
       hapticWrong();
     }
   }
@@ -96,6 +127,7 @@
     foundCount++;
     foundCountEl.textContent = `${foundCount}/${level.differences.length}`;
     addMarker(index);
+    GameAudio.playCorrect();
     hapticCorrect();
     if (foundCount === level.differences.length) {
       finishLevel();
@@ -130,11 +162,8 @@
   function finishLevel() {
     stopTimer();
     victoryTimeEl.textContent = formatTime(Date.now() - startTime);
-    victoryScreen.hidden = false;
-    // На экране победы уже есть свой герой крупным планом —
-    // прячем плавающего маскота, чтобы не перекрывал кнопки.
-    mascotBtn.hidden = true;
-    mascotBubble.hidden = true;
+    GameAudio.playVictory();
+    showScreen(victoryScreen);
   }
 
   // ---------- Поделиться результатом ----------
@@ -152,9 +181,11 @@
     }
   });
 
+  document.getElementById('backToMenuBtn').addEventListener('click', () => {
+    showScreen(startScreen);
+  });
+
   // ---------- Маскот: карточка со случайным фактом ----------
-  const mascotBtn = document.getElementById('mascotBtn');
-  const mascotBubble = document.getElementById('mascotBubble');
   const mascotFactEl = document.getElementById('mascotFact');
   let lastFactIndex = -1;
 
@@ -176,5 +207,69 @@
     mascotBubble.hidden = true;
   });
 
-  startTimer();
+  // ---------- Главное меню и настройки ----------
+  const themeButtons = document.querySelectorAll('[data-theme-option]');
+  const musicToggle = document.getElementById('musicToggle');
+  const sfxToggle = document.getElementById('sfxToggle');
+  const sfxVolume = document.getElementById('sfxVolume');
+
+  function syncSettingsUI() {
+    const s = Settings.get();
+    themeButtons.forEach((btn) => {
+      btn.setAttribute('aria-pressed', String(btn.dataset.themeOption === s.theme));
+    });
+    musicToggle.checked = s.musicOn;
+    sfxToggle.checked = s.sfxOn;
+    sfxVolume.value = s.sfxVolume;
+  }
+
+  themeButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      Settings.set({ theme: btn.dataset.themeOption });
+      syncSettingsUI();
+    });
+  });
+
+  musicToggle.addEventListener('change', () => {
+    Settings.set({ musicOn: musicToggle.checked });
+    GameAudio.setMusicOn(musicToggle.checked);
+  });
+
+  sfxToggle.addEventListener('change', () => {
+    Settings.set({ sfxOn: sfxToggle.checked });
+  });
+
+  sfxVolume.addEventListener('input', () => {
+    Settings.set({ sfxVolume: Number(sfxVolume.value) });
+  });
+
+  document.getElementById('openSettingsBtn').addEventListener('click', () => {
+    syncSettingsUI();
+    showScreen(settingsScreen);
+  });
+
+  document.getElementById('backFromSettingsBtn').addEventListener('click', () => {
+    showScreen(startScreen);
+  });
+
+  document.getElementById('openRulesBtn').addEventListener('click', () => {
+    showScreen(rulesScreen);
+  });
+
+  document.getElementById('backFromRulesBtn').addEventListener('click', () => {
+    showScreen(startScreen);
+  });
+
+  function beginGame() {
+    GameAudio.init();
+    GameAudio.setMusicOn(Settings.get().musicOn);
+    showScreen(gameScreen);
+    startLevel();
+  }
+
+  document.getElementById('playBtn').addEventListener('click', beginGame);
+  document.getElementById('playFromRulesBtn').addEventListener('click', beginGame);
+
+  syncSettingsUI();
+  showScreen(startScreen);
 })();

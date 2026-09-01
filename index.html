@@ -23,7 +23,68 @@
     <a href="https://neurootlichnik.ru/" target="_blank" class="btn btn--outline">Сайт студии</a>
   </header>
 
-  <main class="game">
+  <div id="startScreen" class="screen start-screen">
+    <img class="start-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
+    <img class="start-screen__mascot" src="assets/mascot-hero.webp" alt="" />
+    <p class="start-screen__tagline">Найди 5 отличий между рендерами на скорость</p>
+    <div class="start-screen__actions">
+      <button class="btn" id="playBtn">Играть</button>
+      <button class="btn btn--outline" id="openRulesBtn">Как играть</button>
+      <button class="btn btn--outline" id="openSettingsBtn">Настройки</button>
+    </div>
+  </div>
+
+  <div id="rulesScreen" class="screen rules-screen" hidden>
+    <h2>Как играть</h2>
+    <ol class="rules-list">
+      <li>Перед вами два похожих рендера — они расположены друг под другом.</li>
+      <li>Между ними ровно 5 отличий.</li>
+      <li>Нажимайте на отличие на любой из двух картинок — оно подсветится сразу на обеих.</li>
+      <li>Таймер считает время с начала уровня — играйте на скорость.</li>
+      <li>Промахнулись? Ничего страшного, штрафов нет — пробуйте ещё раз.</li>
+    </ol>
+    <div class="start-screen__actions">
+      <button class="btn" id="playFromRulesBtn">Играть</button>
+      <button class="btn btn--outline" id="backFromRulesBtn">Назад</button>
+    </div>
+  </div>
+
+  <div id="settingsScreen" class="screen settings-screen" hidden>
+    <h2>Настройки</h2>
+
+    <div class="settings-row settings-row--column">
+      <span class="settings-row__label">Тема интерфейса</span>
+      <div class="segmented" id="themeSegmented">
+        <button type="button" class="segmented__option" data-theme-option="light">Светлая</button>
+        <button type="button" class="segmented__option" data-theme-option="dark">Тёмная</button>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-row__label">Музыка</span>
+      <label class="switch">
+        <input type="checkbox" id="musicToggle" />
+        <span class="switch__track"><span class="switch__thumb"></span></span>
+      </label>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-row__label">Звуковые эффекты</span>
+      <label class="switch">
+        <input type="checkbox" id="sfxToggle" />
+        <span class="switch__track"><span class="switch__thumb"></span></span>
+      </label>
+    </div>
+
+    <div class="settings-row settings-row--column">
+      <span class="settings-row__label">Громкость эффектов</span>
+      <input type="range" id="sfxVolume" class="volume-slider" min="0" max="100" step="5" />
+    </div>
+
+    <button class="btn btn--outline" id="backFromSettingsBtn">Назад</button>
+  </div>
+
+  <main class="game screen" id="gameScreen" hidden>
     <p class="game__tagline">&gt; render_speed(thought)</p>
 
     <div class="game__meta">
@@ -50,7 +111,7 @@
   </main>
 
   <!-- Маскот: кнопка внизу экрана открывает карточку с фактом -->
-  <button id="mascotBtn" class="mascot-btn" aria-label="Факт от Нейро Отличника">
+  <button id="mascotBtn" class="mascot-btn" aria-label="Факт от Нейро Отличника" hidden>
     <img src="assets/mascot-avatar.webp" alt="" />
   </button>
 
@@ -70,9 +131,12 @@
       <a class="btn btn--outline" href="https://neurootlichnik.ru/" target="_blank">
         Хочу такой же рендер для своего проекта
       </a>
+      <button class="text-link" id="backToMenuBtn">В главное меню</button>
     </div>
   </div>
 
+  <script src="src/settings.js"></script>
+  <script src="src/audio.js"></script>
   <script src="src/levels.js"></script>
   <script src="src/facts.js"></script>
   <script src="src/game.js"></script>
