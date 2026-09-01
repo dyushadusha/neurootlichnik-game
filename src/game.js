@@ -94,7 +94,7 @@
   function markFound(index) {
     found[index] = true;
     foundCount++;
-    foundCountEl.textContent = String(foundCount);
+    foundCountEl.textContent = `${foundCount}/${level.differences.length}`;
     addMarker(index);
     hapticCorrect();
     if (foundCount === level.differences.length) {

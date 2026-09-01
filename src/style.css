@@ -119,6 +119,12 @@ a {
   text-underline-offset: 3px;
 }
 
+/* Ссылки, оформленные как кнопки, никогда не должны получать
+   подчёркивание — иначе оно "ломает" ровную сетку кнопок */
+a.btn {
+  text-decoration: none;
+}
+
 a:hover {
   color: var(--accent-hover);
 }
@@ -137,14 +143,16 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 22px;
+  padding: 12px 20px;
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--accent);
   color: var(--accent-contrast);
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 16px;
+  font-size: clamp(13px, 3.8vw, 16px);
+  line-height: 1.25;
+  text-align: center;
   cursor: pointer;
   box-shadow: var(--doodle-shadow);
   transition: transform 0.1s ease, box-shadow 0.1s ease;
@@ -197,6 +205,7 @@ a:hover {
 .stat-card__label {
   color: var(--text-secondary);
   font-size: 14px;
+  white-space: nowrap;
 }
 
 /* =========================================================
@@ -206,23 +215,35 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 14px 20px;
   background: var(--bg-secondary);
   border-bottom: var(--border-width) solid var(--border-color);
 }
 
-.app-header__logo-img {
-  height: 28px;
-  width: auto;
-  display: block;
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0; /* даёт теглайну право обрезаться многоточием, а не ломать сетку */
 }
 
-.app-header__tagline {
-  display: block;
-  margin-top: 6px;
+.app-header__logo-img {
+  height: 34px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.app-header .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.game__tagline {
   font-family: var(--font-hand);
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-muted);
+  margin-top: -6px; /* поднимаем ближе к шапке */
 }
 
 /* =========================================================
@@ -242,7 +263,8 @@ body {
 }
 
 .game__meta {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* обе карточки всегда одинаковой ширины */
   gap: 12px;
 }
 
@@ -324,6 +346,24 @@ body {
 
 .victory-screen[hidden] {
   display: none;
+}
+
+.victory-screen__logo {
+  height: 30px;
+  width: auto;
+  margin-bottom: 4px;
+}
+
+.victory-screen__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px; /* кнопки всегда одинаковой ширины и не "гуляют" */
+}
+
+.victory-screen__actions .btn {
+  width: 100%;
 }
 
 .victory-screen__time {
