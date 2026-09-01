@@ -29,8 +29,10 @@
       <img class="doodle" src="assets/doodles/triangle.svg" alt="" style="bottom:14%;right:8%;width:26px;animation-duration:8s;animation-delay:.2s;" />
       <img class="doodle" src="assets/doodles/arrow-curve.svg" alt="" style="top:38%;right:4%;width:34px;animation-duration:6s;animation-delay:1.2s;" />
     </div>
-    <img class="start-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
-    <img class="start-screen__mascot" src="assets/mascot-hero.webp" alt="" />
+    <div class="logo-plate">
+      <img class="start-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
+    </div>
+    <img id="startMascot" class="start-screen__mascot" src="assets/mascot-hero.webp" alt="" />
     <p class="start-screen__tagline">Найди 5 отличий между рендерами на скорость</p>
     <div class="start-screen__actions">
       <button class="btn" id="playBtn">Играть</button>
@@ -143,10 +145,23 @@
 
   <div id="victoryScreen" class="victory-screen" hidden>
     <img class="victory-screen__mascot" src="assets/mascot-hero.webp" alt="Нейро Отличник рад за вас" />
-    <img class="victory-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
-    <h2>Уровень пройден!</h2>
+    <div class="logo-plate logo-plate--sm">
+      <img class="victory-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
+    </div>
+    <h2 id="victoryTitle">Уровень пройден!</h2>
     <p>Ваше время: <span id="victoryTime" class="victory-screen__time accent-num">00:00</span></p>
+    <p id="bestTimeLine" class="victory-screen__best"></p>
+
+    <div id="achievementsRow" class="achievements-row"></div>
+
+    <div class="subscribe-bonus">
+      <p class="subscribe-bonus__text">Подпишись на канал студии и получи промокод на скидку</p>
+      <button class="btn btn--outline" id="subscribeBtn">Подписаться и получить промокод</button>
+      <p id="promoCodeText" class="promo-code" hidden></p>
+    </div>
+
     <div class="victory-screen__actions">
+      <button class="btn" id="nextLevelBtn" hidden>Следующий уровень</button>
       <button class="btn" id="shareBtn">Поделиться результатом</button>
       <a class="btn btn--outline" href="https://neurootlichnik.ru/" target="_blank">
         Хочу такой же рендер для своего проекта
@@ -155,8 +170,10 @@
     </div>
   </div>
 
+  <script src="src/config.js"></script>
   <script src="src/settings.js"></script>
   <script src="src/audio.js"></script>
+  <script src="src/results.js"></script>
   <script src="src/levels.js"></script>
   <script src="src/facts.js"></script>
   <script src="src/game.js"></script>

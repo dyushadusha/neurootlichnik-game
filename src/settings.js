@@ -11,7 +11,8 @@ const Settings = (function () {
     theme: 'light',
     musicOn: true,
     sfxOn: true,
-    sfxVolume: 60 // от 0 до 100
+    sfxVolume: 60, // от 0 до 100
+    hasSeenIntro: false
   };
 
   function load() {
