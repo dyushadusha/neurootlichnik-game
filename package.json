@@ -1,0 +1,9 @@
+{
+  "name": "neurootlichnik-game",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Telegram Mini App игра «Найди 5 отличий» для студии архитектурной нейровизуализации «Нейро Отличник»",
+  "scripts": {
+    "dev": "npx --yes serve ."
+  }
+}
