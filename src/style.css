@@ -73,6 +73,15 @@
   /* --- Скругления --- */
   --radius-md: 18px;
   --radius-sm: 10px;
+
+  /* --- Единый отступ от края экрана — используется ВЕЗДЕ,
+     чтобы контент не "прыгал" при переходах между экранами --- */
+  --screen-padding: 20px;
+  --screen-max-width: 440px; /* на обычном телефоне не влияет, ограничивает только широкие экраны */
+
+  /* --- Шапка всегда тёмная, независимо от выбранной темы --- */
+  --brand-dark: #1c1c1c;
+  --brand-light: #f5f5f0;
 }
 
 /* =========================================================
@@ -230,14 +239,16 @@ a:hover {
 /* =========================================================
    Шапка игры (шапка = верхний блок страницы с логотипом)
    ========================================================= */
+/* Шапка — фирменная тёмная планка. Не меняется вместе с темой
+   интерфейса (светлая/тёмная) — это часть бренда, а не контента. */
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 20px;
-  background: var(--bg-secondary);
-  border-bottom: var(--border-width) solid var(--border-color);
+  padding: 14px var(--screen-padding);
+  background: var(--brand-dark);
+  border-bottom: var(--border-width) solid var(--brand-dark);
 }
 
 .app-header__brand {
@@ -247,28 +258,21 @@ a:hover {
   min-width: 0;
 }
 
-/* Тёмная "подложка" под значок — на белом фоне один лаймовый
-   контур почти не виден, а на графитовом он яркий и заметный */
-.app-header__logo-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  background: var(--ink);
-  border-radius: var(--radius-sm);
-  transform: rotate(-3deg);
-}
-
 .app-header__logo-img {
-  height: 26px;
+  height: 30px;
   width: auto;
 }
 
 .app-header .btn {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* Кнопка в шапке всегда светлая — фон шапки не зависит от темы */
+.app-header .btn.btn--outline {
+  background: transparent;
+  border-color: var(--brand-light);
+  color: var(--brand-light);
 }
 
 .game__tagline {
@@ -288,7 +292,9 @@ body {
 }
 
 .game {
-  padding: 16px;
+  padding: var(--screen-padding);
+  max-width: var(--screen-max-width);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -369,7 +375,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  padding: 24px;
+  padding: var(--screen-padding);
+  max-width: var(--screen-max-width);
+  margin: 0 auto;
   text-align: center;
 }
 
@@ -396,7 +404,6 @@ body {
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  max-width: 300px;
   margin-top: 10px;
 }
 
@@ -412,8 +419,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 24px;
-  max-width: 380px;
+  padding: var(--screen-padding);
+  max-width: var(--screen-max-width);
   margin: 0 auto;
 }
 
@@ -462,8 +469,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 24px;
-  max-width: 380px;
+  padding: var(--screen-padding);
+  max-width: var(--screen-max-width);
   margin: 0 auto;
 }
 
@@ -628,9 +635,10 @@ body {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 24px;
+  padding: var(--screen-padding);
   text-align: center;
   z-index: 10;
+  overflow-y: auto;
 }
 
 .victory-screen[hidden] {
