@@ -1,0 +1,197 @@
+/* =========================================================
+   NEURO OTLICHNIK — цветовые и шрифтовые переменные бренда
+   =========================================================
+   Всё оформление держится на переменных ниже.
+   Хочешь поменять акцентный цвет всей игры — меняй ОДНУ строку:
+   --accent в блоке :root.
+
+   Три готовых варианта акцента (просто скопируй нужный HEX
+   в строку --accent):
+     1) Электрик-синий (по умолчанию): #2F6BFF
+     2) Мятно-зелёный неон:            #00E6A0
+     3) Ледяной циан:                  #3DE8FF
+   ========================================================= */
+
+:root {
+  /* --- Фон --- */
+  --bg-primary: #0a0a0c;      /* почти чёрный, основной фон страницы */
+  --bg-secondary: #141519;    /* графитовый, фон карточек/шапки */
+  --bg-elevated: #1c1e24;     /* чуть светлее — для наведения/поднятых элементов */
+
+  /* --- Текст --- */
+  --text-primary: #f5f5f7;    /* белый — основной текст, заголовки */
+  --text-secondary: #9a9ca3;  /* светло-серый — подписи, второстепенный текст */
+  --text-muted: #5c5f68;      /* тусклый серый — совсем неважные детали */
+
+  /* --- Акцент (меняй здесь!) --- */
+  --accent: #2f6bff;          /* электрик-синий — кнопки, ссылки, активные элементы */
+  --accent-hover: #5583ff;    /* светлее — наведение курсора на кнопку */
+  --accent-contrast: #ffffff; /* цвет текста ПОВЕРХ акцентного фона */
+
+  /* --- Границы и разделители --- */
+  --border-color: #26282e;
+
+  /* --- Шрифты --- */
+  --font-sans: 'Inter', -apple-system, sans-serif;      /* основной текст */
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace; /* технические вставки */
+
+  /* --- Скругления и отступы (для единообразия) --- */
+  --radius-md: 12px;
+  --radius-sm: 6px;
+}
+
+/* =========================================================
+   Сброс базовых стилей браузера
+   ========================================================= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================================
+   Типографика
+   ========================================================= */
+h1, h2, h3 {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+h1 { font-size: clamp(28px, 6vw, 44px); }
+h2 { font-size: clamp(20px, 4vw, 28px); }
+
+p {
+  color: var(--text-secondary);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+/* Моноширинный акцент — для "технических" вставок вроде
+   "> start" или "generate_space(...)" */
+.mono {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* =========================================================
+   Кнопки — единый стиль для всей игры
+   ========================================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+  background: var(--accent-hover);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn--outline {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.btn--outline:hover {
+  background: var(--bg-elevated);
+}
+
+/* =========================================================
+   Карточка с крупной цифрой (для будущих блоков игры —
+   счётчик найденных отличий, уровень, таймер и т.д.)
+   Пример разметки:
+   <div class="stat-card">
+     <span class="stat-card__num mono">01.</span>
+     <span class="stat-card__label">Найдено отличий</span>
+   </div>
+   ========================================================= */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.stat-card__num {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-card__label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* =========================================================
+   Шапка игры (шапка = верхний блок страницы с логотипом)
+   ========================================================= */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.app-header__logo {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.app-header__logo span {
+  color: var(--accent);
+}
+
+.app-header__tagline {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
