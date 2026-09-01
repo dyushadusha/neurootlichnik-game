@@ -2,42 +2,47 @@
    NEURO OTLICHNIK — цветовые и шрифтовые переменные бренда
    =========================================================
    Всё оформление держится на переменных ниже.
+   Фирменная палитра — ровно 3 цвета:
+     --bg-primary (белый)  — фон, как лист бумаги
+     --ink        (тёмно-серый, почти чёрный) — весь текст и обводки
+     --accent     (лаймовый) — кнопки, подсветка, акценты
+
    Хочешь поменять акцентный цвет всей игры — меняй ОДНУ строку:
    --accent в блоке :root.
-
-   Три готовых варианта акцента (просто скопируй нужный HEX
-   в строку --accent):
-     1) Электрик-синий (по умолчанию): #2F6BFF
-     2) Мятно-зелёный неон:            #00E6A0
-     3) Ледяной циан:                  #3DE8FF
    ========================================================= */
 
 :root {
-  /* --- Фон --- */
-  --bg-primary: #0a0a0c;      /* почти чёрный, основной фон страницы */
-  --bg-secondary: #141519;    /* графитовый, фон карточек/шапки */
-  --bg-elevated: #1c1e24;     /* чуть светлее — для наведения/поднятых элементов */
+  /* --- Фон (белый, "бумага") --- */
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff;    /* карточки тоже белые — отличаются толстой обводкой */
 
-  /* --- Текст --- */
-  --text-primary: #f5f5f7;    /* белый — основной текст, заголовки */
-  --text-secondary: #9a9ca3;  /* светло-серый — подписи, второстепенный текст */
-  --text-muted: #5c5f68;      /* тусклый серый — совсем неважные детали */
+  /* --- Текст / обводки (тёмно-графитовый) --- */
+  --ink: #2a2a2a;
+  --text-primary: #2a2a2a;
+  --text-secondary: color-mix(in srgb, #2a2a2a 62%, white);
+  --text-muted: color-mix(in srgb, #2a2a2a 40%, white);
 
   /* --- Акцент (меняй здесь!) --- */
-  --accent: #2f6bff;          /* электрик-синий — кнопки, ссылки, активные элементы */
-  --accent-hover: #5583ff;    /* светлее — наведение курсора на кнопку */
-  --accent-contrast: #ffffff; /* цвет текста ПОВЕРХ акцентного фона */
+  --accent: #dbfc3b;           /* лаймовый — кнопки, подсветка, активные элементы */
+  --accent-hover: color-mix(in srgb, #dbfc3b 85%, black);
+  --accent-contrast: #2a2a2a;  /* тёмный текст поверх лаймового фона — так читается лучше, чем белый */
 
-  /* --- Границы и разделители --- */
-  --border-color: #26282e;
+  /* --- Границы (толстые, "нарисованные от руки") --- */
+  --border-color: #2a2a2a;
+  --border-width: 3px;
+
+  /* --- "Плоская" сдвинутая тень — фирменный приём стикер-стиля --- */
+  --doodle-shadow: 5px 5px 0 var(--ink);
+  --doodle-shadow-sm: 3px 3px 0 var(--ink);
 
   /* --- Шрифты --- */
-  --font-sans: 'Inter', -apple-system, sans-serif;      /* основной текст */
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace; /* технические вставки */
+  --font-sans: 'Inter', -apple-system, sans-serif;         /* основной читаемый текст */
+  --font-hand: 'Kalam', 'Comic Sans MS', cursive;           /* заголовки "от руки" */
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;  /* технические цифры (таймер, счётчик) */
 
-  /* --- Скругления и отступы (для единообразия) --- */
-  --radius-md: 12px;
-  --radius-sm: 6px;
+  /* --- Скругления --- */
+  --radius-md: 18px;
+  --radius-sm: 10px;
 }
 
 /* =========================================================
@@ -66,22 +71,22 @@ body {
    Типографика
    ========================================================= */
 h1, h2, h3 {
-  font-family: var(--font-sans);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  line-height: 1.15;
 }
 
-h1 { font-size: clamp(28px, 6vw, 44px); }
-h2 { font-size: clamp(20px, 4vw, 28px); }
+h1 { font-size: clamp(30px, 7vw, 46px); }
+h2 { font-size: clamp(24px, 5vw, 32px); }
 
 p {
   color: var(--text-secondary);
 }
 
 a {
-  color: var(--accent);
-  text-decoration: none;
+  color: var(--ink);
+  text-decoration: underline wavy var(--accent);
+  text-underline-offset: 3px;
 }
 
 a:hover {
@@ -89,30 +94,31 @@ a:hover {
 }
 
 /* Моноширинный акцент — для "технических" вставок вроде
-   "> start" или "generate_space(...)" */
+   "> start" или "generate_space(...)" и для цифр (счётчик, таймер) */
 .mono {
   font-family: var(--font-mono);
   color: var(--text-secondary);
 }
 
 /* =========================================================
-   Кнопки — единый стиль для всей игры
+   Кнопки — единый стиль для всей игры, в стиле "стикер"
    ========================================================= */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 24px;
-  border: none;
+  padding: 12px 22px;
+  border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--accent);
   color: var(--accent-contrast);
-  font-family: var(--font-sans);
+  font-family: var(--font-hand);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 17px;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  box-shadow: var(--doodle-shadow);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn:hover {
@@ -120,17 +126,13 @@ a:hover {
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
 }
 
 .btn--outline {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.btn--outline:hover {
-  background: var(--bg-elevated);
+  background: var(--bg-primary);
+  color: var(--ink);
 }
 
 /* =========================================================
@@ -146,17 +148,21 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 14px 16px;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
+  box-shadow: var(--doodle-shadow-sm);
 }
 
 .stat-card__num {
   font-family: var(--font-mono);
   font-size: 22px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--ink);
+  background: var(--accent);
+  padding: 2px 8px;
+  border-radius: 6px;
 }
 
 .stat-card__label {
@@ -173,24 +179,33 @@ a:hover {
   justify-content: space-between;
   padding: 16px 20px;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: var(--border-width) solid var(--border-color);
 }
 
 .app-header__logo {
-  font-family: var(--font-sans);
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: 0.02em;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 20px;
   color: var(--text-primary);
+  display: inline-block;
+  transform: rotate(-2deg); /* лёгкий "наклей стикер" эффект */
 }
 
 .app-header__logo span {
-  color: var(--accent);
+  background: var(--accent);
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+.app-header__logo-img {
+  height: 36px;
+  width: auto;
+  display: block;
 }
 
 .app-header__tagline {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-muted);
@@ -220,14 +235,15 @@ body {
 .game__images {
   display: flex;
   flex-direction: column; /* картинки друг под другом — мобильная вёрстка */
-  gap: 10px;
+  gap: 14px;
 }
 
 .game-image {
   position: relative;
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--border-color);
+  border: var(--border-width) solid var(--border-color);
+  box-shadow: var(--doodle-shadow);
   touch-action: manipulation; /* убирает задержку перед распознаванием тапа */
   -webkit-user-select: none;
   user-select: none;
@@ -249,19 +265,19 @@ body {
 
 .hotspot-marker {
   position: absolute;
-  width: 34px;
-  height: 34px;
-  margin-left: -17px;
-  margin-top: -17px;
+  width: 36px;
+  height: 36px;
+  margin-left: -18px;
+  margin-top: -18px;
   border-radius: 50%;
-  border: 3px solid var(--accent);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 20%, transparent);
+  border: 4px solid var(--accent);
+  box-shadow: 0 0 0 3px var(--ink);
   animation: pop 0.25s ease-out;
 }
 
 @keyframes pop {
-  from { transform: scale(0.4); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { transform: scale(0.4) rotate(-10deg); opacity: 0; }
+  to { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
 @keyframes shake {
@@ -281,7 +297,7 @@ body {
 .victory-screen {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 12, 0.94);
+  background: rgba(255, 255, 255, 0.97);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -298,6 +314,11 @@ body {
 
 .victory-screen__time {
   font-family: var(--font-mono);
-  font-size: 28px;
-  color: var(--accent);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 4px 14px;
+  border-radius: 8px;
+  border: var(--border-width) solid var(--border-color);
 }
