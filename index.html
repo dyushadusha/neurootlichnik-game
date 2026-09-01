@@ -4,25 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Найди 5 отличий — Нейро Отличник</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg" />
 
   <!-- Официальный SDK Telegram Mini Apps — даёт доступ к возможностям Telegram
        (вибрация, кнопки, подгонка под тему и т.д.). Вне Telegram просто грузится и не мешает. -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Google Fonts: Inter (основной текст) + Kalam (рукописные заголовки) + JetBrains Mono (технический) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
-    rel="stylesheet"
-  />
-
+  <!-- Свои шрифты бренда подключены прямо в src/style.css (папка assets/fonts) -->
   <link rel="stylesheet" href="src/style.css" />
 </head>
 <body>
   <header class="app-header">
     <div>
-      <div class="app-header__logo">НЕЙРО <span>ОТЛИЧНИК</span></div>
+      <img class="app-header__logo-img" src="assets/logo-full.svg" alt="Нейро Отличник" />
       <span class="app-header__tagline">&gt; render_speed(thought)</span>
     </div>
     <a href="https://neurootlichnik.ru/" target="_blank" class="btn btn--outline">Сайт студии</a>
@@ -31,11 +25,11 @@
   <main class="game">
     <div class="game__meta">
       <div class="stat-card">
-        <span class="stat-card__num mono" id="foundCount">0</span>
+        <span class="stat-card__num accent-num" id="foundCount">0</span>
         <span class="stat-card__label">/ 5 найдено</span>
       </div>
       <div class="stat-card">
-        <span class="stat-card__num mono" id="timer">00:00</span>
+        <span class="stat-card__num accent-num" id="timer">00:00</span>
         <span class="stat-card__label">время</span>
       </div>
     </div>
@@ -54,7 +48,7 @@
 
   <div id="victoryScreen" class="victory-screen" hidden>
     <h2>Уровень пройден!</h2>
-    <p>Ваше время: <span id="victoryTime" class="victory-screen__time mono">00:00</span></p>
+    <p>Ваше время: <span id="victoryTime" class="victory-screen__time accent-num">00:00</span></p>
     <button class="btn" id="shareBtn">Поделиться результатом</button>
     <a class="btn btn--outline" href="https://neurootlichnik.ru/" target="_blank">
       Хочу такой же рендер для своего проекта

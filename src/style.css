@@ -11,6 +11,35 @@
    --accent в блоке :root.
    ========================================================= */
 
+/* Свои шрифты бренда (файлы лежат в assets/fonts).
+   ВАЖНО: при открытии index.html двойным кликом (file://) браузер
+   из соображений безопасности НЕ грузит свои шрифты с диска — вместо
+   них покажется обычный системный шрифт. Это нормально, только для
+   локальной проверки. Чтобы увидеть настоящие шрифты локально,
+   запустите `npm run dev` и откройте адрес, который он покажет.
+   После публикации на Vercel (обычный сайт, не file://) все шрифты
+   будут работать как надо без этого ограничения. */
+@font-face {
+  font-family: 'InterTight';
+  src: url('../assets/fonts/InterTightSemiBold.ttf') format('truetype');
+  font-weight: 600;
+}
+@font-face {
+  font-family: 'KicaBold';
+  src: url('../assets/fonts/KicaBold.ttf') format('truetype');
+  font-weight: 700;
+}
+@font-face {
+  font-family: 'KicaLight';
+  src: url('../assets/fonts/KicaLight.ttf') format('truetype');
+  font-weight: 300;
+}
+@font-face {
+  font-family: 'Pershotravneva';
+  src: url('../assets/fonts/Pershotravneva55.ttf') format('truetype');
+  font-weight: 400;
+}
+
 :root {
   /* --- Фон (белый, "бумага") --- */
   --bg-primary: #ffffff;
@@ -35,10 +64,11 @@
   --doodle-shadow: 5px 5px 0 var(--ink);
   --doodle-shadow-sm: 3px 3px 0 var(--ink);
 
-  /* --- Шрифты --- */
-  --font-sans: 'Inter', -apple-system, sans-serif;         /* основной читаемый текст */
-  --font-hand: 'Kalam', 'Comic Sans MS', cursive;           /* заголовки "от руки" */
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace;  /* технические цифры (таймер, счётчик) */
+  /* --- Шрифты (свои, из фирменного стиля студии) --- */
+  --font-sans: 'InterTight', -apple-system, sans-serif;   /* основной читаемый текст */
+  --font-display: 'KicaBold', var(--font-sans);            /* крупные заголовки, кнопки, цифры */
+  --font-light: 'KicaLight', var(--font-sans);             /* лёгкий второстепенный текст */
+  --font-hand: 'Pershotravneva', cursive, var(--font-sans);/* рукописные акценты — лого, экран победы */
 
   /* --- Скругления --- */
   --radius-md: 18px;
@@ -93,10 +123,9 @@ a:hover {
   color: var(--accent-hover);
 }
 
-/* Моноширинный акцент — для "технических" вставок вроде
-   "> start" или "generate_space(...)" и для цифр (счётчик, таймер) */
-.mono {
-  font-family: var(--font-mono);
+/* Жирный акцент для цифр — счётчик найденных отличий, таймер и т.д. */
+.accent-num {
+  font-family: var(--font-display);
   color: var(--text-secondary);
 }
 
@@ -113,9 +142,9 @@ a:hover {
   border-radius: var(--radius-md);
   background: var(--accent);
   color: var(--accent-contrast);
-  font-family: var(--font-hand);
+  font-family: var(--font-display);
   font-weight: 700;
-  font-size: 17px;
+  font-size: 16px;
   cursor: pointer;
   box-shadow: var(--doodle-shadow);
   transition: transform 0.1s ease, box-shadow 0.1s ease;
@@ -156,7 +185,7 @@ a:hover {
 }
 
 .stat-card__num {
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
   color: var(--ink);
@@ -182,32 +211,17 @@ a:hover {
   border-bottom: var(--border-width) solid var(--border-color);
 }
 
-.app-header__logo {
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 20px;
-  color: var(--text-primary);
-  display: inline-block;
-  transform: rotate(-2deg); /* лёгкий "наклей стикер" эффект */
-}
-
-.app-header__logo span {
-  background: var(--accent);
-  padding: 0 6px;
-  border-radius: 4px;
-}
-
 .app-header__logo-img {
-  height: 36px;
+  height: 28px;
   width: auto;
   display: block;
 }
 
 .app-header__tagline {
   display: block;
-  margin-top: 4px;
-  font-family: var(--font-mono);
-  font-size: 11px;
+  margin-top: 6px;
+  font-family: var(--font-hand);
+  font-size: 14px;
   color: var(--text-muted);
 }
 
@@ -313,7 +327,7 @@ body {
 }
 
 .victory-screen__time {
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
   font-size: 30px;
   font-weight: 700;
   color: var(--ink);
