@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1220"/>
+      <stop offset="1" stop-color="#1c2740"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="680" cy="90" r="40" fill="#2f3550" opacity="0.6"/>
+  <rect x="0" y="480" width="800" height="120" fill="#0f131c"/>
+  <rect x="0" y="480" width="800" height="6" fill="#333c54"/>
+
+  <!-- здание 1 -->
+  <rect x="90" y="200" width="180" height="280" fill="#1e2536" stroke="#333c54" stroke-width="2"/>
+  <rect x="115" y="230" width="30" height="30" fill="#4a5378"/>
+  <rect x="165" y="230" width="30" height="30" fill="#4a5378"/>
+  <rect x="215" y="230" width="30" height="30" fill="#4a5378"/>
+  <rect x="115" y="290" width="30" height="30" fill="#4a5378"/>
+  <rect x="165" y="290" width="30" height="30" fill="#4a5378"/>
+  <rect x="215" y="290" width="30" height="30" fill="#4a5378"/>
+  <rect x="115" y="350" width="30" height="30" fill="#4a5378"/>
+  <rect x="165" y="350" width="30" height="30" fill="#4a5378"/>
+  <rect x="215" y="350" width="30" height="30" fill="#4a5378"/>
+
+  <!-- здание 2 -->
+  <rect x="330" y="120" width="150" height="360" fill="#232b40" stroke="#333c54" stroke-width="2"/>
+  <rect x="355" y="150" width="26" height="26" fill="#4a5378"/>
+  <rect x="400" y="150" width="26" height="26" fill="#4a5378"/>
+  <rect x="355" y="200" width="26" height="26" fill="#4a5378"/>
+  <rect x="400" y="200" width="26" height="26" fill="#4a5378"/>
+  <rect x="355" y="250" width="26" height="26" fill="#4a5378"/>
+  <rect x="400" y="250" width="26" height="26" fill="#4a5378"/>
+
+  <!-- здание 3 -->
+  <rect x="530" y="260" width="200" height="220" fill="#1a2131" stroke="#333c54" stroke-width="2"/>
+  <rect x="555" y="290" width="28" height="28" fill="#4a5378"/>
+  <rect x="605" y="290" width="28" height="28" fill="#4a5378"/>
+  <rect x="655" y="290" width="28" height="28" fill="#4a5378"/>
+  <rect x="555" y="340" width="28" height="28" fill="#4a5378"/>
+  <rect x="605" y="340" width="28" height="28" fill="#4a5378"/>
+  <rect x="655" y="340" width="28" height="28" fill="#4a5378"/>
+</svg>

@@ -2,8 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Найди 5 отличий — Нейро Отличник</title>
+
+  <!-- Официальный SDK Telegram Mini Apps — даёт доступ к возможностям Telegram
+       (вибрация, кнопки, подгонка под тему и т.д.). Вне Telegram просто грузится и не мешает. -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <!-- Google Fonts: Inter (основной шрифт) + JetBrains Mono (технический) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,8 +28,40 @@
     <a href="https://neurootlichnik.ru/" target="_blank" class="btn btn--outline">Сайт студии</a>
   </header>
 
-  <main>
-    <h1>Скоро здесь будет игра</h1>
+  <main class="game">
+    <div class="game__meta">
+      <div class="stat-card">
+        <span class="stat-card__num mono" id="foundCount">0</span>
+        <span class="stat-card__label">/ 5 найдено</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__num mono" id="timer">00:00</span>
+        <span class="stat-card__label">время</span>
+      </div>
+    </div>
+
+    <div class="game__images">
+      <div class="game-image" data-image="a">
+        <img alt="Рендер, вариант A" draggable="false" />
+        <div class="hotspots-layer"></div>
+      </div>
+      <div class="game-image" data-image="b">
+        <img alt="Рендер, вариант B" draggable="false" />
+        <div class="hotspots-layer"></div>
+      </div>
+    </div>
   </main>
+
+  <div id="victoryScreen" class="victory-screen" hidden>
+    <h2>Уровень пройден!</h2>
+    <p>Ваше время: <span id="victoryTime" class="victory-screen__time mono">00:00</span></p>
+    <button class="btn" id="shareBtn">Поделиться результатом</button>
+    <a class="btn btn--outline" href="https://neurootlichnik.ru/" target="_blank">
+      Хочу такой же рендер для своего проекта
+    </a>
+  </div>
+
+  <script src="src/levels.js"></script>
+  <script src="src/game.js"></script>
 </body>
 </html>

@@ -195,3 +195,109 @@ a:hover {
   font-size: 11px;
   color: var(--text-muted);
 }
+
+/* =========================================================
+   Игровой экран
+   ========================================================= */
+body {
+  /* --tg-viewport-height задаёт game.js — это реальная видимая
+     высота экрана внутри Telegram (учитывает шапку мессенджера) */
+  min-height: var(--tg-viewport-height, 100vh);
+}
+
+.game {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.game__meta {
+  display: flex;
+  gap: 12px;
+}
+
+.game__images {
+  display: flex;
+  flex-direction: column; /* картинки друг под другом — мобильная вёрстка */
+  gap: 10px;
+}
+
+.game-image {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  touch-action: manipulation; /* убирает задержку перед распознаванием тапа */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.game-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-user-drag: none;
+  pointer-events: none; /* клик ловит обёртка .game-image, а не сама картинка */
+}
+
+.hotspots-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hotspot-marker {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  margin-top: -17px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 20%, transparent);
+  animation: pop 0.25s ease-out;
+}
+
+@keyframes pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); }
+  40%, 60% { transform: translateX(8px); }
+}
+
+.shake {
+  animation: shake 0.35s ease;
+}
+
+/* =========================================================
+   Экран победы
+   ========================================================= */
+.victory-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 12, 0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+  z-index: 10;
+}
+
+.victory-screen[hidden] {
+  display: none;
+}
+
+.victory-screen__time {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  color: var(--accent);
+}
