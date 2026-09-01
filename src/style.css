@@ -376,3 +376,83 @@ body {
   border-radius: 8px;
   border: var(--border-width) solid var(--border-color);
 }
+
+.victory-screen__mascot {
+  height: 150px;
+  width: auto;
+  margin-bottom: -8px;
+}
+
+/* =========================================================
+   Маскот — кнопка с фактами о нейровизуализации
+   ========================================================= */
+.mascot-btn {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border-radius: 50%;
+  border: var(--border-width) solid var(--border-color);
+  background: var(--accent);
+  box-shadow: var(--doodle-shadow-sm);
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.mascot-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  pointer-events: none;
+}
+
+.mascot-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.mascot-bubble {
+  position: fixed;
+  right: 16px;
+  bottom: 86px;
+  width: min(280px, calc(100vw - 32px));
+  background: var(--bg-primary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--doodle-shadow);
+  padding: 16px;
+  z-index: 20;
+}
+
+.mascot-bubble[hidden] {
+  display: none;
+}
+
+.mascot-bubble__close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  border: none;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.mascot-bubble__text {
+  font-family: var(--font-hand);
+  font-size: 17px;
+  color: var(--ink);
+  line-height: 1.35;
+  margin: 4px 0 14px;
+}
+
+.mascot-bubble__next {
+  width: 100%;
+  padding: 8px 16px;
+}

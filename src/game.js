@@ -131,6 +131,10 @@
     stopTimer();
     victoryTimeEl.textContent = formatTime(Date.now() - startTime);
     victoryScreen.hidden = false;
+    // На экране победы уже есть свой герой крупным планом —
+    // прячем плавающего маскота, чтобы не перекрывал кнопки.
+    mascotBtn.hidden = true;
+    mascotBubble.hidden = true;
   }
 
   // ---------- Поделиться результатом ----------
@@ -146,6 +150,30 @@
       navigator.clipboard.writeText(text + ' ' + url);
       alert('Результат скопирован в буфер обмена!');
     }
+  });
+
+  // ---------- Маскот: карточка со случайным фактом ----------
+  const mascotBtn = document.getElementById('mascotBtn');
+  const mascotBubble = document.getElementById('mascotBubble');
+  const mascotFactEl = document.getElementById('mascotFact');
+  let lastFactIndex = -1;
+
+  function showRandomFact() {
+    let index = Math.floor(Math.random() * MASCOT_FACTS.length);
+    if (MASCOT_FACTS.length > 1 && index === lastFactIndex) {
+      index = (index + 1) % MASCOT_FACTS.length;
+    }
+    lastFactIndex = index;
+    mascotFactEl.textContent = MASCOT_FACTS[index];
+  }
+
+  mascotBtn.addEventListener('click', () => {
+    showRandomFact();
+    mascotBubble.hidden = false;
+  });
+  document.getElementById('mascotNext').addEventListener('click', showRandomFact);
+  document.getElementById('mascotClose').addEventListener('click', () => {
+    mascotBubble.hidden = true;
   });
 
   startTimer();

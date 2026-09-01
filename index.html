@@ -47,7 +47,19 @@
     </div>
   </main>
 
+  <!-- Маскот: кнопка внизу экрана открывает карточку с фактом -->
+  <button id="mascotBtn" class="mascot-btn" aria-label="Факт от Нейро Отличника">
+    <img src="assets/mascot-avatar.webp" alt="" />
+  </button>
+
+  <div id="mascotBubble" class="mascot-bubble" hidden>
+    <button class="mascot-bubble__close" id="mascotClose" aria-label="Закрыть">&times;</button>
+    <p id="mascotFact" class="mascot-bubble__text"></p>
+    <button class="btn btn--outline mascot-bubble__next" id="mascotNext">Ещё факт</button>
+  </div>
+
   <div id="victoryScreen" class="victory-screen" hidden>
+    <img class="victory-screen__mascot" src="assets/mascot-hero.webp" alt="Нейро Отличник рад за вас" />
     <img class="victory-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
     <h2>Уровень пройден!</h2>
     <p>Ваше время: <span id="victoryTime" class="victory-screen__time accent-num">00:00</span></p>
@@ -60,6 +72,7 @@
   </div>
 
   <script src="src/levels.js"></script>
+  <script src="src/facts.js"></script>
   <script src="src/game.js"></script>
 </body>
 </html>
