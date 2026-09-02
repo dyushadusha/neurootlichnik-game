@@ -17,6 +17,9 @@
   if (tg) {
     tg.ready();
     tg.expand();
+    // Отключаем системный свайп вниз — иначе игрок может случайно
+    // закрыть игру, проводя пальцем по картинкам во время поиска отличий.
+    if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
     document.documentElement.dataset.tgColorScheme = tg.colorScheme; // тема из настроек всё равно главнее
     applyViewportHeight();
     tg.onEvent('viewportChanged', applyViewportHeight);

@@ -111,6 +111,7 @@
 
 html, body {
   height: 100%;
+  overscroll-behavior: none; /* убирает "резиновый" оттяг и потягивание для обновления */
 }
 
 body {
@@ -257,6 +258,7 @@ a:hover {
   justify-content: space-between;
   gap: 12px;
   padding: 14px var(--screen-padding);
+  padding-top: calc(14px + env(safe-area-inset-top)); /* не залезает под чёлку/статус-бар */
   background: var(--brand-dark);
   border-bottom: var(--border-width) solid var(--brand-dark);
 }
@@ -303,6 +305,8 @@ body {
 
 .game {
   padding: var(--screen-padding);
+  /* запас снизу, чтобы картинка не пряталась под плавающими кнопками маскота/подсказки */
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
   max-width: var(--screen-max-width);
   margin: 0 auto;
   display: flex;
@@ -390,6 +394,7 @@ body {
   justify-content: center;
   gap: 14px;
   padding: var(--screen-padding);
+  padding-bottom: calc(var(--screen-padding) + env(safe-area-inset-bottom));
   max-width: var(--screen-max-width);
   margin: 0 auto;
   text-align: center;
@@ -460,6 +465,7 @@ body {
   flex-direction: column;
   gap: 20px;
   padding: var(--screen-padding);
+  padding-bottom: calc(var(--screen-padding) + env(safe-area-inset-bottom));
   max-width: var(--screen-max-width);
   margin: 0 auto;
 }
@@ -514,6 +520,7 @@ body {
   flex-direction: column;
   gap: 20px;
   padding: var(--screen-padding);
+  padding-bottom: calc(var(--screen-padding) + env(safe-area-inset-bottom));
   max-width: var(--screen-max-width);
   margin: 0 auto;
 }
@@ -714,6 +721,8 @@ body {
   justify-content: center;
   gap: 16px;
   padding: var(--screen-padding);
+  padding-top: calc(var(--screen-padding) + env(safe-area-inset-top));
+  padding-bottom: calc(var(--screen-padding) + env(safe-area-inset-bottom));
   text-align: center;
   z-index: 10;
   overflow-y: auto;
@@ -835,7 +844,7 @@ body {
 .hint-btn {
   position: fixed;
   left: 16px;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom)); /* не залезает под "домик" iPhone */
   width: 56px;
   height: 56px;
   padding: 10px;
@@ -914,7 +923,7 @@ body {
 .mascot-btn {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom)); /* не залезает под "домик" iPhone */
   width: 72px;
   height: 72px;
   padding: 0;
@@ -963,8 +972,13 @@ body {
 
 .mascot-bubble__close {
   position: absolute;
-  top: 6px;
-  right: 10px;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: none;
   font-size: 22px;
