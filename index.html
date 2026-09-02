@@ -14,7 +14,7 @@
   <!-- ?v=N в конце — принудительный сброс кэша: Telegram и браузеры любят
        подолгу кэшировать эти файлы, и без этого правки могли не доходить
        до игроков сразу после публикации. Меняйте N при каждом деплое. -->
-  <link rel="stylesheet" href="src/style.css?v=8" />
+  <link rel="stylesheet" href="src/style.css?v=9" />
 </head>
 <body>
   <header class="app-header">
@@ -40,17 +40,18 @@
       <img class="doodle" src="assets/doodles/hashtag.svg" alt="" style="top:70%;left:20%;width:34px;animation-duration:6.9s;animation-delay:.5s;" />
       <img class="doodle" src="assets/doodles/scribble.svg" alt="" style="bottom:40%;right:30%;width:46px;animation-duration:5.1s;animation-delay:1.1s;" />
     </div>
-    <div class="logo-plate">
-      <img class="start-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
-    </div>
-    <p class="start-screen__tagline">Найди 5 отличий между рендерами на скорость</p>
-    <p id="progressLine" class="start-screen__progress" hidden></p>
-    <div class="start-screen__actions-wrap">
-      <img id="startMascot" class="start-screen__mascot" src="assets/mascot-start.webp" alt="" />
-      <div class="start-screen__actions">
-        <button class="btn" id="playBtn">Играть</button>
-        <button class="btn btn--outline" id="openRulesBtn">Как играть</button>
-        <button class="btn btn--outline" id="openSettingsBtn">Настройки</button>
+    <img id="startLogo" class="start-screen__logo-full" src="assets/logo-full-dark.svg" alt="Нейро Отличник" />
+    <div class="start-screen__center">
+      <p class="start-screen__tagline">Найди 5 отличий между рендерами на скорость</p>
+      <p id="progressLine" class="start-screen__progress" hidden></p>
+      <div class="start-screen__actions-wrap">
+        <img id="startMascot" class="start-screen__mascot" src="assets/mascot-start.webp" alt="" />
+        <div class="start-screen__actions">
+          <button class="btn" id="playBtn">Играть</button>
+          <button class="btn btn--outline" id="openRulesBtn">Как играть</button>
+          <button class="btn btn--outline" id="openSettingsBtn">Настройки</button>
+        </div>
+        <button class="text-link" id="restartFromBeginningBtn" hidden>Начать сначала</button>
       </div>
     </div>
   </div>
@@ -241,12 +242,12 @@
     </div>
   </div>
 
-  <script src="src/config.js?v=8"></script>
-  <script src="src/settings.js?v=8"></script>
-  <script src="src/audio.js?v=8"></script>
-  <script src="src/results.js?v=8"></script>
-  <script src="src/levels.js?v=8"></script>
-  <script src="src/facts.js?v=8"></script>
-  <script src="src/game.js?v=8"></script>
+  <script src="src/config.js?v=9"></script>
+  <script src="src/settings.js?v=9"></script>
+  <script src="src/audio.js?v=9"></script>
+  <script src="src/results.js?v=9"></script>
+  <script src="src/levels.js?v=9"></script>
+  <script src="src/facts.js?v=9"></script>
+  <script src="src/game.js?v=9"></script>
 </body>
 </html>

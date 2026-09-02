@@ -9,6 +9,31 @@ const GameResults = (function () {
   const ACHIEV_KEY = 'neuroOtlichnikAchievements';
   const WINS_KEY = 'neuroOtlichnikWins';
   const PROMO_CLAIMED_KEY = 'neuroOtlichnikPromoClaimed';
+  const CURRENT_LEVEL_KEY = 'neuroOtlichnikCurrentLevel';
+
+  // ---------- Незавершённый прогон — чтобы не начинать с уровня 1 каждый раз ----------
+  function getCurrentLevelIndex() {
+    try {
+      const raw = localStorage.getItem(CURRENT_LEVEL_KEY);
+      return raw === null ? null : parseInt(raw, 10);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setCurrentLevelIndex(index) {
+    try {
+      localStorage.setItem(CURRENT_LEVEL_KEY, String(index));
+    } catch (e) {}
+  }
+
+  // Прогон закончен (все уровни пройдены) — при следующем "Играть"
+  // снова начинаем с самого начала.
+  function clearCurrentLevelIndex() {
+    try {
+      localStorage.removeItem(CURRENT_LEVEL_KEY);
+    } catch (e) {}
+  }
 
   // ---------- Промокод за подписку — выдаём только один раз ----------
   // Без этого можно было проходить уровни по кругу и каждый раз заново
@@ -373,6 +398,9 @@ const GameResults = (function () {
     evaluateAchievements,
     shareResultImage,
     hasClaimedPromo,
-    claimPromo
+    claimPromo,
+    getCurrentLevelIndex,
+    setCurrentLevelIndex,
+    clearCurrentLevelIndex
   };
 })();

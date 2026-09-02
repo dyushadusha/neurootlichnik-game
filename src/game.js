@@ -179,6 +179,7 @@
     if (screen === startScreen) {
       maybeShowIntro();
       updateProgressLine();
+      updatePlayButtonLabel();
     }
   }
 
@@ -226,6 +227,9 @@
   function startLevel(index) {
     loadLevel(index);
     startTimer();
+    // Запоминаем, на каком уровне игрок — если он выйдет в меню, не
+    // закончив прогон, в следующий раз "Играть" продолжит именно отсюда.
+    GameResults.setCurrentLevelIndex(index);
   }
 
   // ---------- Таймер (считаем "на скорость", без обратного отсчёта) ----------
@@ -358,6 +362,8 @@
       bestTimeLine.textContent = totalResult.isNewRecord
         ? '🎉 Новый общий рекорд!'
         : `Ваш лучший результат: ${formatTime(totalResult.best)}`;
+      // Прогон завершён целиком — в следующий раз "Играть" снова начнёт с 1-го уровня.
+      GameResults.clearCurrentLevelIndex();
     }
 
     // Промокод выдаём только один раз за устройство — иначе можно было
@@ -514,12 +520,24 @@
     sfxVolume.value = s.sfxVolume;
   }
 
+  // Большое лого на главном экране красим по палитре: тёмно-серым на
+  // светлой теме (читается на белом фоне), лаймовым — на тёмной (там
+  // фон сам тёмный, и лайм на нём — уже привычная по всей игре пара).
+  const startLogoEl = document.getElementById('startLogo');
+  function applyStartLogoTheme() {
+    startLogoEl.src =
+      document.documentElement.dataset.theme === 'dark' ? 'assets/logo-full.svg' : 'assets/logo-full-dark.svg';
+  }
+
   themeButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       Settings.set({ theme: btn.dataset.themeOption });
       syncSettingsUI();
+      applyStartLogoTheme();
     });
   });
+
+  applyStartLogoTheme();
 
   musicToggle.addEventListener('change', () => {
     Settings.set({ musicOn: musicToggle.checked });
@@ -529,14 +547,23 @@
   musicVolume.addEventListener('input', () => {
     Settings.set({ musicVolume: Number(musicVolume.value) });
     GameAudio.setMusicVolume(Number(musicVolume.value));
+    // Если музыка должна играть, но по какой-то причине автозапуск браузера
+    // её ещё не завёл — само движение ползунка тоже "касание", пробуем
+    // запустить ещё раз, чтобы изменение громкости стало реально слышно.
+    if (Settings.get().musicOn) GameAudio.startMusic();
   });
 
   sfxToggle.addEventListener('change', () => {
     Settings.set({ sfxOn: sfxToggle.checked });
   });
 
+  // Двигая ползунок, слышно, как меняется громкость — иначе непонятно,
+  // работает он вообще или нет, пока не начнёшь реальный уровень.
+  let sfxPreviewTimer = null;
   sfxVolume.addEventListener('input', () => {
     Settings.set({ sfxVolume: Number(sfxVolume.value) });
+    clearTimeout(sfxPreviewTimer);
+    sfxPreviewTimer = setTimeout(() => GameAudio.playHint(), 120);
   });
 
   document.getElementById('openSettingsBtn').addEventListener('click', () => {
@@ -556,17 +583,31 @@
     showScreen(startScreen);
   });
 
-  function beginGame() {
+  // Без аргумента — продолжает с уровня, на котором остановились (если
+  // такой есть и прогон не завершён целиком), иначе начинает с первого.
+  function beginGame(forceIndex) {
     GameAudio.init();
     GameAudio.setMusicOn(Settings.get().musicOn);
     totalElapsedMs = 0;
+    const resumeIndex = GameResults.getCurrentLevelIndex();
+    const startIndex =
+      forceIndex != null ? forceIndex : resumeIndex != null && resumeIndex < LEVELS.length ? resumeIndex : 0;
     showScreen(gameScreen);
-    startLevel(0);
+    startLevel(startIndex);
     fitGameImages();
   }
 
-  document.getElementById('playBtn').addEventListener('click', beginGame);
-  document.getElementById('playFromRulesBtn').addEventListener('click', beginGame);
+  document.getElementById('playBtn').addEventListener('click', () => beginGame());
+  document.getElementById('playFromRulesBtn').addEventListener('click', () => beginGame());
+  document.getElementById('restartFromBeginningBtn').addEventListener('click', () => beginGame(0));
+
+  // ---------- Кнопка "Играть" помнит прерванный прогон ----------
+  function updatePlayButtonLabel() {
+    const resumeIndex = GameResults.getCurrentLevelIndex();
+    const canResume = resumeIndex != null && resumeIndex > 0 && resumeIndex < LEVELS.length;
+    document.getElementById('playBtn').textContent = canResume ? `Продолжить (уровень ${resumeIndex + 1})` : 'Играть';
+    document.getElementById('restartFromBeginningBtn').hidden = !canResume;
+  }
 
   // Браузеры (а особенно встроенный WebView Telegram на iOS) разрешают
   // включать звук только в ответ на "жест пользователя" — но не всегда
