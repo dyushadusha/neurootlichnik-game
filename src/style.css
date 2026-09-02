@@ -888,6 +888,50 @@ body {
   display: none;
 }
 
+/* Сворачиваемая плашка "новые уровни в разработке" — <details>/<summary>
+   разворачивается кликом сама, без лишнего JS. */
+.dev-note {
+  width: 100%;
+  max-width: 320px;
+  background: var(--bg-secondary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 16px 22px 14px 20px;
+  box-shadow: var(--doodle-shadow-sm);
+  padding: 12px 16px;
+}
+
+.dev-note__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none; /* убираем стандартный треугольник-маркер... */
+}
+
+.dev-note__summary::-webkit-details-marker {
+  display: none; /* ...и в Safari/Chrome тоже */
+}
+
+.dev-note__summary::after {
+  content: '▾';
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.dev-note[open] .dev-note__summary::after {
+  transform: rotate(180deg);
+}
+
+.dev-note__text {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .subscribe-bonus {
   width: 100%;
   max-width: 320px;
