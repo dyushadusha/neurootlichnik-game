@@ -80,7 +80,7 @@
   --screen-max-width: 440px; /* на обычном телефоне не влияет, ограничивает только широкие экраны */
 
   /* --- Шапка всегда тёмная, независимо от выбранной темы --- */
-  --brand-dark: #1c1c1c;
+  --brand-dark: #2a2a2a; /* тот же тёмно-серый, что и везде — без отдельного чёрного оттенка */
   --brand-light: #f5f5f0;
 }
 
@@ -90,8 +90,8 @@
    шрифты, отступы и "рисованные" эффекты остаются те же.
    ========================================================= */
 :root[data-theme='dark'] {
-  --bg-primary: #1c1c1c;
-  --bg-secondary: #262626;
+  --bg-primary: #2a2a2a;
+  --bg-secondary: #3a3a3a;
   --ink: #f5f5f0;
   --text-primary: #f5f5f0;
   --text-secondary: color-mix(in srgb, #f5f5f0 65%, black);
@@ -111,6 +111,7 @@
 
 html, body {
   height: 100%;
+  overflow: hidden; /* страница целиком никогда не скроллится — скроллится только контент внутри активного экрана */
   overscroll-behavior: none; /* убирает "резиновый" оттяг и потягивание для обновления */
 }
 
@@ -234,7 +235,7 @@ a:hover {
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--accent-contrast);
   background: var(--accent);
   padding: 2px 10px;
   border-radius: 6px;
@@ -257,10 +258,10 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px var(--screen-padding);
-  padding-top: calc(14px + env(safe-area-inset-top)); /* не залезает под чёлку/статус-бар */
+  padding: 8px var(--screen-padding);
+  padding-top: calc(8px + env(safe-area-inset-top)); /* не залезает под чёлку/статус-бар */
   background: var(--brand-dark);
-  border-bottom: var(--border-width) solid var(--brand-dark);
+  border-bottom: var(--border-width) solid var(--border-color);
 }
 
 .app-header__brand {
@@ -271,11 +272,13 @@ a:hover {
 }
 
 .app-header__logo-img {
-  height: 30px;
+  height: 22px;
   width: auto;
 }
 
 .app-header .btn {
+  padding: 8px 14px;
+  font-size: 13px;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -300,7 +303,9 @@ a:hover {
 body {
   /* --tg-viewport-height задаёт game.js — это реальная видимая
      высота экрана внутри Telegram (учитывает шапку мессенджера) */
-  min-height: var(--tg-viewport-height, 100vh);
+  min-height: calc(var(--tg-viewport-height, 100vh) - var(--header-height, 0px));
+  max-height: calc(var(--tg-viewport-height, 100vh) - var(--header-height, 0px));
+  overflow-y: auto; /* если контент не влезает — скроллится ВНУТРИ экрана, а не вся страница */
 }
 
 .game {
@@ -387,7 +392,9 @@ body {
    Стартовый экран (главное меню)
    ========================================================= */
 .start-screen {
-  min-height: var(--tg-viewport-height, 100vh);
+  min-height: calc(var(--tg-viewport-height, 100vh) - var(--header-height, 0px));
+  max-height: calc(var(--tg-viewport-height, 100vh) - var(--header-height, 0px));
+  overflow-y: auto; /* если контент не влезает — скроллится ВНУТРИ экрана, а не вся страница */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -431,7 +438,7 @@ body {
 }
 
 .start-screen__mascot {
-  height: 180px;
+  height: min(300px, 36vh);
   width: auto;
   margin: 4px 0;
   animation: hero-pop-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -460,7 +467,9 @@ body {
    Экран "Как играть"
    ========================================================= */
 .rules-screen {
-  min-height: var(--tg-viewport-height, 100vh);
+  min-height: calc(var(--tg-viewport-height, 100vh) - var(--header-height, 0px));
+  max-height: calc(var(--tg-viewport-height, 100vh) - var(--header-height, 0px));
+  overflow-y: auto; /* если контент не влезает — скроллится ВНУТРИ экрана, а не вся страница */
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -515,7 +524,9 @@ body {
    Экран настроек
    ========================================================= */
 .settings-screen {
-  min-height: var(--tg-viewport-height, 100vh);
+  min-height: calc(var(--tg-viewport-height, 100vh) - var(--header-height, 0px));
+  max-height: calc(var(--tg-viewport-height, 100vh) - var(--header-height, 0px));
+  overflow-y: auto; /* если контент не влезает — скроллится ВНУТРИ экрана, а не вся страница */
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -583,6 +594,7 @@ body {
 
 .segmented__option[aria-pressed='true'] {
   background: var(--accent);
+  color: var(--accent-contrast);
 }
 
 /* Тумблер вкл/выкл (музыка, звук) */
@@ -702,13 +714,13 @@ body {
 
 .doodle {
   position: absolute;
-  opacity: 0.5;
-  animation: doodle-float 6s ease-in-out infinite;
+  opacity: 0.9;
+  animation: doodle-float 5s ease-in-out infinite;
 }
 
 @keyframes doodle-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-14px) rotate(10deg); }
+  0%, 100% { transform: translateY(0) rotate(-6deg) scale(1); }
+  50% { transform: translateY(-22px) rotate(14deg) scale(1.08); }
 }
 
 .victory-screen {
@@ -754,7 +766,7 @@ body {
   font-family: var(--font-display);
   font-size: 30px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--accent-contrast);
   background: var(--accent);
   padding: 4px 14px;
   border-radius: 8px;
@@ -798,6 +810,18 @@ body {
 }
 
 /* ---------- Бонус за подписку ---------- */
+.final-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.final-actions[hidden] {
+  display: none;
+}
+
 .subscribe-bonus {
   width: 100%;
   max-width: 320px;
@@ -823,7 +847,7 @@ body {
 .promo-code {
   font-family: var(--font-display);
   font-size: 22px;
-  color: var(--ink);
+  color: var(--accent-contrast);
   background: var(--accent);
   padding: 6px 10px;
   border-radius: 8px;

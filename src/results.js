@@ -104,80 +104,175 @@ const GameResults = (function () {
   }
 
   async function ensureFontsLoaded() {
-    const specs = ['700 64px KicaBold', '700 150px KicaBold', '600 34px InterTight'];
+    const specs = [
+      '700 60px KicaBold', '700 150px KicaBold', '600 32px InterTight', '400 60px Pershotravneva'
+    ];
     try {
       await Promise.all(specs.map((s) => document.fonts.load(s)));
     } catch (e) {}
   }
 
+  // Перекрашивает лаймовое PNG/SVG-изображение в сплошной цвет, сохраняя
+  // прозрачность — так настоящий логотип можно сделать тёмно-серым,
+  // чтобы он был виден на любом фоне (лайм на лайме не читается).
+  function recolorImage(img, color) {
+    const off = document.createElement('canvas');
+    off.width = img.width;
+    off.height = img.height;
+    const octx = off.getContext('2d');
+    octx.drawImage(img, 0, 0);
+    octx.globalCompositeOperation = 'source-in';
+    octx.fillStyle = color;
+    octx.fillRect(0, 0, off.width, off.height);
+    return off;
+  }
+
+  // Лёгкое зерно поверх картинки — рисуем один раз на маленьком холсте
+  // и растягиваем, так быстрее, чем считать шум на весь размер.
+  function drawGrain(ctx, w, h) {
+    const tileW = 220;
+    const tileH = Math.round((tileW * h) / w);
+    const noiseCanvas = document.createElement('canvas');
+    noiseCanvas.width = tileW;
+    noiseCanvas.height = tileH;
+    const nctx = noiseCanvas.getContext('2d');
+    const imageData = nctx.createImageData(tileW, tileH);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      const v = Math.floor(Math.random() * 255);
+      imageData.data[i] = v;
+      imageData.data[i + 1] = v;
+      imageData.data[i + 2] = v;
+      imageData.data[i + 3] = 255;
+    }
+    nctx.putImageData(imageData, 0, 0);
+    ctx.save();
+    ctx.globalAlpha = 0.05;
+    ctx.drawImage(noiseCanvas, 0, 0, w, h);
+    ctx.restore();
+  }
+
+  // Полутоновая (halftone) точечная заливка справа от диагональной линии,
+  // соединяющей (x1,0)-(x2,H) — тот же приём, что и на баннере игры.
+  // x1,y1 -> x2,y2: диагональная линия, точки рисуются только правее неё
+  // и только ниже startY (выше — чистый белый фон, там точек быть не должно).
+  function drawHalftone(ctx, w, h, topX, botX, startY) {
+    const step = 30;
+    ctx.fillStyle = 'rgba(42,42,42,0.28)';
+    for (let gy = Math.ceil(startY / step) * step; gy < h; gy += step) {
+      const t = (gy - startY) / (h - startY);
+      const lineX = topX + (botX - topX) * t;
+      for (let gx = Math.floor(lineX / step) * step; gx < w; gx += step) {
+        const dist = gx - lineX;
+        if (dist < -10) continue;
+        const size = Math.max(2, Math.min(9, dist / 40));
+        ctx.beginPath();
+        ctx.arc(gx, gy, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
   async function buildResultImageBlob(timeText) {
     await ensureFontsLoaded();
 
+    // Формат как экран телефона (9:16) — удобно шерить в сторис/каналы.
+    const W = 1080;
+    const H = 1920;
+    const ink = '#2a2a2a';
+    const accent = '#dbfc3b';
+
     const canvas = document.createElement('canvas');
-    canvas.width = 1080;
-    canvas.height = 1080;
+    canvas.width = W;
+    canvas.height = H;
     const ctx = canvas.getContext('2d');
 
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, W, H);
 
-    const inset = 36;
-    ctx.strokeStyle = '#2a2a2a';
-    ctx.lineWidth = 14;
-    roundRectPath(ctx, inset, inset, canvas.width - inset * 2, canvas.height - inset * 2, 48);
-    ctx.stroke();
-
-    // Лого-надпись
-    ctx.textBaseline = 'alphabetic';
-    ctx.textAlign = 'left';
-    ctx.font = '700 60px KicaBold, sans-serif';
-    const nText = 'НЕЙРО ';
-    const oText = 'ОТЛИЧНИК';
-    const startX = 90;
-    const startY = 160;
-    const nWidth = ctx.measureText(nText).width;
-    const oWidth = ctx.measureText(oText).width;
-    ctx.fillStyle = '#dbfc3b';
-    ctx.fillRect(startX + nWidth - 6, startY - 50, oWidth + 24, 62);
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillText(nText, startX, startY);
-    ctx.fillText(oText, startX + nWidth + 6, startY);
-
-    // Бейдж с результатом
-    const badgeY = 320;
-    const badgeH = 360;
-    ctx.fillStyle = '#dbfc3b';
-    roundRectPath(ctx, 90, badgeY, canvas.width - 180, badgeH, 40);
+    // Диагональная лаймовая "лента" в нижней части — динамика вместо плоского фона.
+    // Выше diagY0 — чистый белый фон. Ниже — лайм справа от диагональной линии,
+    // идущей от (lineTopX, diagY0) до (lineBotX, H).
+    const diagY0 = H * 0.42;
+    const lineTopX = W * 0.62;
+    const lineBotX = W * 0.08;
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.moveTo(lineTopX, diagY0);
+    ctx.lineTo(W, diagY0);
+    ctx.lineTo(W, H);
+    ctx.lineTo(lineBotX, H);
+    ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = '#2a2a2a';
-    ctx.lineWidth = 10;
-    roundRectPath(ctx, 90, badgeY, canvas.width - 180, badgeH, 40);
+
+    drawHalftone(ctx, W, H, lineTopX, lineBotX, diagY0);
+
+    // Толстая рамка — фирменный приём
+    const inset = 32;
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 14;
+    roundRectPath(ctx, inset, inset, W - inset * 2, H - inset * 2, 48);
     ctx.stroke();
 
-    ctx.fillStyle = '#2a2a2a';
+    // Настоящий логотип, перекрашенный в тёмно-серый (виден на любом фоне)
+    try {
+      const logoImg = await loadImage('assets/logo-full.svg');
+      const logoCanvas = recolorImage(logoImg, ink);
+      const logoW = W * 0.62;
+      const logoH = logoCanvas.height * (logoW / logoCanvas.width);
+      ctx.save();
+      ctx.translate(W * 0.08 + logoW / 2, 130 + logoH / 2);
+      ctx.rotate((-2 * Math.PI) / 180);
+      ctx.drawImage(logoCanvas, -logoW / 2, -logoH / 2, logoW, logoH);
+      ctx.restore();
+    } catch (e) {
+      /* если логотип не загрузился — просто продолжаем без него */
+    }
+
+    // Рукописный тег-лайн
+    ctx.fillStyle = ink;
+    ctx.font = '400 46px Pershotravneva, cursive';
+    ctx.textAlign = 'left';
+    ctx.fillText('нашёл все отличия!', W * 0.08, 300);
+
+    // Крупный бейдж с результатом
+    const badgeX = W * 0.08;
+    const badgeW = W * 0.84;
+    const badgeY = 360;
+    const badgeH = 430;
+    ctx.fillStyle = accent;
+    roundRectPath(ctx, badgeX, badgeY, badgeW, badgeH, 40);
+    ctx.fill();
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 10;
+    roundRectPath(ctx, badgeX, badgeY, badgeW, badgeH, 40);
+    ctx.stroke();
+
+    ctx.fillStyle = ink;
     ctx.textAlign = 'center';
-    ctx.font = '700 42px KicaBold, sans-serif';
-    ctx.fillText('НАЙДЕНО 5 ИЗ 5', canvas.width / 2, badgeY + 90);
-    ctx.font = '700 140px KicaBold, sans-serif';
-    ctx.fillText(timeText, canvas.width / 2, badgeY + 250);
+    ctx.font = '700 46px KicaBold, sans-serif';
+    ctx.fillText('НАЙДЕНО 5 ИЗ 5', W / 2, badgeY + 100);
+    ctx.font = '700 160px KicaBold, sans-serif';
+    ctx.fillText(timeText, W / 2, badgeY + 300);
     ctx.textAlign = 'left';
 
-    // Маскот
+    // Маскот — бОльшая часть выходит за нижний край кадра
     try {
       const mascotImg = await loadImage('assets/mascot-hero.webp');
-      const mh = 420;
+      const mh = H * 0.5;
       const mw = mascotImg.width * (mh / mascotImg.height);
-      ctx.drawImage(mascotImg, canvas.width - mw - 50, canvas.height - mh - 110, mw, mh);
+      ctx.drawImage(mascotImg, W - mw - 40, H - mh + 40, mw, mh);
     } catch (e) {
       /* если картинка не загрузилась — просто пропускаем, остальное всё равно готово */
     }
 
-    // Подпись внизу
-    ctx.fillStyle = '#2a2a2a';
-    ctx.font = '600 32px InterTight, sans-serif';
-    ctx.fillText('Игра «Найди 5 отличий» от студии', 90, canvas.height - 140);
-    ctx.font = '700 40px KicaBold, sans-serif';
-    ctx.fillText('neurootlichnik.ru', 90, canvas.height - 90);
+    // Подпись внизу — на лаймовой ленте, тёмно-серым (контраст сохранён)
+    ctx.fillStyle = ink;
+    ctx.font = '600 30px InterTight, sans-serif';
+    ctx.fillText('Игра «Найди 5 отличий» от студии', W * 0.08, H - 130);
+    ctx.font = '700 42px KicaBold, sans-serif';
+    ctx.fillText('neurootlichnik.ru', W * 0.08, H - 80);
+
+    drawGrain(ctx, W, H);
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }

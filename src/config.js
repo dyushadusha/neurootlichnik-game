@@ -8,7 +8,7 @@ const CONFIG = {
   TELEGRAM_CHANNEL_URL: 'https://t.me/neurootlichnik',
 
   // Промокод, который получит игрок после подписки
-  PROMO_CODE: 'NEURO2025',
+  PROMO_CODE: 'Отличник',
 
   // Сайт студии (используется в кнопках "Сайт студии" и на экране победы)
   STUDIO_URL: 'https://neurootlichnik.ru/'

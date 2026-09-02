@@ -14,19 +14,40 @@
     document.documentElement.style.setProperty('--tg-viewport-height', h + 'px');
   }
 
+  // Шапка занимает часть экрана в обычном потоке (не наложена сверху),
+  // поэтому экраны ниже нужно уменьшать ровно на её высоту — иначе всё
+  // вместе оказывается выше экрана и появляется лишний скролл.
+  function applyHeaderHeight() {
+    const headerEl = document.querySelector('.app-header');
+    if (headerEl) {
+      document.documentElement.style.setProperty('--header-height', headerEl.offsetHeight + 'px');
+    }
+  }
+
   if (tg) {
     tg.ready();
     tg.expand();
+    // Полноэкранный режим (Bot API 8.0+) — убирает "шапку" Telegram с
+    // кнопкой "Закрыть" сверху, игра занимает весь экран целиком.
+    // В старых клиентах Telegram такого метода нет — тогда просто пропускаем.
+    if (tg.requestFullscreen) {
+      try { tg.requestFullscreen(); } catch (e) {}
+    }
     // Отключаем системный свайп вниз — иначе игрок может случайно
     // закрыть игру, проводя пальцем по картинкам во время поиска отличий.
     if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
     document.documentElement.dataset.tgColorScheme = tg.colorScheme; // тема из настроек всё равно главнее
     applyViewportHeight();
     tg.onEvent('viewportChanged', applyViewportHeight);
+    tg.onEvent('fullscreenChanged', applyViewportHeight);
+    // Высота от Telegram иногда приходит с небольшой задержкой —
+    // подстраховываемся повторной проверкой.
+    setTimeout(applyViewportHeight, 300);
   } else {
     applyViewportHeight();
     window.addEventListener('resize', applyViewportHeight);
   }
+  applyHeaderHeight();
 
   // ---------- Экраны ----------
   const startScreen = document.getElementById('startScreen');
@@ -67,6 +88,8 @@
   const nextLevelBtn = document.getElementById('nextLevelBtn');
   const bestTimeLine = document.getElementById('bestTimeLine');
   const achievementsRow = document.getElementById('achievementsRow');
+  const finalActionsEl = document.getElementById('finalActions');
+  const victoryTitleEl = document.getElementById('victoryTitle');
 
   const HINTS_PER_LEVEL = 3;
   let hintsLeft = HINTS_PER_LEVEL;
@@ -202,9 +225,12 @@
       achievementsRow.appendChild(chip);
     });
 
-    // Следующий уровень, если он есть
+    // Следующий уровень, если он есть. Делиться результатом и получать
+    // промокод предлагаем только после ПОСЛЕДНЕГО уровня, а не после каждого.
     const hasNext = currentLevelIndex < LEVELS.length - 1;
     nextLevelBtn.hidden = !hasNext;
+    finalActionsEl.hidden = hasNext;
+    victoryTitleEl.textContent = hasNext ? 'Уровень пройден!' : 'Все уровни пройдены! 🏆';
 
     // Сбрасываем состояние блока с промокодом на новый показ экрана
     document.getElementById('promoCodeText').hidden = true;
@@ -371,6 +397,16 @@
 
   document.getElementById('playBtn').addEventListener('click', beginGame);
   document.getElementById('playFromRulesBtn').addEventListener('click', beginGame);
+
+  // Браузеры разрешают включать звук только после того, как человек
+  // сам коснулся экрана — поэтому запускаем музыку по самому первому
+  // касанию где угодно на странице, а не только по кнопке "Играть".
+  function initAudioOnFirstTouch() {
+    GameAudio.init();
+    GameAudio.setMusicOn(Settings.get().musicOn);
+    document.removeEventListener('pointerdown', initAudioOnFirstTouch);
+  }
+  document.addEventListener('pointerdown', initAudioOnFirstTouch, { once: true });
 
   syncSettingsUI();
   showScreen(startScreen);
