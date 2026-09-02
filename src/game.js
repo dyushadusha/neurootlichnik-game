@@ -80,7 +80,13 @@
     if (!tg) return;
     const csi = tg.contentSafeAreaInset || {};
     const si = tg.safeAreaInset || {};
-    const top = Math.max(csi.top || 0, si.top || 0);
+    let top = Math.max(csi.top || 0, si.top || 0);
+    // На части версий Telegram contentSafeAreaInset/safeAreaInset приходят
+    // нулевыми (или сильно заниженными) даже в полноэкранном режиме — а
+    // свои полупрозрачные кнопки (Закрыть/свернуть/•••) Telegram всё равно
+    // рисует поверх страницы. Раз довериться этим цифрам нельзя — в
+    // полноэкранном режиме подстраховываемся минимальным отступом.
+    if (tg.isFullscreen && top < 92) top = 92;
     document.documentElement.style.setProperty('--tg-safe-top', top + 'px');
     applyHeaderHeight(); // высота шапки меняется вместе с этим отступом
   }
@@ -104,12 +110,15 @@
     tg.onEvent('fullscreenChanged', applyTelegramSafeArea);
     tg.onEvent('safeAreaChanged', applyTelegramSafeArea);
     tg.onEvent('contentSafeAreaChanged', applyTelegramSafeArea);
-    // Высота и безопасная зона от Telegram иногда приходят с небольшой
-    // задержкой — подстраховываемся повторной проверкой.
-    setTimeout(() => {
-      applyViewportHeight();
-      applyTelegramSafeArea();
-    }, 300);
+    // Высота, флаг полноэкранного режима и безопасная зона от Telegram
+    // иногда приходят с задержкой (или не сразу верны) — перепроверяем
+    // несколько раз, а не один.
+    [300, 800, 1500].forEach((delay) => {
+      setTimeout(() => {
+        applyViewportHeight();
+        applyTelegramSafeArea();
+      }, delay);
+    });
   } else {
     applyViewportHeight();
     window.addEventListener('resize', applyViewportHeight);

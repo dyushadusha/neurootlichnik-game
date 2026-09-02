@@ -1,17 +1,19 @@
 /* =========================================================
    ЗВУК
-   Готовых файлов музыки/эффектов нет, поэтому звуки и лёгкая
-   фоновая мелодия генерируются прямо в браузере (Web Audio API) —
-   ничего не нужно скачивать, всё работает "из коробки".
+   Звуковые эффекты (правильно/неправильно/победа/подсказка) генерируются
+   прямо в браузере (Web Audio API) — ничего скачивать не нужно.
+   Фоновая музыка — настоящий mp3-файл (assets/music/background.mp3),
+   проигрывается обычным <audio> в цикле.
    Браузеры запрещают включать звук до первого касания
-   экрана — поэтому всё запускается только через Audio.init(),
-   которую мы вызываем по кнопке "Играть".
+   экрана — поэтому всё запускается только через Audio.init()/
+   startMusic(), которые мы вызываем по кнопке "Играть" и по самому
+   первому касанию где угодно на странице (см. game.js).
    ========================================================= */
 
 const GameAudio = (function () {
   let ctx = null;
-  let musicNodes = null;
   let masterGain = null;
+  let musicEl = null;
 
   function ensureContext() {
     if (!ctx) {
@@ -71,47 +73,30 @@ const GameAudio = (function () {
     playTone([440, 660], 0.2, 'triangle');
   }
 
-  // Простая тихая фоновая "подушка" из двух расстроенных тонов —
-  // не мелодия в привычном смысле, а мягкий эмбиент-фон.
+  // Настоящая фоновая музыка — обычный <audio>, зациклен, негромкая
+  // громкость, чтобы не перебивать звуковые эффекты и не раздражать.
+  function ensureMusicEl() {
+    if (!musicEl) {
+      musicEl = new Audio('assets/music/background.mp3');
+      musicEl.loop = true;
+      musicEl.volume = 0.35;
+      musicEl.preload = 'auto';
+    }
+    return musicEl;
+  }
+
   function startMusic() {
-    if (!ctx || musicNodes) return;
     const s = Settings.get();
     if (!s.musicOn) return;
-
-    const musicGain = ctx.createGain();
-    musicGain.gain.value = 0.05;
-    musicGain.connect(masterGain);
-
-    const osc1 = ctx.createOscillator();
-    osc1.type = 'sine';
-    osc1.frequency.value = 220;
-
-    const osc2 = ctx.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.value = 220 * 1.5;
-
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.1;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.03;
-    lfo.connect(lfoGain);
-    lfoGain.connect(musicGain.gain);
-
-    osc1.connect(musicGain);
-    osc2.connect(musicGain);
-    osc1.start();
-    osc2.start();
-    lfo.start();
-
-    musicNodes = { osc1, osc2, lfo, musicGain };
+    const el = ensureMusicEl();
+    // play() возвращает промис — без настоящего жеста пользователя браузер
+    // может его отклонить, тогда просто попробуем ещё раз по следующему
+    // касанию (см. tryStartAudio в game.js). Ошибку тут не считаем багом.
+    el.play().catch(() => {});
   }
 
   function stopMusic() {
-    if (!musicNodes) return;
-    musicNodes.osc1.stop();
-    musicNodes.osc2.stop();
-    musicNodes.lfo.stop();
-    musicNodes = null;
+    if (musicEl) musicEl.pause();
   }
 
   function setMusicOn(on) {
