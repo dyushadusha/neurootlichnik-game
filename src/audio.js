@@ -30,9 +30,18 @@ const GameAudio = (function () {
     ensureContext();
   }
 
+  // Человеческий слух воспринимает громкость не линейно, а примерно как
+  // квадрат — если отдавать в звук ползунок "как есть", то верхняя
+  // половина шкалы почти не отличается на слух, и кажется, что ползунок
+  // сломан. Возводим в квадрат, чтобы шкала ощущалась ровной.
+  function perceptualVolume(percent0to100) {
+    const t = Math.max(0, Math.min(100, percent0to100)) / 100;
+    return t * t;
+  }
+
   function currentVolume() {
     const s = Settings.get();
-    return s.sfxOn ? s.sfxVolume / 100 : 0;
+    return s.sfxOn ? perceptualVolume(s.sfxVolume) : 0;
   }
 
   // Короткий синтезированный звук — серия нот с затуханием.
@@ -79,7 +88,7 @@ const GameAudio = (function () {
     if (!musicEl) {
       musicEl = new Audio('assets/music/background.mp3');
       musicEl.loop = true;
-      musicEl.volume = (Settings.get().musicVolume ?? 55) / 100;
+      musicEl.volume = perceptualVolume(Settings.get().musicVolume ?? 55);
       musicEl.preload = 'auto';
     }
     return musicEl;
@@ -105,7 +114,7 @@ const GameAudio = (function () {
   }
 
   function setMusicVolume(volume0to100) {
-    if (musicEl) musicEl.volume = volume0to100 / 100;
+    if (musicEl) musicEl.volume = perceptualVolume(volume0to100);
   }
 
   return {

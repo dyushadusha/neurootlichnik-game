@@ -14,7 +14,7 @@
   <!-- ?v=N в конце — принудительный сброс кэша: Telegram и браузеры любят
        подолгу кэшировать эти файлы, и без этого правки могли не доходить
        до игроков сразу после публикации. Меняйте N при каждом деплое. -->
-  <link rel="stylesheet" href="src/style.css?v=6" />
+  <link rel="stylesheet" href="src/style.css?v=7" />
 </head>
 <body>
   <header class="app-header">
@@ -44,6 +44,7 @@
       <img class="start-screen__logo" src="assets/logo-full.svg" alt="Нейро Отличник" />
     </div>
     <p class="start-screen__tagline">Найди 5 отличий между рендерами на скорость</p>
+    <p id="progressLine" class="start-screen__progress" hidden></p>
     <div class="start-screen__actions-wrap">
       <img id="startMascot" class="start-screen__mascot" src="assets/mascot-start.webp" alt="" />
       <div class="start-screen__actions">
@@ -173,6 +174,10 @@
     </div>
   </main>
 
+  <!-- Выход в меню прямо во время уровня — раньше выйти можно было
+       только пройдя уровень целиком -->
+  <button id="exitToMenuBtn" class="exit-btn" aria-label="Выйти в меню" hidden>✕</button>
+
   <!-- Летающая подсказка: тапнуть — подсветится одно из отличий -->
   <button id="hintBtn" class="hint-btn" aria-label="Подсказка" hidden>
     <img src="assets/doodles/spiral-c.svg" alt="" />
@@ -236,12 +241,12 @@
     </div>
   </div>
 
-  <script src="src/config.js?v=6"></script>
-  <script src="src/settings.js?v=6"></script>
-  <script src="src/audio.js?v=6"></script>
-  <script src="src/results.js?v=6"></script>
-  <script src="src/levels.js?v=6"></script>
-  <script src="src/facts.js?v=6"></script>
-  <script src="src/game.js?v=6"></script>
+  <script src="src/config.js?v=7"></script>
+  <script src="src/settings.js?v=7"></script>
+  <script src="src/audio.js?v=7"></script>
+  <script src="src/results.js?v=7"></script>
+  <script src="src/levels.js?v=7"></script>
+  <script src="src/facts.js?v=7"></script>
+  <script src="src/game.js?v=7"></script>
 </body>
 </html>

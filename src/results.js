@@ -40,6 +40,13 @@ const GameResults = (function () {
     return loadBest()[levelId] || null;
   }
 
+  // Сколько из перечисленных уровней игрок уже когда-либо проходил —
+  // для прогресса на главном экране (по сохранённому рекорду времени).
+  function getCompletedCount(levelIds) {
+    const best = loadBest();
+    return levelIds.filter((id) => best[id] != null).length;
+  }
+
   // Возвращает { isNewRecord, best } — best всегда лучшее время после этой попытки.
   function submitTime(levelId, ms) {
     const best = loadBest();
@@ -252,11 +259,13 @@ const GameResults = (function () {
     ctx.textAlign = 'left';
     ctx.fillText('нашёл все отличия!', W * 0.08, 300);
 
-    // Крупный бейдж с результатом
+    // Крупный бейдж с результатом. Если известно имя игрока — бейдж выше,
+    // чтобы крупно, шрифтом KicaBold, поместилось "ОТЛИЧНИК: ИМЯ" —
+    // персонализация должна бросаться в глаза, а не прятаться мелким текстом.
     const badgeX = W * 0.08;
     const badgeW = W * 0.84;
     const badgeY = 360;
-    const badgeH = 430;
+    const badgeH = userName ? 560 : 430;
     ctx.fillStyle = accent;
     roundRectPath(ctx, badgeX, badgeY, badgeW, badgeH, 40);
     ctx.fill();
@@ -269,11 +278,27 @@ const GameResults = (function () {
     ctx.textAlign = 'center';
     ctx.font = '700 36px KicaBold, sans-serif';
     ctx.fillText('ВСЕ УРОВНИ ПРОЙДЕНЫ', W / 2, badgeY + 90);
-    ctx.font = '700 160px KicaBold, sans-serif';
-    ctx.fillText(timeText, W / 2, badgeY + 300);
+
     if (userName) {
-      ctx.font = '600 34px InterTight, sans-serif';
-      ctx.fillText(userName, W / 2, badgeY + 380);
+      ctx.font = '700 32px KicaBold, sans-serif';
+      ctx.fillText('🎓 ОТЛИЧНИК', W / 2, badgeY + 155);
+
+      // Имя может быть длинным — подбираем самый крупный размер, который
+      // помещается по ширине бейджа, а не просто уменьшаем его заранее.
+      const maxNameWidth = badgeW * 0.88;
+      let nameSize = 84;
+      ctx.font = `700 ${nameSize}px KicaBold, sans-serif`;
+      while (ctx.measureText(userName).width > maxNameWidth && nameSize > 32) {
+        nameSize -= 4;
+        ctx.font = `700 ${nameSize}px KicaBold, sans-serif`;
+      }
+      ctx.fillText(userName, W / 2, badgeY + 250);
+
+      ctx.font = '700 130px KicaBold, sans-serif';
+      ctx.fillText(timeText, W / 2, badgeY + 440);
+    } else {
+      ctx.font = '700 160px KicaBold, sans-serif';
+      ctx.fillText(timeText, W / 2, badgeY + 300);
     }
     ctx.textAlign = 'left';
 
@@ -341,5 +366,13 @@ const GameResults = (function () {
     return true;
   }
 
-  return { getBestTime, submitTime, evaluateAchievements, shareResultImage, hasClaimedPromo, claimPromo };
+  return {
+    getBestTime,
+    getCompletedCount,
+    submitTime,
+    evaluateAchievements,
+    shareResultImage,
+    hasClaimedPromo,
+    claimPromo
+  };
 })();

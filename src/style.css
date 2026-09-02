@@ -491,6 +491,25 @@ body {
   max-width: 300px;
 }
 
+/* Прогресс по уровням — видно только у вернувшихся игроков (0 уровней
+   пройдено — блок скрыт совсем, чтобы не грузить первый экран новичкам). */
+.start-screen__progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 14px;
+  background: var(--bg-secondary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 20px;
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.start-screen__progress[hidden] {
+  display: none;
+}
+
 .start-screen__actions {
   position: relative;
   z-index: 1; /* поверх маскота — прячет его обрезанный край */
@@ -994,6 +1013,32 @@ body {
   from { transform: translateX(-140px) rotate(-15deg); opacity: 0; }
   60% { transform: translateX(10px) rotate(4deg); opacity: 1; }
   to { transform: translateX(0) rotate(0deg); opacity: 1; }
+}
+
+/* Выход в меню поверх уровня — фиксированная кнопка не участвует в
+   раскладке .game (fitGameImages), поэтому картинкам не нужно ужиматься
+   ради неё. */
+.exit-btn {
+  position: fixed;
+  left: 16px;
+  top: calc(var(--header-height, 60px) + 10px);
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: var(--border-width) solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--ink);
+  box-shadow: var(--doodle-shadow-sm);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 20;
+}
+
+.exit-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
 }
 
 .hint-btn {

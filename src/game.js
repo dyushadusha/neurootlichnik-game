@@ -162,6 +162,7 @@
   const mascotBtn = document.getElementById('mascotBtn');
   const mascotBubble = document.getElementById('mascotBubble');
   const hintBtn = document.getElementById('hintBtn');
+  const exitToMenuBtn = document.getElementById('exitToMenuBtn');
 
   function showScreen(screen) {
     [startScreen, rulesScreen, settingsScreen, gameScreen, victoryScreen].forEach((s) => {
@@ -171,10 +172,14 @@
     // именно в конце игры (после всех уровней) уместнее всего почитать факты.
     mascotBtn.hidden = screen !== gameScreen && screen !== startScreen && screen !== victoryScreen;
     hintBtn.hidden = screen !== gameScreen;
+    exitToMenuBtn.hidden = screen !== gameScreen;
     if (mascotBtn.hidden) {
       mascotBubble.hidden = true;
     }
-    if (screen === startScreen) maybeShowIntro();
+    if (screen === startScreen) {
+      maybeShowIntro();
+      updateProgressLine();
+    }
   }
 
   // ---------- Состояние уровня ----------
@@ -430,6 +435,13 @@
     showScreen(startScreen);
   });
 
+  // Выход в меню прямо во время уровня — прогресс текущей попытки просто
+  // не засчитывается, ничего страшного тут нет (рекорды не трогаем).
+  exitToMenuBtn.addEventListener('click', () => {
+    stopTimer();
+    showScreen(startScreen);
+  });
+
   // ---------- Подсказка: подсвечивает одно не найденное отличие ----------
   hintBtn.addEventListener('click', () => {
     if (hintsLeft <= 0) return;
@@ -578,6 +590,22 @@
   // Показываем только пока пользователь на главном экране — если он успел
   // быстро нажать "Играть" раньше, чем сработал таймер, пузырь мог бы
   // появиться поверх игры и закрыть собой часть картинки от тапов.
+  // ---------- Прогресс по уровням — виден только вернувшимся игрокам ----------
+  function updateProgressLine() {
+    const progressEl = document.getElementById('progressLine');
+    const total = LEVELS.length;
+    const completed = GameResults.getCompletedCount(LEVELS.map((l) => l.id));
+    if (completed === 0) {
+      progressEl.hidden = true;
+      return;
+    }
+    progressEl.textContent =
+      completed >= total
+        ? `🏆 Все ${total} уровня пройдены — сыграйте ещё раз на время!`
+        : `Пройдено уровней: ${completed} из ${total}`;
+    progressEl.hidden = false;
+  }
+
   function maybeShowIntro() {
     if (Settings.get().hasSeenIntro) return;
     if (startScreen.hidden) return; // не на главном экране — покажем в другой раз
