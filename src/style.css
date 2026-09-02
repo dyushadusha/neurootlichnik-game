@@ -330,8 +330,10 @@ body {
   overflow-y: auto; /* подстраховка — при точном расчёте картинок ниже скролла быть не должно */
   overflow-x: hidden;
   padding: var(--screen-padding);
-  /* запас снизу, чтобы картинка не пряталась под плавающими кнопками маскота/подсказки */
-  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  /* запас снизу, чтобы картинка не пряталась под плавающими кнопками маскота/подсказки.
+     game.js (fitGameImages) может уменьшить --game-bottom-reserve на тесных
+     экранах, чтобы дать картинкам всю ширину вместо более узких с полями. */
+  padding-bottom: calc(var(--game-bottom-reserve, 84px) + env(safe-area-inset-bottom));
   max-width: var(--screen-max-width);
   margin: 0 auto;
   display: flex;

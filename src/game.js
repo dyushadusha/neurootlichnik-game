@@ -19,6 +19,9 @@
   // Вместо "ширина 100%, высота авто" (из-за чего картинки могли не влезать
   // по высоте и появлялся скролл) здесь высчитывается точный размер в
   // пикселях, чтобы обе картинки гарантированно поместились на экране.
+  const GAME_BOTTOM_RESERVE_DEFAULT = 84; // место под плавающие кнопки маскота/подсказки
+  const GAME_BOTTOM_RESERVE_MIN = 16; // минимум, если совсем не хватает высоты
+
   function fitGameImages() {
     const gameEl = document.getElementById('gameScreen');
     const imagesWrap = document.querySelector('.game__images');
@@ -29,31 +32,56 @@
       el.style.width = '';
       el.style.height = '';
     });
-
-    const gameStyles = getComputedStyle(gameEl);
-    const paddingTop = parseFloat(gameStyles.paddingTop) || 0;
-    const paddingBottom = parseFloat(gameStyles.paddingBottom) || 0;
-    const paddingLeft = parseFloat(gameStyles.paddingLeft) || 0;
-    const paddingRight = parseFloat(gameStyles.paddingRight) || 0;
-    const columnGap = parseFloat(gameStyles.rowGap) || 16;
+    gameEl.style.setProperty('--game-bottom-reserve', GAME_BOTTOM_RESERVE_DEFAULT + 'px');
 
     const taglineEl = document.querySelector('.game__tagline');
     const metaEl = document.querySelector('.game__meta');
-    const taglineH = taglineEl ? taglineEl.offsetHeight : 0;
-    const metaH = metaEl ? metaEl.offsetHeight : 0;
     const imagesGap = parseFloat(getComputedStyle(imagesWrap).rowGap) || 14;
 
-    const totalAvailableHeight = gameEl.clientHeight - paddingTop - paddingBottom;
-    const usedByOthers = taglineH + metaH + columnGap * 2; // 2 промежутка между 3 блоками
-    const availableForImages = Math.max(160, totalAvailableHeight - usedByOthers);
+    // Считает, сколько места остаётся под обе картинки при заданном
+    // нижнем отступе (reserve), и какая точная ширина/высота у них выйдет,
+    // если тянуть их на всю ширину экрана.
+    function computeFit() {
+      const gameStyles = getComputedStyle(gameEl);
+      const paddingTop = parseFloat(gameStyles.paddingTop) || 0;
+      const paddingBottom = parseFloat(gameStyles.paddingBottom) || 0;
+      const paddingLeft = parseFloat(gameStyles.paddingLeft) || 0;
+      const paddingRight = parseFloat(gameStyles.paddingRight) || 0;
+      const columnGap = parseFloat(gameStyles.rowGap) || 16;
+      const taglineH = taglineEl ? taglineEl.offsetHeight : 0;
+      const metaH = metaEl ? metaEl.offsetHeight : 0;
 
-    let heightEach = (availableForImages - imagesGap) / 2;
-    let widthEach = heightEach * (4 / 3);
+      const totalAvailableHeight = gameEl.clientHeight - paddingTop - paddingBottom;
+      const usedByOthers = taglineH + metaH + columnGap * 2; // 2 промежутка между 3 блоками
+      const availableForImages = Math.max(160, totalAvailableHeight - usedByOthers);
+      const availableWidth = gameEl.clientWidth - paddingLeft - paddingRight;
 
-    const availableWidth = gameEl.clientWidth - paddingLeft - paddingRight;
-    if (widthEach > availableWidth) {
-      widthEach = availableWidth;
-      heightEach = widthEach * (3 / 4);
+      const fullWidthHeight = availableWidth * (3 / 4); // высота, если картинки на всю ширину
+      const neededForFullWidth = fullWidthHeight * 2 + imagesGap;
+
+      return { availableForImages, availableWidth, fullWidthHeight, neededForFullWidth };
+    }
+
+    let fit = computeFit();
+
+    // Если на всю ширину картинки не помещаются по высоте — сначала пробуем
+    // ужать запас под плавающие кнопки (а не сами картинки), вплоть до
+    // минимума. Так изображения остаются во всю ширину экрана чаще.
+    if (fit.neededForFullWidth > fit.availableForImages) {
+      const shortBy = fit.neededForFullWidth - fit.availableForImages;
+      const newReserve = Math.max(GAME_BOTTOM_RESERVE_MIN, GAME_BOTTOM_RESERVE_DEFAULT - shortBy);
+      gameEl.style.setProperty('--game-bottom-reserve', newReserve + 'px');
+      fit = computeFit();
+    }
+
+    let widthEach = fit.availableWidth;
+    let heightEach = fit.fullWidthHeight;
+
+    // Если даже после урезания запаса снизу всё равно не хватает высоты —
+    // вот теперь, в самом крайнем случае, уменьшаем сами картинки.
+    if (fit.fullWidthHeight * 2 + imagesGap > fit.availableForImages) {
+      heightEach = (fit.availableForImages - imagesGap) / 2;
+      widthEach = heightEach * (4 / 3);
     }
 
     imageBoxes.forEach((el) => {
