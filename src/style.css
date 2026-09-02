@@ -348,6 +348,7 @@ body {
 .game__images {
   display: flex;
   flex-direction: column; /* картинки друг под другом — мобильная вёрстка */
+  align-items: center; /* если по высоте картинка уже экрана — центр, а не прилипание влево */
   gap: 10px;
 }
 
