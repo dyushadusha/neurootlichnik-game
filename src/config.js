@@ -5,7 +5,7 @@
    ========================================================= */
 const CONFIG = {
   // Ссылка на ваш Telegram-канал (для кнопки "Подписаться и получить промокод")
-  TELEGRAM_CHANNEL_URL: 'https://t.me/neurootlichnik',
+  TELEGRAM_CHANNEL_URL: 'https://t.me/NeuroOtlichnikArch',
 
   // Промокод, который получит игрок после подписки
   PROMO_CODE: 'Отличник',
