@@ -465,15 +465,15 @@ body {
 .start-screen__actions-wrap {
   position: relative;
   width: 100%;
-  margin-top: 76px; /* место для видимой (верхней) части выглядывающего маскота */
+  margin-top: 161px; /* место для видимой (верхней) части выглядывающего маскота */
 }
 
 .start-screen__mascot {
   position: absolute;
-  left: -34px; /* глубже прячем обрезанный левый край за границу экрана */
+  left: -40px; /* глубже прячем обрезанный левый край за границу экрана */
   bottom: 100%;
-  margin-bottom: -118px; /* обрезанный низ иллюстрации прячется за кнопками */
-  height: min(196px, 25vh);
+  margin-bottom: -55px; /* совсем немного перекрывает кнопки — не "сильно" */
+  height: min(220px, 27vh);
   width: auto;
   pointer-events: none;
   animation: hero-pop-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -483,6 +483,7 @@ body {
   font-family: var(--font-hand);
   font-size: 22px;
   line-height: 1.25;
+  margin-top: 22px; /* было "приклеено" к логотипу — отодвигаем, чтобы не липло */
   color: var(--text-secondary);
   max-width: 300px;
 }
@@ -1028,16 +1029,20 @@ body {
 }
 
 .mascot-btn img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%; /* сама картинка остаётся круглой */
+  /* Картинка немного больше и сдвинута вверх (см. left/top ниже), а
+     clip-path вырезает круг ТОЧНО такого же размера, как сама кнопка
+     (72px), плюс узкую полоску сверху — благодаря прозрачному фону
+     картинки в этой полоске видна только макушка волос, торчащая за
+     край круга, а не квадратный кусок картинки. */
+  position: absolute;
+  left: -4px;
+  top: -18px;
+  width: 80px;
+  height: 90px;
   object-fit: cover;
   object-position: top center;
   pointer-events: none;
-  /* растёт от нижнего края — круг визуально того же размера, но макушка
-     чуть высовывается сверху за его границу */
-  transform: scale(1.16);
-  transform-origin: 50% 100%;
+  clip-path: url(#mascotPeekClip);
 }
 
 .mascot-btn:active {
