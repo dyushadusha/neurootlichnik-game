@@ -57,5 +57,17 @@ const LEVELS = [
       { x: 20, y: 65, r: 6 },
       { x: 88, y: 70, r: 6 }
     ]
+  },
+  {
+    id: 4,
+    imageA: 'assets/level-4-a.png',
+    imageB: 'assets/level-4-b.png',
+    differences: [
+      { x: 8.8, y: 23, r: 8 },
+      { x: 39.8, y: 59.9, r: 5 },
+      { x: 58.1, y: 46.5, r: 8 },
+      { x: 76.3, y: 48.9, r: 8 },
+      { x: 95.6, y: 50.5, r: 8 }
+    ]
   }
 ];
