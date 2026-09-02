@@ -12,6 +12,54 @@
   function applyViewportHeight() {
     const h = (tg && (tg.viewportStableHeight || tg.viewportHeight)) || window.innerHeight;
     document.documentElement.style.setProperty('--tg-viewport-height', h + 'px');
+    fitGameImages();
+  }
+
+  // Игровые картинки всегда имеют соотношение сторон 4:3 (см. levels.js).
+  // Вместо "ширина 100%, высота авто" (из-за чего картинки могли не влезать
+  // по высоте и появлялся скролл) здесь высчитывается точный размер в
+  // пикселях, чтобы обе картинки гарантированно поместились на экране.
+  function fitGameImages() {
+    const gameEl = document.getElementById('gameScreen');
+    const imagesWrap = document.querySelector('.game__images');
+    const imageBoxes = document.querySelectorAll('.game-image');
+    if (!gameEl || gameEl.hidden || !imagesWrap || imageBoxes.length < 2) return;
+
+    imageBoxes.forEach((el) => {
+      el.style.width = '';
+      el.style.height = '';
+    });
+
+    const gameStyles = getComputedStyle(gameEl);
+    const paddingTop = parseFloat(gameStyles.paddingTop) || 0;
+    const paddingBottom = parseFloat(gameStyles.paddingBottom) || 0;
+    const paddingLeft = parseFloat(gameStyles.paddingLeft) || 0;
+    const paddingRight = parseFloat(gameStyles.paddingRight) || 0;
+    const columnGap = parseFloat(gameStyles.rowGap) || 16;
+
+    const taglineEl = document.querySelector('.game__tagline');
+    const metaEl = document.querySelector('.game__meta');
+    const taglineH = taglineEl ? taglineEl.offsetHeight : 0;
+    const metaH = metaEl ? metaEl.offsetHeight : 0;
+    const imagesGap = parseFloat(getComputedStyle(imagesWrap).rowGap) || 14;
+
+    const totalAvailableHeight = gameEl.clientHeight - paddingTop - paddingBottom;
+    const usedByOthers = taglineH + metaH + columnGap * 2; // 2 промежутка между 3 блоками
+    const availableForImages = Math.max(160, totalAvailableHeight - usedByOthers);
+
+    let heightEach = (availableForImages - imagesGap) / 2;
+    let widthEach = heightEach * (4 / 3);
+
+    const availableWidth = gameEl.clientWidth - paddingLeft - paddingRight;
+    if (widthEach > availableWidth) {
+      widthEach = availableWidth;
+      heightEach = widthEach * (3 / 4);
+    }
+
+    imageBoxes.forEach((el) => {
+      el.style.width = widthEach + 'px';
+      el.style.height = heightEach + 'px';
+    });
   }
 
   // Шапка занимает часть экрана в обычном потоке (не наложена сверху),
@@ -22,6 +70,19 @@
     if (headerEl) {
       document.documentElement.style.setProperty('--header-height', headerEl.offsetHeight + 'px');
     }
+  }
+
+  // В полноэкранном режиме Telegram (requestFullscreen) поверх страницы
+  // остаются собственные полупрозрачные кнопки Telegram (закрыть/свернуть) —
+  // они не часть страницы, но занимают место сверху. contentSafeAreaInset
+  // как раз сообщает, сколько места они закрывают, — отступаем от них.
+  function applyTelegramSafeArea() {
+    if (!tg) return;
+    const csi = tg.contentSafeAreaInset || {};
+    const si = tg.safeAreaInset || {};
+    const top = Math.max(csi.top || 0, si.top || 0);
+    document.documentElement.style.setProperty('--tg-safe-top', top + 'px');
+    applyHeaderHeight(); // высота шапки меняется вместе с этим отступом
   }
 
   if (tg) {
@@ -38,11 +99,17 @@
     if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
     document.documentElement.dataset.tgColorScheme = tg.colorScheme; // тема из настроек всё равно главнее
     applyViewportHeight();
+    applyTelegramSafeArea();
     tg.onEvent('viewportChanged', applyViewportHeight);
-    tg.onEvent('fullscreenChanged', applyViewportHeight);
-    // Высота от Telegram иногда приходит с небольшой задержкой —
-    // подстраховываемся повторной проверкой.
-    setTimeout(applyViewportHeight, 300);
+    tg.onEvent('fullscreenChanged', applyTelegramSafeArea);
+    tg.onEvent('safeAreaChanged', applyTelegramSafeArea);
+    tg.onEvent('contentSafeAreaChanged', applyTelegramSafeArea);
+    // Высота и безопасная зона от Telegram иногда приходят с небольшой
+    // задержкой — подстраховываемся повторной проверкой.
+    setTimeout(() => {
+      applyViewportHeight();
+      applyTelegramSafeArea();
+    }, 300);
   } else {
     applyViewportHeight();
     window.addEventListener('resize', applyViewportHeight);
@@ -68,6 +135,7 @@
     if (screen !== gameScreen && screen !== startScreen) {
       mascotBubble.hidden = true;
     }
+    if (screen === startScreen) maybeShowIntro();
   }
 
   // ---------- Состояние уровня ----------
@@ -77,6 +145,7 @@
   let foundCount = 0;
   let startTime = null;
   let timerInterval = null;
+  let totalElapsedMs = 0; // сумма времени по всем уровням текущего прохождения
 
   const imageAEl = document.querySelector('[data-image="a"] img');
   const imageBEl = document.querySelector('[data-image="b"] img');
@@ -90,6 +159,7 @@
   const achievementsRow = document.getElementById('achievementsRow');
   const finalActionsEl = document.getElementById('finalActions');
   const victoryTitleEl = document.getElementById('victoryTitle');
+  const victoryTimeLabelEl = document.getElementById('victoryTimeLabel');
 
   const HINTS_PER_LEVEL = 3;
   let hintsLeft = HINTS_PER_LEVEL;
@@ -203,10 +273,12 @@
   function finishLevel() {
     stopTimer();
     const elapsed = Date.now() - startTime;
+    totalElapsedMs += elapsed;
     victoryTimeEl.textContent = formatTime(elapsed);
+    victoryTimeLabelEl.textContent = 'Ваше время:';
     GameAudio.playVictory();
 
-    // Личный рекорд
+    // Личный рекорд по уровню
     const { isNewRecord, best } = GameResults.submitTime(level.id, elapsed);
     bestTimeLine.textContent = isNewRecord
       ? '🎉 Новый рекорд!'
@@ -232,6 +304,18 @@
     finalActionsEl.hidden = hasNext;
     victoryTitleEl.textContent = hasNext ? 'Уровень пройден!' : 'Все уровни пройдены! 🏆';
 
+    if (!hasNext) {
+      // На последнем уровне показываем и делимся ОБЩИМ временем по всем
+      // уровням, а не временем последнего — так результатом можно делиться
+      // как "прошёл всё за такое-то время".
+      victoryTimeEl.textContent = formatTime(totalElapsedMs);
+      victoryTimeLabelEl.textContent = 'Общее время:';
+      const totalResult = GameResults.submitTime('total', totalElapsedMs);
+      bestTimeLine.textContent = totalResult.isNewRecord
+        ? '🎉 Новый общий рекорд!'
+        : `Ваш лучший результат: ${formatTime(totalResult.best)}`;
+    }
+
     // Сбрасываем состояние блока с промокодом на новый показ экрана
     document.getElementById('promoCodeText').hidden = true;
     document.getElementById('subscribeBtn').hidden = false;
@@ -243,6 +327,7 @@
     if (currentLevelIndex < LEVELS.length - 1) {
       showScreen(gameScreen);
       startLevel(currentLevelIndex + 1);
+      fitGameImages();
     }
   });
 
@@ -251,7 +336,7 @@
     const shared = await GameResults.shareResultImage(victoryTimeEl.textContent);
     if (shared) return;
 
-    const text = `Я нашёл 5 отличий за ${victoryTimeEl.textContent} в игре от Нейро Отличник! Попробуй и ты:`;
+    const text = `Я прошёл все уровни игры «Найди 5 отличий» за ${victoryTimeEl.textContent}! Попробуй и ты:`;
     const url = CONFIG.STUDIO_URL;
 
     if (tg && tg.openTelegramLink) {
@@ -391,32 +476,43 @@
   function beginGame() {
     GameAudio.init();
     GameAudio.setMusicOn(Settings.get().musicOn);
+    totalElapsedMs = 0;
     showScreen(gameScreen);
     startLevel(0);
+    fitGameImages();
   }
 
   document.getElementById('playBtn').addEventListener('click', beginGame);
   document.getElementById('playFromRulesBtn').addEventListener('click', beginGame);
 
-  // Браузеры разрешают включать звук только после того, как человек
-  // сам коснулся экрана — поэтому запускаем музыку по самому первому
-  // касанию где угодно на странице, а не только по кнопке "Играть".
-  function initAudioOnFirstTouch() {
+  // Браузеры (а особенно встроенный WebView Telegram на iOS) разрешают
+  // включать звук только в ответ на "жест пользователя" — но не всегда
+  // считают таким жестом именно pointerdown. Поэтому пробуем на нескольких
+  // типах событий и НЕ снимаем слушатели после первого раза: GameAudio
+  // сам защищён от повторного запуска (см. startMusic/ensureContext),
+  // так что лишние повторные вызовы безопасны, а звук гарантированно
+  // включится с первого же жеста, который браузер реально засчитает.
+  function tryStartAudio() {
     GameAudio.init();
     GameAudio.setMusicOn(Settings.get().musicOn);
-    document.removeEventListener('pointerdown', initAudioOnFirstTouch);
   }
-  document.addEventListener('pointerdown', initAudioOnFirstTouch, { once: true });
+  ['pointerdown', 'touchend', 'click', 'keydown'].forEach((evt) => {
+    document.addEventListener(evt, tryStartAudio, { passive: true });
+  });
 
   syncSettingsUI();
   showScreen(startScreen);
 
   // ---------- Маскот-проводник: приветствие при первом визите ----------
-  if (!Settings.get().hasSeenIntro) {
-    setTimeout(() => {
-      mascotFactEl.textContent = MASCOT_INTRO;
-      mascotBubble.hidden = false;
-      Settings.set({ hasSeenIntro: true });
-    }, 700);
+  // Показываем только пока пользователь на главном экране — если он успел
+  // быстро нажать "Играть" раньше, чем сработал таймер, пузырь мог бы
+  // появиться поверх игры и закрыть собой часть картинки от тапов.
+  function maybeShowIntro() {
+    if (Settings.get().hasSeenIntro) return;
+    if (startScreen.hidden) return; // не на главном экране — покажем в другой раз
+    mascotFactEl.textContent = MASCOT_INTRO;
+    mascotBubble.hidden = false;
+    Settings.set({ hasSeenIntro: true });
   }
+  setTimeout(maybeShowIntro, 700);
 })();

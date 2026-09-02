@@ -249,8 +249,8 @@ const GameResults = (function () {
 
     ctx.fillStyle = ink;
     ctx.textAlign = 'center';
-    ctx.font = '700 46px KicaBold, sans-serif';
-    ctx.fillText('НАЙДЕНО 5 ИЗ 5', W / 2, badgeY + 100);
+    ctx.font = '700 36px KicaBold, sans-serif';
+    ctx.fillText('ВСЕ УРОВНИ ПРОЙДЕНЫ', W / 2, badgeY + 90);
     ctx.font = '700 160px KicaBold, sans-serif';
     ctx.fillText(timeText, W / 2, badgeY + 300);
     ctx.textAlign = 'left';
@@ -295,7 +295,7 @@ const GameResults = (function () {
         await navigator.share({
           files: [file],
           title: 'Нейро Отличник',
-          text: `Я нашёл 5 отличий за ${timeText} в игре от Нейро Отличник!`
+          text: `Я прошёл все уровни игры «Найди 5 отличий» за ${timeText}!`
         });
         return true;
       } catch (e) {
