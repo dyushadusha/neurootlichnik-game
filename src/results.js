@@ -8,6 +8,24 @@ const GameResults = (function () {
   const BEST_KEY = 'neuroOtlichnikBest';
   const ACHIEV_KEY = 'neuroOtlichnikAchievements';
   const WINS_KEY = 'neuroOtlichnikWins';
+  const PROMO_CLAIMED_KEY = 'neuroOtlichnikPromoClaimed';
+
+  // ---------- Промокод за подписку — выдаём только один раз ----------
+  // Без этого можно было проходить уровни по кругу и каждый раз заново
+  // "получать" промокод за одну и ту же подписку.
+  function hasClaimedPromo() {
+    try {
+      return localStorage.getItem(PROMO_CLAIMED_KEY) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function claimPromo() {
+    try {
+      localStorage.setItem(PROMO_CLAIMED_KEY, '1');
+    } catch (e) {}
+  }
 
   // ---------- Личный рекорд ----------
   function loadBest() {
@@ -172,7 +190,7 @@ const GameResults = (function () {
     }
   }
 
-  async function buildResultImageBlob(timeText) {
+  async function buildResultImageBlob(timeText, userName) {
     await ensureFontsLoaded();
 
     // Формат как экран телефона (9:16) — удобно шерить в сторис/каналы.
@@ -253,6 +271,10 @@ const GameResults = (function () {
     ctx.fillText('ВСЕ УРОВНИ ПРОЙДЕНЫ', W / 2, badgeY + 90);
     ctx.font = '700 160px KicaBold, sans-serif';
     ctx.fillText(timeText, W / 2, badgeY + 300);
+    if (userName) {
+      ctx.font = '600 34px InterTight, sans-serif';
+      ctx.fillText(userName, W / 2, badgeY + 380);
+    }
     ctx.textAlign = 'left';
 
     // Маскот — бОльшая часть выходит за нижний край кадра
@@ -279,23 +301,26 @@ const GameResults = (function () {
 
   // Пытается поделиться картинкой через нативное меню "Поделиться".
   // Возвращает true, если получилось (или пользователь открыл меню шеринга).
-  async function shareResultImage(timeText) {
+  async function shareResultImage(timeText, userName) {
     let blob;
     try {
-      blob = await buildResultImageBlob(timeText);
+      blob = await buildResultImageBlob(timeText, userName);
     } catch (e) {
       return false;
     }
     if (!blob) return false;
 
     const file = new File([blob], 'neuro-otlichnik-result.png', { type: 'image/png' });
+    const shareText = userName
+      ? `Я, ${userName}, прошёл(-ла) все уровни игры «Найди 5 отличий» за ${timeText}!`
+      : `Я прошёл все уровни игры «Найди 5 отличий» за ${timeText}!`;
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({
           files: [file],
           title: 'Нейро Отличник',
-          text: `Я прошёл все уровни игры «Найди 5 отличий» за ${timeText}!`
+          text: shareText
         });
         return true;
       } catch (e) {
@@ -316,5 +341,5 @@ const GameResults = (function () {
     return true;
   }
 
-  return { getBestTime, submitTime, evaluateAchievements, shareResultImage };
+  return { getBestTime, submitTime, evaluateAchievements, shareResultImage, hasClaimedPromo, claimPromo };
 })();

@@ -10,9 +10,11 @@ const Settings = (function () {
   const defaults = {
     theme: 'light',
     musicOn: true,
+    musicVolume: 55, // от 0 до 100
     sfxOn: true,
     sfxVolume: 60, // от 0 до 100
-    hasSeenIntro: false
+    hasSeenIntro: false,
+    hasSeenFactPrompt: false
   };
 
   function load() {

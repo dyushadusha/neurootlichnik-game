@@ -920,6 +920,17 @@ body {
 .dev-note__summary::after {
   content: '▾';
   flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-radius: 50%;
+  border: var(--border-width) solid var(--border-color);
   transition: transform 0.2s ease;
 }
 
@@ -932,6 +943,12 @@ body {
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-secondary);
+}
+
+/* задаёт свой display, поэтому обычный hidden="" без этой строчки
+   не сработает — явно возвращаем стандартное поведение (см. .btn[hidden]) */
+.subscribe-bonus[hidden] {
+  display: none;
 }
 
 .subscribe-bonus {
@@ -950,6 +967,8 @@ body {
 .subscribe-bonus__text {
   font-size: 14px;
   color: var(--text-secondary);
+  text-align: center;
+  max-width: 280px;
 }
 
 .subscribe-bonus .btn {

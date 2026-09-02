@@ -14,7 +14,7 @@
   <!-- ?v=N в конце — принудительный сброс кэша: Telegram и браузеры любят
        подолгу кэшировать эти файлы, и без этого правки могли не доходить
        до игроков сразу после публикации. Меняйте N при каждом деплое. -->
-  <link rel="stylesheet" href="src/style.css?v=5" />
+  <link rel="stylesheet" href="src/style.css?v=6" />
 </head>
 <body>
   <header class="app-header">
@@ -113,6 +113,11 @@
       </label>
     </div>
 
+    <div class="settings-row settings-row--column">
+      <span class="settings-row__label">Громкость музыки</span>
+      <input type="range" id="musicVolume" class="volume-slider" min="0" max="100" step="5" />
+    </div>
+
     <div class="settings-row">
       <span class="settings-row__label">Звуковые эффекты</span>
       <label class="switch">
@@ -187,13 +192,13 @@
 
   <div id="victoryScreen" class="victory-screen screen" hidden>
     <div class="doodle-field">
-      <img class="doodle" src="assets/doodles/check.svg" alt="" style="top:8%;left:4%;width:39px;animation-duration:5.4s;" />
-      <img class="doodle" src="assets/doodles/spiral-c.svg" alt="" style="top:6%;right:4%;width:44px;animation-duration:6.1s;animation-delay:.4s;" />
-      <img class="doodle" src="assets/doodles/sparkle.svg" alt="" style="bottom:4%;left:6%;width:37px;animation-duration:5.7s;animation-delay:.8s;" />
-      <img class="doodle" src="assets/doodles/zigzag.svg" alt="" style="bottom:8%;right:8%;width:34px;animation-duration:6.5s;animation-delay:.2s;" />
-      <img class="doodle" src="assets/doodles/knot.svg" alt="" style="top:30%;left:2%;width:32px;animation-duration:5.9s;animation-delay:1.2s;" />
-      <img class="doodle" src="assets/doodles/dots.svg" alt="" style="top:40%;right:2%;width:30px;animation-duration:6.8s;animation-delay:.6s;" />
-      <img class="doodle" src="assets/doodles/percent.svg" alt="" style="bottom:20%;left:16%;width:28px;animation-duration:5.3s;animation-delay:1s;" />
+      <img class="doodle" src="assets/doodles/check.svg" alt="" style="top:8%;left:4%;width:55px;animation-duration:5.4s;" />
+      <img class="doodle" src="assets/doodles/spiral-c.svg" alt="" style="top:6%;right:4%;width:62px;animation-duration:6.1s;animation-delay:.4s;" />
+      <img class="doodle" src="assets/doodles/sparkle.svg" alt="" style="bottom:4%;left:6%;width:52px;animation-duration:5.7s;animation-delay:.8s;" />
+      <img class="doodle" src="assets/doodles/zigzag.svg" alt="" style="bottom:8%;right:8%;width:48px;animation-duration:6.5s;animation-delay:.2s;" />
+      <img class="doodle" src="assets/doodles/knot.svg" alt="" style="top:30%;left:2%;width:46px;animation-duration:5.9s;animation-delay:1.2s;" />
+      <img class="doodle" src="assets/doodles/dots.svg" alt="" style="top:40%;right:2%;width:42px;animation-duration:6.8s;animation-delay:.6s;" />
+      <img class="doodle" src="assets/doodles/percent.svg" alt="" style="bottom:20%;left:16%;width:40px;animation-duration:5.3s;animation-delay:1s;" />
     </div>
     <img id="victoryMascot" class="victory-screen__mascot" src="assets/mascot-hero.webp" alt="Нейро Отличник рад за вас" />
     <div class="logo-plate logo-plate--sm">
@@ -213,11 +218,14 @@
           <summary class="dev-note__summary">🚧 Новые уровни в разработке</summary>
           <p class="dev-note__text">Мы уже готовим новые локации для игры. Ждите обновлений — как только новые уровни будут готовы, обязательно сообщим!</p>
         </details>
-        <div class="subscribe-bonus">
+        <div id="subscribeBonus" class="subscribe-bonus">
           <p class="subscribe-bonus__text">Подпишись на канал студии и получи промокод на скидку</p>
           <button class="btn btn--outline" id="subscribeBtn">Подписаться и получить промокод</button>
           <p id="promoCodeText" class="promo-code" hidden></p>
         </div>
+        <p id="promoAlreadyClaimedText" class="subscribe-bonus__text" hidden>
+          Промокод уже был выдан на этом устройстве — спасибо, что играете ещё раз! 🙌
+        </p>
         <button class="btn" id="shareBtn">Поделиться результатом</button>
         <a class="btn btn--outline" href="https://neurootlichnik.ru/" target="_blank">
           Хочу такой же рендер для своего проекта
@@ -228,12 +236,12 @@
     </div>
   </div>
 
-  <script src="src/config.js?v=5"></script>
-  <script src="src/settings.js?v=5"></script>
-  <script src="src/audio.js?v=5"></script>
-  <script src="src/results.js?v=5"></script>
-  <script src="src/levels.js?v=5"></script>
-  <script src="src/facts.js?v=5"></script>
-  <script src="src/game.js?v=5"></script>
+  <script src="src/config.js?v=6"></script>
+  <script src="src/settings.js?v=6"></script>
+  <script src="src/audio.js?v=6"></script>
+  <script src="src/results.js?v=6"></script>
+  <script src="src/levels.js?v=6"></script>
+  <script src="src/facts.js?v=6"></script>
+  <script src="src/game.js?v=6"></script>
 </body>
 </html>

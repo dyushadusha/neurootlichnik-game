@@ -79,7 +79,7 @@ const GameAudio = (function () {
     if (!musicEl) {
       musicEl = new Audio('assets/music/background.mp3');
       musicEl.loop = true;
-      musicEl.volume = 0.35;
+      musicEl.volume = (Settings.get().musicVolume ?? 55) / 100;
       musicEl.preload = 'auto';
     }
     return musicEl;
@@ -104,5 +104,19 @@ const GameAudio = (function () {
     else stopMusic();
   }
 
-  return { init, playCorrect, playWrong, playVictory, playHint, startMusic, stopMusic, setMusicOn };
+  function setMusicVolume(volume0to100) {
+    if (musicEl) musicEl.volume = volume0to100 / 100;
+  }
+
+  return {
+    init,
+    playCorrect,
+    playWrong,
+    playVictory,
+    playHint,
+    startMusic,
+    stopMusic,
+    setMusicOn,
+    setMusicVolume
+  };
 })();

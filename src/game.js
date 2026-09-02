@@ -167,9 +167,11 @@
     [startScreen, rulesScreen, settingsScreen, gameScreen, victoryScreen].forEach((s) => {
       s.hidden = s !== screen;
     });
-    mascotBtn.hidden = screen !== gameScreen && screen !== startScreen;
+    // Маскот с фактами доступен на игровом, главном экране и экране победы —
+    // именно в конце игры (после всех уровней) уместнее всего почитать факты.
+    mascotBtn.hidden = screen !== gameScreen && screen !== startScreen && screen !== victoryScreen;
     hintBtn.hidden = screen !== gameScreen;
-    if (screen !== gameScreen && screen !== startScreen) {
+    if (mascotBtn.hidden) {
       mascotBubble.hidden = true;
     }
     if (screen === startScreen) maybeShowIntro();
@@ -353,11 +355,25 @@
         : `Ваш лучший результат: ${formatTime(totalResult.best)}`;
     }
 
-    // Сбрасываем состояние блока с промокодом на новый показ экрана
+    // Промокод выдаём только один раз за устройство — иначе можно было
+    // проходить уровни по кругу и получать его снова и снова.
+    const promoAlreadyClaimed = GameResults.hasClaimedPromo();
+    document.getElementById('subscribeBonus').hidden = promoAlreadyClaimed;
+    document.getElementById('promoAlreadyClaimedText').hidden = !promoAlreadyClaimed;
     document.getElementById('promoCodeText').hidden = true;
     document.getElementById('subscribeBtn').hidden = false;
 
     showScreen(victoryScreen);
+
+    // Один раз объясняем, зачем нужна кнопка с маскотом — самый уместный
+    // момент для этого как раз в конце, когда играть больше нечего.
+    if (!hasNext && !Settings.get().hasSeenFactPrompt) {
+      setTimeout(() => {
+        mascotFactEl.textContent = MASCOT_OUTRO;
+        mascotBubble.hidden = false;
+        Settings.set({ hasSeenFactPrompt: true });
+      }, 900);
+    }
   }
 
   nextLevelBtn.addEventListener('click', () => {
@@ -368,9 +384,19 @@
     }
   });
 
+  // Имя игрока из Telegram (если открыто внутри Telegram) — для подписи
+  // на картинке-результате. Вне Telegram имени взять неоткуда — просто
+  // не подписываем картинку именем.
+  function getPlayerName() {
+    const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (!user) return null;
+    return [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || null;
+  }
+
   // ---------- Поделиться результатом (картинкой, с текстом в запасе) ----------
   document.getElementById('shareBtn').addEventListener('click', async () => {
-    const shared = await GameResults.shareResultImage(victoryTimeEl.textContent);
+    const playerName = getPlayerName();
+    const shared = await GameResults.shareResultImage(victoryTimeEl.textContent, playerName);
     if (shared) return;
 
     const text = `Я прошёл все уровни игры «Найди 5 отличий» за ${victoryTimeEl.textContent}! Попробуй и ты:`;
@@ -397,6 +423,7 @@
     promoEl.textContent = `Промокод: ${CONFIG.PROMO_CODE}`;
     promoEl.hidden = false;
     document.getElementById('subscribeBtn').hidden = true;
+    GameResults.claimPromo();
   });
 
   document.getElementById('backToMenuBtn').addEventListener('click', () => {
@@ -460,6 +487,7 @@
   // ---------- Главное меню и настройки ----------
   const themeButtons = document.querySelectorAll('[data-theme-option]');
   const musicToggle = document.getElementById('musicToggle');
+  const musicVolume = document.getElementById('musicVolume');
   const sfxToggle = document.getElementById('sfxToggle');
   const sfxVolume = document.getElementById('sfxVolume');
 
@@ -469,6 +497,7 @@
       btn.setAttribute('aria-pressed', String(btn.dataset.themeOption === s.theme));
     });
     musicToggle.checked = s.musicOn;
+    musicVolume.value = s.musicVolume;
     sfxToggle.checked = s.sfxOn;
     sfxVolume.value = s.sfxVolume;
   }
@@ -483,6 +512,11 @@
   musicToggle.addEventListener('change', () => {
     Settings.set({ musicOn: musicToggle.checked });
     GameAudio.setMusicOn(musicToggle.checked);
+  });
+
+  musicVolume.addEventListener('input', () => {
+    Settings.set({ musicVolume: Number(musicVolume.value) });
+    GameAudio.setMusicVolume(Number(musicVolume.value));
   });
 
   sfxToggle.addEventListener('change', () => {

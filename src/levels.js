@@ -22,8 +22,8 @@
 const LEVELS = [
   {
     id: 1,
-    imageA: 'assets/level-1-a.png',
-    imageB: 'assets/level-1-b.png',
+    imageA: 'assets/level-1-a.webp',
+    imageB: 'assets/level-1-b.webp',
     differences: [
       { x: 8.8, y: 23, r: 8 },
       { x: 39.8, y: 59.9, r: 5 },
@@ -34,8 +34,8 @@ const LEVELS = [
   },
   {
     id: 2,
-    imageA: 'assets/level-2-a.png',
-    imageB: 'assets/level-2-b.png',
+    imageA: 'assets/level-2-a.webp',
+    imageB: 'assets/level-2-b.webp',
     differences: [
       { x: 63.8, y: 69.9, r: 4.5 },
       { x: 44.2, y: 44.7, r: 8 },
@@ -46,8 +46,8 @@ const LEVELS = [
   },
   {
     id: 3,
-    imageA: 'assets/level-3-a.png',
-    imageB: 'assets/level-3-b.png',
+    imageA: 'assets/level-3-a.webp',
+    imageB: 'assets/level-3-b.webp',
     differences: [
       { x: 62.2, y: 57.8, r: 5 },
       { x: 82.6, y: 50.3, r: 4 },
