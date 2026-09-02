@@ -1,45 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
   <defs>
-    <linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3a1f3d"/>
-      <stop offset="1" stop-color="#c9622f"/>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1220"/>
+      <stop offset="1" stop-color="#1c2740"/>
     </linearGradient>
   </defs>
-  <rect width="800" height="600" fill="url(#sky2)"/>
-  <circle cx="400" cy="230" r="70" fill="#ffdca6" opacity="0.85"/>
-  <rect x="0" y="470" width="800" height="130" fill="#241019"/>
-  <rect x="0" y="470" width="800" height="6" fill="#3a1f3d"/>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="680" cy="90" r="40" fill="#2f3550" opacity="0.6"/>
+  <rect x="0" y="480" width="800" height="120" fill="#0f131c"/>
+  <rect x="0" y="480" width="800" height="6" fill="#333c54"/>
 
-  <!-- здание 1: широкий блок -->
-  <rect x="60" y="300" width="220" height="180" fill="#2c1620" stroke="#4a2a34" stroke-width="2"/>
-  <rect x="90" y="325" width="26" height="26" fill="#6b3b48"/>
-  <rect x="135" y="325" width="26" height="26" fill="#6b3b48"/>
-  <rect x="180" y="325" width="26" height="26" fill="#6b3b48"/>
-  <rect x="225" y="325" width="26" height="26" fill="#6b3b48"/>
-  <rect x="90" y="375" width="26" height="26" fill="#6b3b48"/>
-  <rect x="135" y="375" width="26" height="26" fill="#6b3b48"/>
-  <rect x="180" y="375" width="26" height="26" fill="#6b3b48"/>
-  <rect x="225" y="375" width="26" height="26" fill="#6b3b48"/>
-  <rect x="90" y="425" width="26" height="26" fill="#6b3b48"/>
-  <rect x="180" y="425" width="26" height="26" fill="#6b3b48"/>
+  <!-- здание 1 -->
+  <rect x="90" y="200" width="180" height="280" fill="#1e2536" stroke="#333c54" stroke-width="2"/>
+  <rect x="115" y="230" width="30" height="30" fill="#4a5378"/>
+  <rect x="165" y="230" width="30" height="30" fill="#4a5378"/>
+  <rect x="215" y="230" width="30" height="30" fill="#4a5378"/>
+  <rect x="115" y="290" width="30" height="30" fill="#4a5378"/>
+  <rect x="165" y="290" width="30" height="30" fill="#4a5378"/>
+  <rect x="215" y="290" width="30" height="30" fill="#4a5378"/>
+  <rect x="115" y="350" width="30" height="30" fill="#4a5378"/>
+  <rect x="165" y="350" width="30" height="30" fill="#4a5378"/>
+  <rect x="215" y="350" width="30" height="30" fill="#4a5378"/>
 
-  <!-- здание 2: высокая башня -->
-  <rect x="340" y="150" width="130" height="330" fill="#361c26" stroke="#4a2a34" stroke-width="2"/>
-  <rect x="360" y="180" width="24" height="24" fill="#6b3b48"/>
-  <rect x="400" y="180" width="24" height="24" fill="#6b3b48"/>
-  <rect x="360" y="225" width="24" height="24" fill="#6b3b48"/>
-  <rect x="400" y="225" width="24" height="24" fill="#6b3b48"/>
-  <rect x="360" y="270" width="24" height="24" fill="#6b3b48"/>
-  <rect x="400" y="270" width="24" height="24" fill="#6b3b48"/>
-  <rect x="360" y="315" width="24" height="24" fill="#6b3b48"/>
-  <rect x="400" y="315" width="24" height="24" fill="#6b3b48"/>
+  <!-- здание 2 -->
+  <rect x="330" y="120" width="150" height="360" fill="#232b40" stroke="#333c54" stroke-width="2"/>
+  <rect x="355" y="150" width="26" height="26" fill="#4a5378"/>
+  <rect x="400" y="150" width="26" height="26" fill="#4a5378"/>
+  <rect x="355" y="200" width="26" height="26" fill="#4a5378"/>
+  <rect x="400" y="200" width="26" height="26" fill="#4a5378"/>
+  <rect x="355" y="250" width="26" height="26" fill="#4a5378"/>
+  <rect x="400" y="250" width="26" height="26" fill="#4a5378"/>
 
   <!-- здание 3 -->
-  <rect x="540" y="260" width="190" height="220" fill="#2c1620" stroke="#4a2a34" stroke-width="2"/>
-  <rect x="565" y="290" width="26" height="26" fill="#6b3b48"/>
-  <rect x="615" y="290" width="26" height="26" fill="#6b3b48"/>
-  <rect x="665" y="290" width="26" height="26" fill="#6b3b48"/>
-  <rect x="565" y="340" width="26" height="26" fill="#6b3b48"/>
-  <rect x="615" y="340" width="26" height="26" fill="#6b3b48"/>
-  <rect x="665" y="340" width="26" height="26" fill="#6b3b48"/>
+  <rect x="530" y="260" width="200" height="220" fill="#1a2131" stroke="#333c54" stroke-width="2"/>
+  <rect x="555" y="290" width="28" height="28" fill="#4a5378"/>
+  <rect x="605" y="290" width="28" height="28" fill="#4a5378"/>
+  <rect x="655" y="290" width="28" height="28" fill="#4a5378"/>
+  <rect x="555" y="340" width="28" height="28" fill="#4a5378"/>
+  <rect x="605" y="340" width="28" height="28" fill="#4a5378"/>
+  <rect x="655" y="340" width="28" height="28" fill="#4a5378"/>
 </svg>

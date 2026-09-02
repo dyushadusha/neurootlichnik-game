@@ -16,16 +16,29 @@
        r    — радиус области, по которой засчитывается попадание
               (тоже в процентах). Больше цифра — легче попасть.
 
-   Сейчас 3 уровня с временными картинками-заглушками — замените
-   imageA/imageB на свои рендеры и пересчитайте differences, когда
-   будут готовы настоящие пары.
+   Уровень 1 — первый настоящий рендер (архитектурная сцена,
+   сгенерирован через Weave). Уровни 2-4 пока с временными
+   картинками-заглушками — замените imageA/imageB на свои рендеры
+   и пересчитайте differences, когда будут готовы настоящие пары.
    ========================================================= */
 
 const LEVELS = [
   {
     id: 1,
-    imageA: 'assets/level-1-a.svg',
-    imageB: 'assets/level-1-b.svg',
+    imageA: 'assets/level-1-a.png',
+    imageB: 'assets/level-1-b.png',
+    differences: [
+      { x: 8.8, y: 23, r: 8 },
+      { x: 39.8, y: 59.9, r: 5 },
+      { x: 45.8, y: 44.9, r: 8 },
+      { x: 76.3, y: 48.9, r: 8 },
+      { x: 95.6, y: 50.5, r: 8 }
+    ]
+  },
+  {
+    id: 2,
+    imageA: 'assets/level-2-a.svg',
+    imageB: 'assets/level-2-b.svg',
     differences: [
       { x: 20, y: 25, r: 6 },
       { x: 55, y: 18, r: 6 },
@@ -35,9 +48,9 @@ const LEVELS = [
     ]
   },
   {
-    id: 2,
-    imageA: 'assets/level-2-a.svg',
-    imageB: 'assets/level-2-b.svg',
+    id: 3,
+    imageA: 'assets/level-3-a.svg',
+    imageB: 'assets/level-3-b.svg',
     differences: [
       { x: 15, y: 20, r: 6 },
       { x: 50, y: 30, r: 6 },
@@ -47,9 +60,9 @@ const LEVELS = [
     ]
   },
   {
-    id: 3,
-    imageA: 'assets/level-3-a.svg',
-    imageB: 'assets/level-3-b.svg',
+    id: 4,
+    imageA: 'assets/level-4-a.svg',
+    imageB: 'assets/level-4-b.svg',
     differences: [
       { x: 10, y: 15, r: 6 },
       { x: 45, y: 10, r: 6 },
