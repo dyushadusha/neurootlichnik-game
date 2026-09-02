@@ -16,8 +16,8 @@
        r    — радиус области, по которой засчитывается попадание
               (тоже в процентах). Больше цифра — легче попасть.
 
-   Уровни 1-2 — настоящие рендеры (сгенерированы через Weave).
-   Уровни 3-5 пока с временными картинками-заглушками — замените
+   Уровни 1-3 — настоящие рендеры (сгенерированы через Weave).
+   Уровни 4-6 пока с временными картинками-заглушками — замените
    imageA/imageB на свои рендеры и пересчитайте differences, когда
    будут готовы настоящие пары.
    ========================================================= */
@@ -49,8 +49,20 @@ const LEVELS = [
   },
   {
     id: 3,
-    imageA: 'assets/level-3-a.svg',
-    imageB: 'assets/level-3-b.svg',
+    imageA: 'assets/level-3-a.png',
+    imageB: 'assets/level-3-b.png',
+    differences: [
+      { x: 62.2, y: 57.8, r: 5 },
+      { x: 82.6, y: 50.3, r: 4 },
+      { x: 51.1, y: 28.6, r: 5 },
+      { x: 32.2, y: 47.7, r: 4.2 },
+      { x: 52.5, y: 51.7, r: 5 }
+    ]
+  },
+  {
+    id: 4,
+    imageA: 'assets/level-4-a.svg',
+    imageB: 'assets/level-4-b.svg',
     differences: [
       { x: 20, y: 25, r: 6 },
       { x: 55, y: 18, r: 6 },
@@ -60,9 +72,9 @@ const LEVELS = [
     ]
   },
   {
-    id: 4,
-    imageA: 'assets/level-4-a.svg',
-    imageB: 'assets/level-4-b.svg',
+    id: 5,
+    imageA: 'assets/level-5-a.svg',
+    imageB: 'assets/level-5-b.svg',
     differences: [
       { x: 15, y: 20, r: 6 },
       { x: 50, y: 30, r: 6 },
@@ -72,9 +84,9 @@ const LEVELS = [
     ]
   },
   {
-    id: 5,
-    imageA: 'assets/level-5-a.svg',
-    imageB: 'assets/level-5-b.svg',
+    id: 6,
+    imageA: 'assets/level-6-a.svg',
+    imageB: 'assets/level-6-b.svg',
     differences: [
       { x: 10, y: 15, r: 6 },
       { x: 45, y: 10, r: 6 },
