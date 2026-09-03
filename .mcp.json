@@ -7,6 +7,10 @@
         "@playwright/mcp@latest"
       ],
       "env": {}
+    },
+    "glif": {
+      "type": "http",
+      "url": "https://glif.app/api/mcp"
     }
   }
 }
