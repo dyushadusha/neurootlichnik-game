@@ -55,6 +55,11 @@
 - `claude-mem` — плагин, запоминает контекст между чатами (Claude Code plugin, scope: user)
 - `sheleg-design` — методология motion-дизайна (анимация, скролл-эффекты) + 39 стилевых
   наборов дизайн-токенов (Claude Code plugin, scope: user)
+- `marketing-skills` — 50 маркетинговых скиллов (CRO, копирайтинг, аналитика) (plugin, scope: user)
+- `social-media-skills` — скиллы для контента в соцсетях (LinkedIn/Instagram/X/YouTube),
+  начинать с `voice-builder` (plugin, scope: user)
+- `legalzoom` — базовые юридические консультации/проверка документов для бизнеса
+  (официальный плагин Anthropic, plugin, scope: user)
 
 ## Отдельный подпроект
 - `social-video/` — Remotion-проект для создания видео-роликов для соцсетей кодом
