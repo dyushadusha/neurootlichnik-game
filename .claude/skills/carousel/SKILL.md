@@ -17,6 +17,38 @@ paths, and CSS patterns already proven to render correctly in this canvas runtim
 captions to calibrate tone against, plus the ICP facts you're allowed to cite. Both are short;
 read them in full, don't skim.
 
+## Vary the design every time
+
+Don't default to the same layout carousel after carousel — that's the fastest way for a
+studio's feed to start feeling like a template mill instead of a design shop, and it's exactly
+the feedback that shaped this note (2026-09-03: three carousels in a row all used the same
+lime sticker-card look, and the client called it out). The brand tokens in `references/brand.md`
+(the lime/ink/white palette, the two fonts, the logo, the character library) are load-bearing —
+keep those. Everything else — the layout language, how bold the type gets, how photos are
+treated, how playful the copy is — should genuinely differ carousel to carousel, chasing
+whatever reads as current in social design right now rather than reusing the last invocation's
+choices wholesale. Two directions that have worked so far, described so you don't just recreate
+them: sticker cards (chip-and-badge elements with an offset hard shadow, thick borders, a
+recurring illustrated mascot) and editorial poster (huge oversized type bleeding toward the
+frame edges, flat highlight bars instead of shadowed chips, big flat color blocks, a duotone
+photo treatment). Treat those as two points on a spectrum, not the only two options — grain and
+noise textures, collage/cutout layering, kinetic-looking diagonal grids, glassmorphism accents,
+chrome or liquid-metal highlights, brutalist anti-design are all fair game if they fit the topic
+and still read as this studio when someone glances at the corner logo.
+
+The cover slide is the one place this matters most: it is the only slide a scrolling stranger
+sees before deciding whether to stop, so its type should be the biggest, boldest element in the
+whole carousel — sized and placed to read instantly, not squeezed in among other elements. When
+you have a strong photo for the cover (see Step 2), let the type interact with it directly
+(overlapping, bleeding off an edge, sized to the image's own negative space) rather than parking
+safely inside a card on top of it.
+
+Playfulness is welcome and was explicitly asked for — a joke, a self-aware wink, a slightly
+absurd premise (an oversized cat draped over a tower block turned into a whole carousel about
+photorealism) can outperform another straight pain-point-to-reframe post, as long as it still
+lands on something true about the studio and doesn't misrepresent what it actually does. Match
+the humor to the topic; not every carousel needs to be a bit.
+
 ## Why the process looks the way it does
 
 The design canvas renders each slide as its own sandboxed iframe with no shared state, so
@@ -61,12 +93,15 @@ don't leave it as an afterthought after the visual build.
 
 ## Step 2 — Ask about real photos, once, then move on
 
-If the user hasn't already supplied portfolio/render images for this specific carousel, ask
-once whether they have any to use for the cover and/or the "visual proof" slide (full-bleed
-photo background + bold white headline overlay — see brand.md for the pattern). If they say no
-or don't answer, proceed with all 8 slides in the illustrated brand style — don't block the
-whole task on this. Never fabricate an architectural render to stand in for a real one; that's
-exactly the "AI slop" this studio's whole positioning pushes back against.
+Check `assets/portfolio/` first — it holds real (studio-generated) render photos already
+pulled from past client uploads, filenames descriptive of what's in each one. If something
+there fits the topic, use it; no need to ask. Only if nothing there fits, and the user hasn't
+already supplied images for this specific carousel, ask once whether they have any to use for
+the cover and/or the "visual proof" slide (full-bleed photo background + bold white headline
+overlay — see brand.md for the pattern). If they say no or don't answer, proceed with all 8
+slides in the illustrated brand style — don't block the whole task on this. Never fabricate an
+architectural render to stand in for a real one; that's exactly the "AI slop" this studio's
+whole positioning pushes back against.
 
 If they paste images directly into the chat, they will NOT be reachable as files in this
 environment — only actual file attachments (or images embedded in a PDF/DOCX they upload) land

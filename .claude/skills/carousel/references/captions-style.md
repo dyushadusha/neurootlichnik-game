@@ -7,6 +7,13 @@ audience. The brand's visual identity leans on hand-drawn doodles rather than em
 in the copy too; if you use an emoji at all, one is plenty and it should read as a wink, not
 decoration.
 
+Jokes, a wink at the reader, an openly absurd premise ("we bolted a giant cat onto a real
+render and nobody asked about the cat") are all fair game and were explicitly asked for — the
+studio would rather sound like a person than a brochure. Let the humor come from something
+true (a real workflow, a real result, a real frustration this audience has) rather than a joke
+for its own sake, and follow the carousel's own tone: a genuinely funny visual concept earns
+funnier copy, a straight pain-point post earns straighter copy.
+
 ## Who you're writing for
 
 See `../../../../assets/carousel-characters/icp-summary.md` (repo path:

@@ -122,25 +122,50 @@ highlight box per line, instead of one box stretching across the gap.)
 
 ## Slide counter
 
-A small `N / 8` pill, top-right corner, every slide — background flips to whatever reads on
-that slide's own background (dark pill on light slides, lime pill on dark slides). Cheap to add,
-gives the carousel a "designed as a set" feel and doubles as a swipe-progress cue.
+A small `N / 8` pill, top-right corner, every slide. **Give it default `top`/`right` in the
+shared CSS class** (e.g. `.pill { position: absolute; top: 56px; right: 56px; ... }`) rather
+than repeating those coordinates inline on every slide's counter element — a real run of this
+skill wrote the counter as `<div class="pill" style="...">N / 8</div>` on seven of eight slides
+without an inline position, forgot the CSS default too, and every one of those seven rendered
+top-LEFT instead (an absolutely-positioned element with no offsets keeps its in-flow position,
+which is the top-left corner here). Only the one slide that happened to set `top`/`right`
+inline came out right. Set the default once in the shared class and every slide inherits it
+correctly; override inline only on the rare slide that genuinely needs the counter somewhere
+else. Background flips to whatever reads on that slide's own background (dark pill on light
+slides, lime pill on dark slides) — that part does need a per-slide inline override, since it's
+content-dependent, not a layout default.
 
 ## Photo slides
 
-When the user has supplied real portfolio/render images for this run, use 1–2 as full-bleed
-backgrounds — typically the cover and one "proof" slide, bookending the illustrated middle:
+`assets/portfolio/` holds real studio render photos, filenames descriptive of content (e.g.
+`giant-cat-tower.jpg`, `villa-modern-dark.jpg`, `office-reception-green.jpg`) — check there
+before asking the user for images (see Step 2 in SKILL.md). Use 1–2 as full-bleed
+backgrounds per carousel — typically the cover and one "proof" slide, bookending an illustrated
+middle, though a strong photo can carry more slides if the topic calls for it (a whole carousel
+can be photo-led if that's the right choice for the topic).
+
+Two treatments, pick whichever the photo actually needs:
 
 ```css
 .photo-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .scrim-top { position: absolute; top: 0; left: 0; right: 0; height: 58%; background: linear-gradient(to bottom, rgba(20,20,18,0.82), rgba(20,20,18,0)); }
 .scrim-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 56%; background: linear-gradient(to top, rgba(20,20,18,0.88), rgba(20,20,18,0)); }
+
+/* duotone alternative — a current, more editorial look; skip the scrim, tint the whole image instead */
+.duotone-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.15) brightness(0.9); }
+.duotone-tint { position: absolute; inset: 0; background: #dbfc3b; mix-blend-mode: multiply; }
 ```
 
-Put the scrim on whichever side the headline sits, white KicaBold text with a soft
-`text-shadow` for extra legibility over busy image detail. Never fabricate a render to fill this
-slot — ask for real images (Step 2 in SKILL.md) and fall back to the illustrated style if none
-are available.
+With a scrim: put it on whichever side the headline sits, white KicaBold text with a soft
+`text-shadow` for extra legibility over busy image detail. Without one (bright, graphic photos
+with real negative space — open sky, a plain wall): ink-colored text can sit directly on the
+image with no scrim at all, which reads bolder and more current than defaulting to a scrim
+every time — check the actual photo's tonal areas before reaching for a gradient. Either way,
+double-check every text block against the specific photo you're using: a caption that's legible
+over one image's sky can vanish over another's, so verify in the render-and-look pass
+(workflow.md), don't assume the pattern that worked last time still fits this photo. Never
+fabricate a render to fill this slot — ask for real images (Step 2 in SKILL.md) and fall back
+to the illustrated style if none are available.
 
 Compress source photos before embedding — `PIL`, `quality=78, optimize=True` brought a pair of
 ~400KB JPEGs down to ~230KB each with no visible loss, and the seed-canvas helper's own warning
@@ -149,13 +174,23 @@ range are fine against the 16MB total document budget.
 
 ## Growing this library
 
-If a future carousel needs a pose that doesn't exist yet, the studio's raw illustration sheets
-(`assets/Group *.svg`, `assets/На_Экспорт-*.svg`) hold more than what's been extracted so far —
-they're large shared-canvas sprite sheets (viewBoxes like `0 0 4096 2888`) with multiple poses
-positioned at different coordinates within one file. To pull a new one out cleanly: render the
-SVG at a few thousand px wide via a headless browser, screenshot with a transparent background,
-then auto-crop to the drawn content's bounding box on the alpha channel (Pillow's
-`Image.getbbox()` on the loaded RGBA image does this in a couple of lines). Resize the result
-down to a sane max dimension (~900px on the long side was plenty for how these render in a
-slide) before saving. Drop the finished PNG into `assets/carousel-characters/` and add a line
-about it to this file so the next run knows it exists.
+Two separate libraries grow the same way — use real material when it exists, generate only
+when it doesn't, and always save what you make back into the repo:
+
+- **Real photos** (`assets/portfolio/`): when the user shares new render photos (directly as
+  file attachments, or wrapped in a PDF — see Step 2 in SKILL.md for why direct chat pastes
+  don't work), save the good ones here with a descriptive filename before the session ends,
+  the same way the existing set got there.
+- **Illustrated character poses** (`assets/carousel-characters/`): if a future carousel needs a
+  pose that doesn't exist yet, the studio's raw illustration sheets (`assets/Group *.svg`,
+  `assets/На_Экспорт-*.svg`) hold more than what's been extracted so far — they're large
+  shared-canvas sprite sheets (viewBoxes like `0 0 4096 2888`) with multiple poses positioned at
+  different coordinates within one file. To pull a new one out cleanly: render the SVG at a few
+  thousand px wide via a headless browser, screenshot with a transparent background, then
+  auto-crop to the drawn content's bounding box on the alpha channel (Pillow's
+  `Image.getbbox()` on the loaded RGBA image does this in a couple of lines). Resize the result
+  down to a sane max dimension (~900px on the long side was plenty for how these render in a
+  slide) before saving.
+
+Either way, add a line to this file describing what you added so the next run knows it exists
+without having to `ls` blind.
