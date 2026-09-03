@@ -59,6 +59,17 @@ than the brand font — it's a graphic, not brand-carrying text, so it doesn't n
 Place small (roughly 26px tall) in a bottom corner of every slide, consistently positioned, so
 the carousel reads as one branded set even out of context.
 
+**Picking the wrong variant for a split-color slide is invisible-text bug #3 (after
+lime-behind-white-text and a faded gradient stop): a real run put `logo-full.svg` (lime) in the
+lime-bottom half of a dark-top/lime-bottom split slide, where it was lime-on-lime and completely
+gone** — caught only by cropping and zooming the corner in the render-and-look pass, not visible
+at thumbnail scale. A slide's default corner logo isn't automatically safe just because it's
+"the logo, it always goes there" — on any slide whose background isn't uniform (a split panel, a
+color-blocked layout, a card sitting in that exact corner), check what's actually *behind* the
+logo's specific pixel position, same as any other lime-colored element, and pick
+`logo-full.svg` vs `logo-full-dark.svg` per-slide accordingly rather than defaulting to one
+choice for the whole carousel.
+
 ## Doodle accents
 
 `assets/doodles/*.svg` — hand-drawn squiggles, arrows, checks, spirals, hashtags, dots, etc.
@@ -94,6 +105,13 @@ edge is the effect that reads as "designed," and it's what the client specifical
 when this skill was built. Leave clear space around any text block it might overlap — check
 this in the render-and-look pass (references/workflow.md), it's the single most common layout
 bug.
+
+A bleeding character parked in a bottom corner competes with the corner logo mark for the same
+real estate — a real run put a waving mascot at `left:-30px; bottom:-10px` and its raised leg
+crossed straight through the default bottom-left logo position, garbling the wordmark. When a
+character occupies a bottom corner, either move it to the opposite corner from the logo, or
+override the logo's position for that one slide (e.g. `style="left:auto; right:48px;"`) rather
+than letting them collide — check this specifically, not just the headline/character overlap.
 
 ### Tablet screen overlay
 
