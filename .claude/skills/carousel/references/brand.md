@@ -15,10 +15,19 @@ Exactly three, straight out of `src/style.css` (`:root` block) — don't introdu
 - `--ink: #2a2a2a` (near-black, all text/outlines)
 - `--accent: #dbfc3b` (lime, buttons/highlights/accents)
 
-Every slide's background is one of: white, lime, or dark (`#2a2a2a`, sometimes written as
-`#141412` for a photo slide's near-black backdrop — either reads as "the dark one" in this
-palette). Don't gradient the background itself; gradients are reserved for legibility scrims
-over photos (see "Photo slides" below).
+Every slide's background is one of: white (or a warm-paper near-white like `#f6f3ec` — a
+deliberately chosen neutral for a quieter direction, still reads as "white" in this palette),
+lime, or dark (`#2a2a2a`, sometimes written as `#141412` for a photo slide's near-black
+backdrop — either reads as "the dark one" in this palette). Don't gradient the background
+itself; gradients are reserved for legibility scrims over photos (see "Photo slides" below).
+
+**Never let lime be a field that text sits directly on without deliberately choosing the text
+color for it** — a real published carousel shipped with an element whose text inherited the
+default ink color while its container's background had been set to lime by a different rule,
+so the text simply vanished. Lime reads well as thin rules, small marks, an underline, a tiny
+inset circle — anywhere it's backing text, hand-check that specific element's rendered contrast
+in the look-once pass (workflow.md), don't assume a color that worked as an accent elsewhere in
+the same file is safe as a text background too.
 
 ## Fonts
 
@@ -35,6 +44,12 @@ does this (reads the two TTFs once, base64-encodes them, and interpolates the sa
 `FONT_FACES` block into every slide via its `wrap()` helper) — reuse that pattern rather than
 re-deriving it, and don't try to skip embedding on slides that "don't really need" the headline
 font; a slide can still pick it up later if you're iterating.
+
+Neither custom font covers decorative glyphs outside plain Cyrillic/Latin/digits — a large
+typographic quotation mark (`&#8220;` etc.) set in `KicaBold` rendered as two blank tofu boxes
+in a real run, not a quote mark. For any purely decorative character like that, set a generic
+fallback stack (e.g. `Georgia, 'Times New Roman', serif`) on that element specifically rather
+than the brand font — it's a graphic, not brand-carrying text, so it doesn't need to match.
 
 ## Logo
 
@@ -171,6 +186,95 @@ Compress source photos before embedding — `PIL`, `quality=78, optimize=True` b
 ~400KB JPEGs down to ~230KB each with no visible loss, and the seed-canvas helper's own warning
 threshold (~70KB/image) is a soft guideline, not a hard cap; a few photos in the few-hundred-KB
 range are fine against the 16MB total document budget.
+
+## Maximalist bento glass
+
+A fourth layout direction (see SKILL.md's "Vary the design every time") for when the client
+explicitly wants dense, "complex," current-2026 design rather than something quiet — reached for
+after a real run where a client rejected an editorial-grid carousel as too plain and asked for
+"сложный человеческий дизайн, в котором отображаются все тренды веб-дизайна 2026 года." Busy on
+purpose: bento-grid card sizes (mismatched, not one box per slide), frosted glass panels,
+blurred ambient color blobs, a chrome-gradient headline, procedural grain, stacked-paper photo
+depth, and doodle stickers all layered in the same carousel.
+
+```css
+/* procedural grain — no image asset needed, needs the matching <filter> defs below */
+.grain { position: absolute; inset: 0; z-index: 40; pointer-events: none; filter: url(#grainFilter); opacity: 0.5; mix-blend-mode: overlay; }
+/* put this once per slide, right after opening .root's content: */
+/* <svg width="0" height="0" style="position:absolute"><filter id="grainFilter">
+     <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="n"/>
+     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.5 0.5 0.5 0 0"/>
+   </filter></svg> */
+
+/* ambient blurred lime blob — the glow, never a text background */
+.blob { position: absolute; z-index: 0; pointer-events: none; filter: blur(46px); }
+
+/* frosted glass card — three variants for light/dark/lime slides */
+.glass {
+  position: absolute; background: rgba(255,255,255,0.62);
+  backdrop-filter: blur(20px) saturate(1.2); -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1.5px solid rgba(255,255,255,0.9); border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(20,20,18,0.18), 0 2px 8px rgba(20,20,18,0.08);
+  color: #2a2a2a; z-index: 10;
+}
+.glass--dark { background: rgba(20,20,18,0.5); border-color: rgba(255,255,255,0.14); color: #f5f2e8; box-shadow: 0 24px 60px rgba(0,0,0,0.35); }
+.glass--lime { background: rgba(219,252,59,0.82); border-color: rgba(42,42,42,0.25); color: #2a2a2a; box-shadow: 0 24px 60px rgba(20,20,18,0.2); }
+
+/* stacked-paper depth behind a photo — offset rotated duplicate layers underneath the real image */
+.stack-under { position: absolute; background: #f5f2e8; border: 2px solid #2a2a2a; border-radius: 20px; z-index: 1; }
+```
+
+**A glass panel with a busy or warm-toned photo directly behind it can still wash out the text
+inside it** — a real cover slide put a `.glass` panel over a ginger cat's face, and the
+`backdrop-filter: blur()` let enough orange bleed through to smudge the last few letters of the
+headline sitting on top. Fixed by narrowing/repositioning the panel so it sits over plainer
+photo area (sky, wall) rather than the photo's busiest/brightest region, and bumping the panel's
+own background opacity (`rgba(255,255,255,0.62)` → `~0.86`) so less of the photo shows through
+the blur. Check this specifically for any glass panel placed over a photo, not just over a flat
+background.
+
+**A slide meant to be dark needs its background set explicitly — `wrap()`'s default `.root`
+background is white, and nothing here inherits "dark" from a class name.** A real run wrote a
+whole slide using `.chrome-text--onDark`, `.glass--dark`, and the lime logo variant — all
+correctly chosen for a dark slide — but never actually set `.root`'s background to dark, so it
+rendered on white and `chrome-text--onDark`'s pale gradient became nearly invisible against it
+(the same invisible-text failure mode as lime-behind-white-text, just triggered by a missing
+background instead of a wrong one). `wrap(body_html, extra_css)` takes an `extra_css` argument
+for exactly this — pass `".root { background: #2a2a2a; color: #f5f2e8; }"` for that one slide
+rather than trying to set it inline on a div, since the body HTML no longer creates its own
+`.root` wrapper in this template shape (`wrap()` does). Whenever a slide uses any `--onDark` or
+`--dark` variant class, double check in the render-and-look pass that the slide's actual
+background is dark, not just that the class names say so.
+
+**A gradient-clipped "chrome text" headline needs stops that stay dark relative to whatever
+background it sits on — a stop that gets too close to the background color makes part of the
+word disappear, exactly like solid invisible text, just harder to spot because most of the word
+still reads fine.** The first version of `.chrome-text` included a near-white/cream stop
+(`#f5f2e8`) meant to read as a metallic highlight; on a white or light-glass background, the
+letters landing on that stop nearly vanished (verified by cropping and zooming the render — the
+tail end of a word was legible in the thumbnail but essentially blank up close). Fixed by
+keeping every stop in the on-light variant clearly darker than the background — an ink → olive →
+bright-lime → ink progression with no near-white stop — and adding a faint
+`-webkit-text-stroke: 1.5px rgba(42,42,42,0.16)` as a safety margin regardless of exactly where
+the gradient lands:
+
+```css
+.chrome-text {
+  background: linear-gradient(115deg, #2a2a2a 0%, #55661f 22%, #a8c93a 42%, #2a2a2a 64%, #55661f 82%, #2a2a2a 100%);
+  -webkit-background-clip: text; background-clip: text; color: #2a2a2a; -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px rgba(42,42,42,0.16);
+}
+/* onDark variant is fine keeping a cream/lime-heavy gradient — those stops are always light-on-dark, high contrast either way */
+.chrome-text--onDark {
+  background: linear-gradient(115deg, #dbfc3b 0%, #f5f2e8 35%, #dbfc3b 55%, #8a9a4a 75%, #f5f2e8 100%);
+  -webkit-background-clip: text; background-clip: text; color: #f5f2e8; -webkit-text-fill-color: transparent;
+}
+```
+
+Whenever you write a gradient-clipped text effect, zoom into a screenshot crop of it in the
+render-and-look pass rather than eyeballing the thumbnail — a partial fade is exactly the kind
+of thing that reads fine at a glance and disappears on closer inspection (which is how a
+scrolling stranger actually reads a cover slide).
 
 ## Growing this library
 

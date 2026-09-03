@@ -27,14 +27,30 @@ lime sticker-card look, and the client called it out). The brand tokens in `refe
 keep those. Everything else — the layout language, how bold the type gets, how photos are
 treated, how playful the copy is — should genuinely differ carousel to carousel, chasing
 whatever reads as current in social design right now rather than reusing the last invocation's
-choices wholesale. Two directions that have worked so far, described so you don't just recreate
-them: sticker cards (chip-and-badge elements with an offset hard shadow, thick borders, a
-recurring illustrated mascot) and editorial poster (huge oversized type bleeding toward the
-frame edges, flat highlight bars instead of shadowed chips, big flat color blocks, a duotone
-photo treatment). Treat those as two points on a spectrum, not the only two options — grain and
-noise textures, collage/cutout layering, kinetic-looking diagonal grids, glassmorphism accents,
-chrome or liquid-metal highlights, brutalist anti-design are all fair game if they fit the topic
-and still read as this studio when someone glances at the corner logo.
+choices wholesale. Four directions that have worked so far, described so you don't just
+recreate them: sticker cards (chip-and-badge elements with an offset hard shadow, thick
+borders, a recurring illustrated mascot), editorial poster (huge oversized type bleeding toward
+the frame edges, flat highlight bars instead of shadowed chips, big flat color blocks, a
+duotone photo treatment), editorial grid (a warm paper neutral instead of the brand white,
+left-aligned ragged-right headlines instead of centered blocks, photos inset in a thin frame
+with real margin instead of full-bleed, a giant translucent quotation mark as a recurring
+graphic device, lime reduced to hairline rules and small marks rather than a field anything
+sits on), and maximalist bento glass (mismatched bento-grid card sizes instead of one box per
+slide, frosted glassmorphism panels with `backdrop-filter: blur()` floating over photos and
+blurred ambient lime blobs, a chrome/liquid-metal gradient-clipped headline as a recurring
+signature move, procedural SVG-noise grain overlay for tactile texture, stacked-paper depth
+behind photos via offset rotated duplicate layers, doodle stickers with hard drop shadows —
+busy on purpose, the opposite failure mode from editorial grid's quiet minimalism, reached for
+when the client explicitly asks for "complex," "human," maximalist design; see brand.md's
+"Maximalist bento glass" section for the CSS patterns and the bugs this direction is prone to).
+Treat those as four points on a spectrum, not the only options — collage/cutout layering,
+kinetic-looking diagonal grids, brutalist anti-design are all fair game too if they fit the
+topic and still read as this studio when someone glances at the corner logo. If the last one or
+two carousels used full-bleed color-block slides, lean the next one toward quieter and vice
+versa — the swing itself is part of what keeps the feed from feeling templated. But read what
+the client is actually asking for before picking a direction: "too simple/plain" is a request to
+swing toward maximalist bento glass, not toward another quiet direction — a client who explicitly
+rejects minimalism as underwhelming won't be won back by a different flavor of quiet.
 
 The cover slide is the one place this matters most: it is the only slide a scrolling stranger
 sees before deciding whether to stop, so its type should be the biggest, boldest element in the
