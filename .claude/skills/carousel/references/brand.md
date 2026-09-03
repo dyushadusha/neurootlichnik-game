@@ -294,6 +294,62 @@ render-and-look pass rather than eyeballing the thumbnail — a partial fade is 
 of thing that reads fine at a glance and disappears on closer inspection (which is how a
 scrolling stranger actually reads a cover slide).
 
+## Technical blueprint
+
+A fifth layout direction (see SKILL.md's "Vary the design every time") for a topic that's
+itself about a plan, a promise, or something not yet built — first reached for on a carousel
+about developers selling pre-construction real estate, where the metaphor (a blueprint stands
+for the object that doesn't exist yet) fit the topic directly. Ink is the dominant background
+here rather than white or lime; lime and cream appear only as thin line/label color, never a
+filled panel behind text — which structurally rules out the lime-behind-text bug class this
+direction would otherwise be prone to (there's no filled lime field to accidentally put text on
+in the first place).
+
+```css
+/* faint drafting-paper dot grid, laid under everything */
+.grid-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(219,252,59,0.16) 1px, transparent 1px); background-size: 36px 36px; }
+.grid-bg--onLight { background-image: radial-gradient(rgba(42,42,42,0.12) 1px, transparent 1px); }
+
+/* corner registration brackets — the recurring signature device, one per corner */
+.reg-mark { position: absolute; width: 28px; height: 28px; z-index: 30; }
+/* each corner's <svg><path> draws a 2-px L-shape rotated to point into that corner — see
+   scripts from the run that built this for the four path variants */
+
+/* dimension-line callout — a rule with tick-mark ends, standing in for a chip */
+.dim-line { position: absolute; height: 1.5px; background: rgba(219,252,59,0.7); z-index: 6; }
+.dim-line::before, .dim-line::after {
+  content: ""; position: absolute; top: -6px; width: 1.5px; height: 13px; background: rgba(219,252,59,0.7);
+}
+.dim-line::before { left: 0; }
+.dim-line::after { right: 0; }
+
+/* "sheet number" slide counter, framed instead of pill-shaped */
+.sheet-tag { position: absolute; top: 48px; right: 48px; z-index: 30; border: 1.5px solid rgba(245,242,232,0.5); padding: 8px 16px; }
+.tech-label { font-family: 'InterTight', sans-serif; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; font-size: 15px; }
+```
+
+**A split-background slide (ink top half / light bottom half, like a page break) needs the
+light half to actually establish its own positioning context, or its background silently
+collapses to zero height.** A real run wrapped a light-half slide's content in a `<div
+class="root--light">` sitting *inside* the outer `.root`, expecting it to fill the bottom
+portion — but `.root--light` had no `position` of its own, so it stayed a normal in-flow block
+with only absolutely-positioned children inside it (which don't contribute to a parent's
+height), collapsing to zero height and hiding the light background entirely behind `.root`'s own
+ink background. Fixed by giving any such wrapper `position: absolute; inset: 0;` explicitly so
+it actually spans the slide instead of relying on its children to give it size.
+
+**A headline's line count is unpredictable at a chosen font-size until you actually render it —
+don't eyeball a Cyrillic character count and guess.** Two slides in the same run wrapped to one
+more line than planned (a 2-line headline came out as 4, a 3-line one printed 4), pushing text
+down into a technical-annotation label positioned below where the shorter version would have
+ended, producing a visible overlap. Cyrillic KicaBold caps run wide, so a headline that looks
+short by character count can still wrap further than expected at a large size. Treat any
+element positioned *below* a large headline (a dimension-line label, a caption, anything with a
+fixed `top`) as at risk until the actual render confirms the headline's real line count —
+either give it enough vertical clearance for one extra line, or check and adjust font-size/
+position together in the render-and-look pass rather than trusting the draft numbers.
+
 ## Growing this library
 
 Two separate libraries grow the same way — use real material when it exists, generate only

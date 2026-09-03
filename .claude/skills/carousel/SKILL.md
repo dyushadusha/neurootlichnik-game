@@ -27,7 +27,7 @@ lime sticker-card look, and the client called it out). The brand tokens in `refe
 keep those. Everything else — the layout language, how bold the type gets, how photos are
 treated, how playful the copy is — should genuinely differ carousel to carousel, chasing
 whatever reads as current in social design right now rather than reusing the last invocation's
-choices wholesale. Four directions that have worked so far, described so you don't just
+choices wholesale. Five directions that have worked so far, described so you don't just
 recreate them: sticker cards (chip-and-badge elements with an offset hard shadow, thick
 borders, a recurring illustrated mascot), editorial poster (huge oversized type bleeding toward
 the frame edges, flat highlight bars instead of shadowed chips, big flat color blocks, a
@@ -42,10 +42,18 @@ signature move, procedural SVG-noise grain overlay for tactile texture, stacked-
 behind photos via offset rotated duplicate layers, doodle stickers with hard drop shadows —
 busy on purpose, the opposite failure mode from editorial grid's quiet minimalism, reached for
 when the client explicitly asks for "complex," "human," maximalist design; see brand.md's
-"Maximalist bento glass" section for the CSS patterns and the bugs this direction is prone to).
-Treat those as four points on a spectrum, not the only options — collage/cutout layering,
-kinetic-looking diagonal grids, brutalist anti-design are all fair game too if they fit the
-topic and still read as this studio when someone glances at the corner logo. If the last one or
+"Maximalist bento glass" section for the CSS patterns and the bugs this direction is prone to),
+and technical blueprint (ink as the dominant background rather than white or lime, thin 1-2px
+rules instead of card borders, a faint dot grid across every slide, corner registration
+brackets as the recurring signature device, dimension-line callouts — a rule with tick-mark
+ends and a centered tracked-caps label — standing in for chips, "sheet number" styling on the
+slide counter; lime and cream appear only as line/label color, never a filled panel, which
+sidesteps the invisible-text bug class entirely. Reached for when the topic itself is about a
+plan, a promise, or something not yet built — see brand.md's "Technical blueprint" section for
+the CSS patterns and the layout pitfalls it's prone to). Treat those as five points on a
+spectrum, not the only options — collage/cutout layering, kinetic-looking diagonal grids,
+brutalist anti-design are all fair game too if they fit the topic and still read as this studio
+when someone glances at the corner logo. If the last one or
 two carousels used full-bleed color-block slides, lean the next one toward quieter and vice
 versa — the swing itself is part of what keeps the feed from feeling templated. But read what
 the client is actually asking for before picking a direction: "too simple/plain" is a request to
