@@ -1,571 +1,666 @@
 'use strict';
 /* =========================================================
-   Набор анимированных реакций Нейро Отличника.
-   Все иконки — лайм (#dbfc3b) + графит (#2a2a2a), плотная
-   обводка, флэт-геометрия — фирменный "дудл"-стиль бренда.
-   Только векторные фигуры (без растров/текста) — совместимо
-   с Telegram .tgs (см. assets/lottie/README.md).
+   РЕАКЦИИ НА ПОСТ — 18 штук, канвас 512×512, 60 fps
+   =========================================================
+   Все построены на общем языке движения (motion.js + compose.js):
+   пружинное появление с перелётом, squash & stretch, вторичное
+   движение деталей и «живой» idle вместо статики.
    ========================================================= */
 
-const fs = require('fs');
 const path = require('path');
 const L = require('./lib');
+const M = require('./motion');
+const C = require('./compose');
+const { ICONS, baseStyle, shadowStyle, BRAND } = require('./icons');
 
-const ROOT = path.join(__dirname, '..', '..');
-const OUT_DIR = path.join(ROOT, 'assets', 'lottie');
-const DOODLES_DIR = path.join(ROOT, 'assets', 'doodles');
-
-const W = 512, H = 512;
-const CX = W / 2, CY = H / 2;
+const OUT_DIR = path.join(__dirname, '..', '..', 'assets', 'lottie');
+const W = 512;
+const H = 512;
+const CX = W / 2;
+const CY = H / 2;
 const FR = 60;
 
-function centerAndScale(subpaths, targetSize) {
-  const bbox = L.bboxOfSubpaths(subpaths);
-  const cx = bbox.minX + bbox.w / 2;
-  const cy = bbox.minY + bbox.h / 2;
-  const scale = targetSize / Math.max(bbox.w, bbox.h);
-  return L.transformSubpaths(subpaths, { scale, dx: -cx * scale, dy: -cy * scale });
+function emit(nm, op, layers) {
+  L.writeJson(path.join(OUT_DIR, `${nm}.json`), L.animation({ w: W, h: H, fr: FR, op, nm, layers }));
 }
 
-function loadDoodle(name, targetSize) {
-  const svg = fs.readFileSync(path.join(DOODLES_DIR, `${name}.svg`), 'utf8');
-  const ds = L.extractPathsFromSvg(svg);
-  const subpaths = ds.flatMap((d) => L.parseSvgPath(d));
-  return centerAndScale(subpaths, targetSize);
+/* Обёртка: собрать стикер из иконки и сразу записать файл. */
+function sticker(nm, op, opts) {
+  L.resetLayerIndex();
+  emit(nm, op, C.buildSticker({ canvas: W, op, ...opts }));
 }
 
-function pathGroup(nm, subpaths, { fill, stroke, strokeWidth } = {}) {
-  const items = subpaths.map((sp, i) => L.pathShapeItem(sp, `p${i}`));
-  if (stroke) items.push(L.strokeItem(stroke, strokeWidth || 10));
-  if (fill) items.push(L.fillItem(fill));
-  return L.groupItem(nm, items);
+// =========================================================
+// 1. СЕРДЦЕ — пружинное появление, дальше живое сердцебиение
+// =========================================================
+function heart() {
+  sticker('reaction-heart', 120, {
+    icon: 'heart',
+    entrance: 'pop',
+    iconSize: 320,
+    accents: {
+      ring: { t0: 11, size: 170 },
+      sparks: [
+        [128, -128, 78, 13, 26],
+        [-136, -92, 58, 19, -22],
+      ],
+    },
+    patchMotion: (mo) => ({
+      ...mo,
+      s: M.seq(M.popIn({ t0: 0, dur: 30, to: 100, lag: 3 }), M.heartbeat({ t0: 34, t1: 120, base: 100, amp: 0.11 })),
+    }),
+  });
 }
 
-// маленький акцент-искра (переиспользуем фирменный doodle) с миганием
-function sparkleAccent(pos, size, delay, spin = 20) {
-  const sp = loadDoodle('sparkle', size);
-  const group = pathGroup('Sparkle', sp, { fill: L.BRAND.lime });
-  return L.shapeLayer('Sparkle accent', [group], {
-    op: 9999,
-    ks: {
-      a: L.staticProp([0, 0]),
-      p: L.staticProp(pos),
-      r: L.animProp([
-        { t: delay, v: 0 },
-        { t: delay + 40, v: spin },
-      ]),
-      o: L.animProp([
-        { t: delay, v: 0 },
-        { t: delay + 6, v: 100 },
-        { t: delay + 26, v: 100 },
-        { t: delay + 40, v: 0 },
-      ]),
-      s: L.animProp([
-        { t: delay, v: [40, 40] },
-        { t: delay + 8, v: [110, 110] },
-        { t: delay + 40, v: [70, 70] },
-      ]),
+// =========================================================
+// 2. ОГОНЬ — «дышит» и дрожит, как настоящее пламя
+// =========================================================
+function fire() {
+  sticker('reaction-fire', 110, {
+    icon: 'fire',
+    entrance: 'pop',
+    iconSize: 300,
+    center: [CX, CY + 14],
+    accents: { sparks: [[110, -140, 52, 22, 30]] },
+    patchMotion: (mo, { pos }) => ({
+      s: M.seq(
+        M.popIn({ t0: 0, dur: 26, to: 100, lag: 4 }),
+        // пламя живёт неровным ритмом: вертикаль тянется, горизонталь поджимается
+        M.breathe({ t0: 30, t1: 110, base: 100, amp: 5.5, cycles: 3, phaseLag: 0.5 })
+      ),
+      r: M.seq(M.wobble({ t0: 2, dur: 30, amp: 8 }), M.jitter({ t0: 30, t1: 110, amp: 3.5, seed: 7, step: 6 })),
+      p: M.seq(
+        M.hold(0, pos),
+        M.bake({ t0: 30, dur: 80, from: pos, to: pos, curve: M.curves.linear, step: 8 })
+      ),
+    }),
+  });
+}
+
+// =========================================================
+// 3. ЛАЙК — замах и выброс большого пальца
+// =========================================================
+function thumbsUp() {
+  sticker('reaction-thumbsup', 115, {
+    icon: 'thumbsUp',
+    entrance: 'anticipate',
+    iconSize: 300,
+    center: [CX + 6, CY + 10],
+    accents: {
+      burst: { count: 6, t0: 14, radius: 230, len: 44, width: 14 },
+      sparks: [[112, -132, 62, 18, -24]],
     },
   });
 }
 
-function finish(nm, op, layers) {
-  const anim = L.animation({ w: W, h: H, fr: FR, op, nm, layers });
-  L.writeJson(path.join(OUT_DIR, `${nm}.json`), anim);
-}
-
-// ---------------------------------------------------------------
-// 1. HEART — сердцебиение с искрой
-// ---------------------------------------------------------------
-function buildHeart() {
-  L.resetLayerIndex();
-  const d =
-    'M100,178 C40,140 8,103 8,66 C8,34 32,10 62,10 C80,10 94,20 100,36 ' +
-    'C106,20 120,10 138,10 C168,10 192,34 192,66 C192,103 160,140 100,178 Z';
-  const sp = centerAndScale(L.parseSvgPath(d), 300);
-  const heart = pathGroup('Heart', sp, { fill: L.BRAND.lime, stroke: L.BRAND.ink, strokeWidth: 16 });
-
-  const OP = 100;
-  const heartLayer = L.shapeLayer('Heart', [heart], {
-    op: OP,
-    ks: {
-      a: L.staticProp([0, 0]),
-      p: L.staticProp([CX, CY + 10]),
-      s: L.animProp([
-        { t: 0, v: [92, 92] },
-        { t: 8, v: [128, 128] },
-        { t: 16, v: [100, 100] },
-        { t: 24, v: [120, 120] },
-        { t: 36, v: [100, 100] },
-        { t: 100, v: [100, 100] },
-      ]),
+// =========================================================
+// 4. ЗВЕЗДА — наплыв из крупного плана и мерцание
+// =========================================================
+function star() {
+  sticker('reaction-star', 118, {
+    icon: 'star',
+    entrance: 'zoom',
+    iconSize: 320,
+    accents: {
+      ring: { t0: 10, size: 180 },
+      sparks: [
+        [146, -70, 62, 14, 30],
+        [-140, 78, 54, 26, -28],
+        [-104, -122, 46, 34, 24],
+      ],
     },
   });
-
-  const spark = sparkleAccent([CX + 108, CY - 118], 90, 10, 25);
-  finish('reaction-heart', OP, [spark, heartLayer]);
 }
 
-// ---------------------------------------------------------------
-// 2. FIRE — пламя с фликкером
-// ---------------------------------------------------------------
-function buildFire() {
+// =========================================================
+// 5. ИДЕЯ — лампочка загорается, лучи вспыхивают волной
+// =========================================================
+function lightbulb() {
   L.resetLayerIndex();
-  const outerD =
-    'M100,12 C130,50 158,78 158,118 C158,156 132,184 100,190 C68,184 42,156 42,118 ' +
-    'C42,90 55,68 72,52 C70,80 80,98 96,104 C90,78 92,45 100,12 Z';
-  const innerD =
-    'M100,150 C112,132 122,118 122,102 C122,88 112,78 100,72 C104,90 98,104 88,110 C90,124 94,140 100,150 Z';
-
-  const outer = centerAndScale(L.parseSvgPath(outerD), 300);
-  const bboxOuter = L.bboxOfSubpaths(L.parseSvgPath(outerD));
-  const scaleF = 300 / Math.max(bboxOuter.w, bboxOuter.h);
-  const cx = bboxOuter.minX + bboxOuter.w / 2;
-  const cy = bboxOuter.minY + bboxOuter.h / 2;
-  const inner = L.transformSubpaths(L.parseSvgPath(innerD), { scale: scaleF, dx: -cx * scaleF, dy: -cy * scaleF });
-
-  const outerGroup = pathGroup('Flame outer', outer, { fill: L.BRAND.lime, stroke: L.BRAND.ink, strokeWidth: 14 });
-  const innerGroup = pathGroup('Flame inner', inner, { fill: L.BRAND.ink });
-
-  const OP = 90;
-  const flicker = [
-    { t: 0, v: [100, 100] },
-    { t: 10, v: [107, 95] },
-    { t: 20, v: [96, 108] },
-    { t: 32, v: [109, 96] },
-    { t: 44, v: [98, 106] },
-    { t: 58, v: [105, 98] },
-    { t: 72, v: [98, 103] },
-    { t: 90, v: [100, 100] },
-  ];
-  const sway = [
-    { t: 0, v: -3 },
-    { t: 18, v: 4 },
-    { t: 40, v: -5 },
-    { t: 64, v: 3 },
-    { t: 90, v: -3 },
-  ];
-
-  const flameLayer = L.shapeLayer('Flame', [outerGroup, innerGroup], {
-    op: OP,
-    ks: {
-      a: L.staticProp([0, 0]),
-      p: L.staticProp([CX, CY + 40]),
-      r: L.animProp(sway),
-      s: L.animProp(flicker),
-    },
-  });
-
-  finish('reaction-fire', OP, [flameLayer]);
-}
-
-// ---------------------------------------------------------------
-// 3. THUMBS UP
-// ---------------------------------------------------------------
-function buildThumbsUp() {
-  L.resetLayerIndex();
-  const palm = L.groupItem('Palm', [
-    L.rectItem({ p: [14, 34], s: [110, 92], r: 30 }),
-    L.strokeItem(L.BRAND.ink, 16),
-    L.fillItem(L.BRAND.lime),
+  const OP = 126;
+  const pos = [CX, CY + 16];
+  const rays = [];
+  const RAYS = 8;
+  for (let i = 0; i < RAYS; i++) {
+    const a = (i * 360) / RAYS - 90;
+    const rad = (a * Math.PI) / 180;
+    const near = [pos[0] + Math.cos(rad) * 168, pos[1] + Math.sin(rad) * 168];
+    const far = [pos[0] + Math.cos(rad) * 208, pos[1] + Math.sin(rad) * 208];
+    const t0 = 22 + i * 2;
+    rays.push(
+      L.shapeLayer(`Ray ${i}`, [
+        L.groupItem('ray', [
+          L.rectItem({ p: [0, 0], s: [16, 50], r: 8 }),
+          L.strokeItem(BRAND.ink, 8),
+          L.fillItem(BRAND.lime),
+        ]),
+      ], {
+        op: OP,
+        ks: {
+          a: L.staticProp([0, 0]),
+          p: L.animProp(M.seq(M.hold(0, near), M.hold(t0, near), M.bake({ t0, dur: 18, from: near, to: far, curve: M.curves.spring({ bounces: 2, decay: 5 }), step: 2 }))),
+          r: L.staticProp(a + 90),
+          s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(t0, [0, 0]), M.popIn({ t0, dur: 18, to: 100, lag: 2 }), M.breathe({ t0: t0 + 20, t1: OP, base: 100, amp: 9, cycles: 2 }))),
+          o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.hold(t0 + 4, 100), M.hold(OP, 100))),
+        },
+      })
+    );
+  }
+  emit('reaction-lightbulb', OP, [
+    ...rays,
+    ...C.buildSticker({
+      canvas: W,
+      op: OP,
+      icon: 'bulb',
+      entrance: 'pop',
+      iconSize: 300,
+      center: pos,
+      accents: { ring: { t0: 16, size: 160 } },
+    }),
   ]);
-  const thumb = L.groupItem(
-    'Thumb',
-    [L.rectItem({ p: [0, 0], s: [46, 104], r: 23 }), L.strokeItem(L.BRAND.ink, 16), L.fillItem(L.BRAND.lime)],
-    { p: [-40, -46], r: -16 }
-  );
-
-  const OP = 100;
-  const handLayer = L.shapeLayer('Hand', [thumb, palm], {
-    op: OP,
-    ks: {
-      a: L.staticProp([0, 0]),
-      p: L.staticProp([CX - 10, CY + 30]),
-      r: L.animProp([
-        { t: 0, v: -8 },
-        { t: 14, v: 6 },
-        { t: 26, v: -4 },
-        { t: 36, v: 0 },
-        { t: 100, v: 0 },
-      ]),
-      s: L.animProp([
-        { t: 0, v: [55, 55] },
-        { t: 14, v: [118, 118] },
-        { t: 24, v: [96, 96] },
-        { t: 34, v: [106, 106] },
-        { t: 44, v: [100, 100] },
-        { t: 100, v: [100, 100] },
-      ]),
-    },
-  });
-
-  const spark = sparkleAccent([CX + 90, CY - 96], 86, 12, -20);
-  finish('reaction-thumbsup', OP, [spark, handLayer]);
 }
 
-// ---------------------------------------------------------------
-// 4. STAR / WOW — мерцающая звезда
-// ---------------------------------------------------------------
-function buildStar() {
-  L.resetLayerIndex();
-  const star = L.groupItem('Star', [
-    L.starItem({ p: [0, 0], pt: 5, or_: 150, ir: 62, os: 6, is: 0, rot: -90 }),
-    L.strokeItem(L.BRAND.ink, 14),
-    L.fillItem(L.BRAND.lime),
-  ]);
+// =========================================================
+// 6. ОТЛИЧНО — бейдж впечатывается как штамп
+// =========================================================
+function perfect() {
+  sticker('reaction-perfect', 124, {
+    icon: 'check',
+    entrance: 'stamp',
+    iconSize: 330,
+    accents: {
+      burst: { count: 10, t0: 16, radius: 250, len: 46, width: 14 },
+      ring: { t0: 16, size: 200 },
+      sparks: [
+        [150, -140, 58, 24, 26],
+        [-152, -108, 46, 32, -22],
+      ],
+    },
+  });
+}
 
-  const OP = 110;
-  const starLayer = L.shapeLayer('Star', [star], {
+// =========================================================
+// 7. КОНФЕТТИ — залп частиц с пружиной и вращением
+// =========================================================
+function confetti() {
+  L.resetLayerIndex();
+  const OP = 108;
+  const defs = [
+    { a: -90, d: 196, s: 26, k: 'rect', c: 'lime', spin: 150, t: 0 },
+    { a: -55, d: 214, s: 20, k: 'circle', c: 'ink', spin: 0, t: 3 },
+    { a: -20, d: 200, s: 28, k: 'tri', c: 'lime', spin: -130, t: 1 },
+    { a: 12, d: 222, s: 18, k: 'circle', c: 'lime', spin: 0, t: 5 },
+    { a: 46, d: 198, s: 25, k: 'rect', c: 'ink', spin: -170, t: 2 },
+    { a: 80, d: 228, s: 20, k: 'circle', c: 'lime', spin: 0, t: 0 },
+    { a: 114, d: 200, s: 26, k: 'tri', c: 'lime', spin: 140, t: 4 },
+    { a: 148, d: 212, s: 19, k: 'circle', c: 'ink', spin: 0, t: 2 },
+    { a: 180, d: 204, s: 24, k: 'rect', c: 'lime', spin: -150, t: 6 },
+    { a: 212, d: 192, s: 17, k: 'circle', c: 'lime', spin: 0, t: 1 },
+    { a: 244, d: 210, s: 23, k: 'tri', c: 'ink', spin: 160, t: 7 },
+    { a: 276, d: 196, s: 19, k: 'circle', c: 'lime', spin: 0, t: 3 },
+    { a: 308, d: 220, s: 25, k: 'rect', c: 'lime', spin: 130, t: 5 },
+    { a: 340, d: 202, s: 21, k: 'circle', c: 'ink', spin: 0, t: 2 },
+  ];
+
+  const layers = defs.map((p, i) => {
+    const rad = (p.a * Math.PI) / 180;
+    const end = [CX + Math.cos(rad) * p.d, CY + Math.sin(rad) * p.d];
+    const mid = [CX + Math.cos(rad) * p.d * 0.7, CY + Math.sin(rad) * p.d * 0.7];
+    const color = p.c === 'lime' ? BRAND.lime : BRAND.ink;
+    let item;
+    if (p.k === 'rect') item = L.rectItem({ p: [0, 0], s: [p.s, p.s], r: 5 });
+    else if (p.k === 'circle') item = L.ellipseItem({ p: [0, 0], s: [p.s, p.s] });
+    else item = L.starItem({ p: [0, 0], pt: 3, or_: p.s * 0.72, ir: p.s * 0.34, sy: 1 });
+
+    const t0 = p.t;
+    return L.shapeLayer(`Particle ${i}`, [L.groupItem('p', [item, L.fillItem(color)])], {
+      op: OP,
+      ks: {
+        a: L.staticProp([0, 0]),
+        // вылет с резким стартом и «оседанием» в конце — частица теряет энергию
+        p: L.animProp(
+          M.seq(
+            M.hold(0, [CX, CY]),
+            M.hold(t0, [CX, CY]),
+            M.bake({ t0, dur: 30, from: [CX, CY], to: mid, curve: M.curves.expoOut, step: 2 }),
+            M.bake({ t0: t0 + 30, dur: 34, from: mid, to: end, curve: M.curves.easeOut, step: 4 })
+          )
+        ),
+        r: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.bake({ t0, dur: 60, from: 0, to: p.spin, curve: M.curves.easeOut, step: 5 }))),
+        s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(t0, [0, 0]), M.popIn({ t0, dur: 16, to: 100, lag: 2 }), M.bake({ t0: t0 + 44, dur: 22, from: [100, 100], to: [55, 55], curve: M.curves.easeIn, step: 3 }))),
+        o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.hold(t0 + 3, 100), M.hold(t0 + 46, 100), M.hold(t0 + 66, 0))),
+      },
+    });
+  });
+
+  // центральная вспышка в кадре залпа
+  const flash = L.shapeLayer('Flash', [L.groupItem('f', [L.ellipseItem({ p: [0, 0], s: [90, 90] }), L.fillItem(BRAND.lime)])], {
     op: OP,
     ks: {
       a: L.staticProp([0, 0]),
       p: L.staticProp([CX, CY]),
-      r: L.animProp([
-        { t: 0, v: -10 },
-        { t: 20, v: 8 },
-        { t: 45, v: -6 },
-        { t: 70, v: 5 },
-        { t: 110, v: -10 },
-      ]),
-      s: L.animProp([
-        { t: 0, v: [80, 80] },
-        { t: 10, v: [112, 112] },
-        { t: 22, v: [96, 96] },
-        { t: 34, v: [106, 106] },
-        { t: 46, v: [100, 100] },
-        { t: 110, v: [100, 100] },
-      ]),
+      s: L.animProp(M.seq(M.hold(0, [20, 20]), M.bake({ t0: 0, dur: 16, from: [20, 20], to: [210, 210], curve: M.curves.expoOut, step: 2 }))),
+      o: L.animProp(M.seq(M.hold(0, 100), M.bake({ t0: 0, dur: 16, from: 100, to: 0, curve: M.curves.easeOut, step: 2 }), M.hold(OP, 0))),
     },
   });
 
-  const spark1 = sparkleAccent([CX + 132, CY - 60], 60, 6, 30);
-  const spark2 = sparkleAccent([CX - 128, CY + 76], 50, 34, -30);
-  const spark3 = sparkleAccent([CX - 96, CY - 116], 44, 58, 22);
-  finish('reaction-star', OP, [spark1, spark2, spark3, starLayer]);
+  emit('reaction-confetti', OP, [flash, ...layers, ...C.burstLayers({ pos: [CX, CY], op: OP, count: 6, t0: 0, radius: 150, len: 34, width: 11, color: BRAND.ink })]);
 }
 
-// ---------------------------------------------------------------
-// 5. LIGHTBULB — идея (нейро-инсайт)
-// ---------------------------------------------------------------
-function buildLightbulb() {
+// =========================================================
+// 8. ОТЛИЧНИК — шапочка падает, кисточка догоняет с задержкой
+// =========================================================
+function gradcap() {
   L.resetLayerIndex();
+  const OP = 132;
+  const pos = [CX, CY + 6];
+  const mo = C.entranceMotion('drop', { pos, op: OP });
+  const opacity = C.entranceOpacity('drop', OP);
 
-  const bulb = L.groupItem('Bulb', [
-    L.ellipseItem({ p: [0, -34], s: [172, 182] }),
-    L.strokeItem(L.BRAND.ink, 16),
-    L.fillItem(L.BRAND.lime),
-  ]);
-  const base = L.groupItem('Base', [L.rectItem({ p: [0, 78], s: [78, 30], r: 10 }), L.fillItem(L.BRAND.ink)]);
-  const filament = L.groupItem('Filament', [
-    L.starItem({ p: [0, -34], pt: 4, or_: 30, ir: 11, sy: 1 }),
-    L.fillItem(L.BRAND.ink),
-  ]);
+  const capInd = L.nextLayerIndex();
+  const capLayer = L.shapeLayer('Cap', [C.iconGroup('gradcap', baseStyle(13), 330)], {
+    op: OP,
+    ks: {
+      a: L.staticProp([0, 0]),
+      p: L.animProp(mo.p),
+      s: L.animProp(mo.s),
+      r: L.animProp(mo.r),
+      o: L.animProp(opacity),
+    },
+  });
 
-  const bulbLayer = (op) =>
-    L.shapeLayer('Bulb group', [filament, bulb, base], {
-      op,
+  /* Кисточка — ребёнок шапочки: едет вместе с ней, но раскачивается
+     сама и успокаивается позже (классический follow-through). */
+  const tassel = L.shapeLayer(
+    'Tassel',
+    [
+      L.groupItem('bead', [L.ellipseItem({ p: [0, 128], s: [30, 30] }), L.strokeItem(BRAND.ink, 9), L.fillItem(BRAND.lime)]),
+      L.groupItem('thread', [L.rectItem({ p: [0, 64], s: [8, 128], r: 4 }), L.fillItem(BRAND.ink)]),
+    ],
+    {
+      op: OP,
+      parent: capInd,
       ks: {
         a: L.staticProp([0, 0]),
-        p: L.staticProp([CX, CY + 20]),
-        s: L.animProp([
-          { t: 0, v: [70, 70] },
-          { t: 10, v: [110, 110] },
-          { t: 18, v: [98, 98] },
-          { t: 26, v: [104, 104] },
-          { t: 60, v: [100, 100] },
-          { t: 90, v: [104, 104] },
-          { t: op, v: [100, 100] },
-        ]),
+        p: L.staticProp([14, -44]),
+        r: L.animProp(
+          M.seq(
+            M.hold(0, 24),
+            M.wobble({ t0: 24, dur: 56, amp: 30, bounces: 2.8, decay: 3.4 }),
+            M.sway({ t0: 80, t1: OP, amp: 5, cycles: 1 })
+          )
+        ),
       },
-    });
+    }
+  );
 
-  const RAYS = 6;
-  const OP = 130;
-  const rayLayers = [];
-  for (let k = 0; k < RAYS; k++) {
-    const angle = (k * 360) / RAYS - 90;
-    const rad = (angle * Math.PI) / 180;
-    const dist = 158;
-    const pos = [CX + Math.cos(rad) * dist, CY + 20 + Math.sin(rad) * dist];
-    // rect по умолчанию вертикальный (ось совпадает с направлением -90°),
-    // поэтому доворачиваем на (angle + 90), чтобы луч смотрел радиально наружу
-    const rayRotation = angle + 90;
-    const ray = L.groupItem('Ray', [
-      L.rectItem({ p: [0, 0], s: [14, 46], r: 7 }),
-      L.strokeItem(L.BRAND.ink, 8),
-      L.fillItem(L.BRAND.lime),
-    ]);
-    const delay = 22 + k * 4;
-    rayLayers.push(
-      L.shapeLayer(`Ray ${k}`, [ray], {
+  const shadow = L.shapeLayer('Shadow', [C.iconGroup('gradcap', shadowStyle(13), 330)], {
+    op: OP,
+    ks: {
+      a: L.staticProp([0, 0]),
+      p: L.animProp(mo.p.map((k) => ({ ...k, v: [k.v[0] + 12, k.v[1] + 12] }))),
+      s: L.animProp(mo.s),
+      r: L.animProp(mo.r),
+      o: L.animProp(opacity),
+    },
+  });
+
+  emit('reaction-gradcap', OP, [
+    ...C.burstLayers({ pos: [CX, CY + 40], op: OP, count: 6, t0: 26, radius: 210, len: 40, width: 12 }),
+    C.sparkLayer({ pos: [CX - 150, CY - 120], size: 60, t0: 30, spin: 24, op: OP }),
+    tassel,
+    capLayer,
+    shadow,
+  ]);
+}
+
+// =========================================================
+// 9. АПЛОДИСМЕНТЫ — ладони сходятся и бьются друг о друга
+// =========================================================
+function clap() {
+  L.resetLayerIndex();
+  const OP = 112;
+  const HIT = 18;
+  const hands = [];
+  for (const side of [-1, 1]) {
+    const rest = [CX + side * 44, CY + 14];
+    const wide = [CX + side * 190, CY + 40];
+    hands.push(
+      L.shapeLayer(side < 0 ? 'Hand L' : 'Hand R', [C.iconGroup('clapHand', baseStyle(13), 230, 'icon', { mirror: side > 0 })], {
         op: OP,
         ks: {
           a: L.staticProp([0, 0]),
-          p: L.staticProp(pos),
-          r: L.staticProp(rayRotation),
-          o: L.animProp([
-            { t: delay, v: 0 },
-            { t: delay + 8, v: 100 },
-            { t: delay + 30, v: 60 },
-            { t: delay + 55, v: 100 },
-            { t: OP, v: 70 },
-          ]),
-          s: L.animProp([
-            { t: delay, v: [40, 40] },
-            { t: delay + 10, v: [100, 100] },
-          ]),
+          // сходятся резко, на ударе сплющиваются, потом дважды хлопают
+          p: L.animProp(
+            M.seq(
+              M.hold(0, wide),
+              M.bake({ t0: 0, dur: HIT, from: wide, to: rest, curve: M.curves.expoIn, step: 2 }),
+              M.bake({ t0: HIT, dur: 16, from: rest, to: [CX + side * 92, CY + 20], curve: M.curves.easeOut, step: 3 }),
+              M.bake({ t0: HIT + 16, dur: 12, from: [CX + side * 92, CY + 20], to: rest, curve: M.curves.expoIn, step: 2 }),
+              M.sway({ t0: HIT + 30, t1: OP, base: rest[0], amp: side * 14, cycles: 2 }).map((k) => ({ ...k, v: [k.v, rest[1]] }))
+            )
+          ),
+          s: L.animProp(M.seq(M.hold(0, [100, 100]), M.squash({ t: HIT, amount: 0.2, recover: 20 }), M.squash({ t: HIT + 28, amount: 0.13, recover: 18 }))),
+          r: L.animProp(M.seq(M.hold(0, side * 22), M.bake({ t0: 0, dur: HIT, from: side * 22, to: side * 6, curve: M.curves.expoIn, step: 2 }), M.wobble({ t0: HIT, dur: 34, amp: side * 10 }), M.sway({ t0: HIT + 34, t1: OP, amp: side * 4, cycles: 2 }))),
+        },
+      })
+    );
+  }
+  emit('reaction-clap', OP, [
+    ...C.burstLayers({ pos: [CX, CY + 10], op: OP, count: 8, t0: HIT, radius: 220, len: 42, width: 13 }),
+    C.ringLayer({ pos: [CX, CY + 10], t0: HIT, size: 150, op: OP }),
+    ...hands,
+  ]);
+}
+
+// =========================================================
+// 10. РАКЕТА — старт со сжатием, разгон и след
+// =========================================================
+function rocket() {
+  L.resetLayerIndex();
+  const OP = 126;
+  const start = [CX, CY + 190];
+  const peak = [CX, CY - 10];
+
+  // след: штрихи, убегающие вниз
+  const trail = [];
+  for (let i = 0; i < 5; i++) {
+    const t0 = 16 + i * 5;
+    const x = CX + (i % 2 === 0 ? -26 : 26) * (0.5 + (i % 3) * 0.35);
+    trail.push(
+      L.shapeLayer(`Trail ${i}`, [L.groupItem('t', [L.rectItem({ p: [0, 0], s: [13, 62], r: 7 }), L.fillItem(i % 2 ? BRAND.ink : BRAND.lime)])], {
+        op: OP,
+        ks: {
+          a: L.staticProp([0, 0]),
+          p: L.animProp(M.seq(M.hold(0, [x, CY + 130]), M.hold(t0, [x, CY + 130]), M.bake({ t0, dur: 40, from: [x, CY + 130], to: [x, CY + 300], curve: M.curves.easeOut, step: 3 }))),
+          s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(t0, [100, 130]), M.bake({ t0, dur: 40, from: [100, 130], to: [40, 30], curve: M.curves.easeOut, step: 4 }))),
+          o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 100), M.hold(t0 + 34, 0))),
         },
       })
     );
   }
 
-  finish('reaction-lightbulb', OP, [bulbLayer(OP), ...rayLayers]);
-}
+  const motion = {
+    p: M.seq(
+      M.hold(0, start),
+      // приседание перед стартом, затем выброс вверх
+      M.bake({ t0: 0, dur: 10, from: start, to: [CX, CY + 214], curve: M.curves.easeOut, step: 2 }),
+      M.bake({ t0: 10, dur: 26, from: [CX, CY + 214], to: peak, curve: M.curves.spring({ bounces: 1.7, decay: 5.4 }), step: 2 }),
+      M.sway({ t0: 40, t1: OP, base: peak[1], amp: 12, cycles: 1 }).map((k) => ({ ...k, v: [CX, k.v] }))
+    ),
+    s: M.seq(
+      M.hold(0, [100, 100]),
+      M.bake({ t0: 0, dur: 10, from: [100, 100], to: [122, 80], curve: M.curves.easeOut, step: 2 }),
+      M.bake({ t0: 10, dur: 12, from: [122, 80], to: [82, 126], curve: M.curves.expoOut, step: 2 }),
+      M.bake({ t0: 22, dur: 22, from: [82, 126], to: [100, 100], curve: M.curves.spring({ bounces: 2.2, decay: 5 }), step: 2 }),
+      M.breathe({ t0: 46, t1: OP, base: 100, amp: 2, cycles: 1 })
+    ),
+    r: M.seq(M.hold(0, 0), M.wobble({ t0: 14, dur: 40, amp: 9 }), M.sway({ t0: 54, t1: OP, amp: 3, cycles: 1 })),
+  };
 
-// ---------------------------------------------------------------
-// 6. CHECKMARK — «Отлично!» бейдж
-// ---------------------------------------------------------------
-function buildCheckmark() {
-  L.resetLayerIndex();
-  const badge = L.groupItem('Badge', [
-    L.ellipseItem({ p: [0, 0], s: [320, 320] }),
-    L.strokeItem(L.BRAND.ink, 18),
-    L.fillItem(L.BRAND.lime),
-  ]);
-
-  const checkD = 'M-76,6 L-22,64 L86,-64';
-  const checkSub = L.parseSvgPath(checkD);
-  checkSub.forEach((sp) => { sp.c = false; }); // открытая ломаная — иначе замкнётся в треугольник
-  const checkItems = checkSub.map((sp, i) => L.pathShapeItem(sp, `c${i}`));
-
-  const OP = 120;
-  const DRAW_START = 18;
-  const DRAW_END = 40;
-  const checkGroup = L.groupItem('Check', [
-    ...checkItems,
-    L.trimItem({
-      s: 0,
-      e: L.animProp([
-        { t: DRAW_START, v: 0 },
-        { t: DRAW_END, v: 100 },
-      ]),
-      o: 0,
-    }),
-    L.strokeItem(L.BRAND.ink, 30),
-  ]);
-
-  const badgeLayer = L.shapeLayer('Badge', [badge], {
+  const ind = L.nextLayerIndex();
+  const body = L.shapeLayer('Rocket', [C.iconGroup('rocket', baseStyle(13), 300)], {
+    op: OP,
+    ks: { a: L.staticProp([0, 0]), p: L.animProp(motion.p), s: L.animProp(motion.s), r: L.animProp(motion.r) },
+  });
+  const shadow = L.shapeLayer('Shadow', [C.iconGroup('rocket', shadowStyle(13), 300)], {
     op: OP,
     ks: {
       a: L.staticProp([0, 0]),
-      p: L.staticProp([CX, CY]),
-      s: L.animProp([
-        { t: 0, v: [60, 60] },
-        { t: 14, v: [112, 112] },
-        { t: 22, v: [98, 98] },
-        { t: 30, v: [100, 100] },
-        { t: 60, v: [100, 100] },
-        { t: 90, v: [104, 104] },
-        { t: OP, v: [100, 100] },
-      ]),
+      p: L.animProp(motion.p.map((k) => ({ ...k, v: [k.v[0] + 12, k.v[1] + 12] }))),
+      s: L.animProp(motion.s),
+      r: L.animProp(motion.r),
     },
   });
-  const checkLayer = L.shapeLayer('Checkmark', [checkGroup], {
-    op: OP,
-    ks: { a: L.staticProp([0, 0]), p: L.staticProp([CX, CY]) },
-  });
 
-  const spark1 = sparkleAccent([CX + 130, CY - 130], 60, DRAW_END + 2, 25);
-  const spark2 = sparkleAccent([CX - 138, CY - 96], 46, DRAW_END + 14, -20);
-  finish('reaction-perfect', OP, [checkLayer, badgeLayer, spark1, spark2]);
+  emit('reaction-rocket', OP, [
+    C.sparkLayer({ pos: [CX + 140, CY - 130], size: 60, t0: 30, spin: 24, op: OP }),
+    C.sparkLayer({ pos: [CX - 150, CY - 60], size: 46, t0: 40, spin: -20, op: OP }),
+    body,
+    shadow,
+    ...trail,
+  ]);
 }
 
-// ---------------------------------------------------------------
-// 7. CONFETTI — праздничный залп
-// ---------------------------------------------------------------
-function buildConfetti() {
+// =========================================================
+// 11. НЕЙРО — мозг с пульсирующими связями
+// =========================================================
+function brain() {
   L.resetLayerIndex();
-  const OP = 100;
-
-  const particleDefs = [
-    { a: -80, d: 168, size: 22, shape: 'rect', color: 'lime', spin: 140, delay: 0 },
-    { a: -45, d: 190, size: 18, shape: 'circle', color: 'ink', spin: 0, delay: 4 },
-    { a: -10, d: 175, size: 24, shape: 'tri', color: 'lime', spin: -120, delay: 0 },
-    { a: 20, d: 195, size: 16, shape: 'circle', color: 'lime', spin: 0, delay: 6 },
-    { a: 55, d: 170, size: 22, shape: 'rect', color: 'ink', spin: -160, delay: 2 },
-    { a: 90, d: 200, size: 18, shape: 'circle', color: 'lime', spin: 0, delay: 0 },
-    { a: 125, d: 172, size: 22, shape: 'tri', color: 'lime', spin: 130, delay: 5 },
-    { a: 160, d: 188, size: 18, shape: 'circle', color: 'ink', spin: 0, delay: 3 },
-    { a: -160, d: 178, size: 22, shape: 'rect', color: 'lime', spin: -140, delay: 7 },
-    { a: -125, d: 165, size: 16, shape: 'circle', color: 'lime', spin: 0, delay: 1 },
-    { a: 200, d: 182, size: 20, shape: 'tri', color: 'ink', spin: 150, delay: 8 },
-    { a: 235, d: 172, size: 18, shape: 'circle', color: 'lime', spin: 0, delay: 3 },
+  const OP = 130;
+  const pos = [CX, CY];
+  // импульсы по узлам сети — каждый вспыхивает со своей фазой
+  const nodes = [
+    [-51, -78], [58, -51], [51, 44], [-10, 75],
   ];
-
-  const layers = particleDefs.map((p, idx) => {
-    const rad = (p.a * Math.PI) / 180;
-    const end = [Math.cos(rad) * p.d, Math.sin(rad) * p.d];
-    const color = p.color === 'lime' ? L.BRAND.lime : L.BRAND.ink;
-    let shapeItem;
-    if (p.shape === 'rect') shapeItem = L.rectItem({ p: [0, 0], s: [p.size, p.size], r: 4 });
-    else if (p.shape === 'circle') shapeItem = L.ellipseItem({ p: [0, 0], s: [p.size, p.size] });
-    else shapeItem = L.starItem({ p: [0, 0], pt: 3, or_: p.size * 0.62, ir: p.size * 0.3, sy: 1 });
-    const group = L.groupItem('Particle', [shapeItem, L.fillItem(color)]);
-
-    const t0 = p.delay;
-    const t1 = t0 + 6;
-    const t2 = t0 + 46;
-    const t3 = t0 + 62;
-    return L.shapeLayer(`Particle ${idx}`, [group], {
+  const pulses = nodes.map((n, i) =>
+    L.shapeLayer(`Pulse ${i}`, [L.groupItem('p', [L.ellipseItem({ p: [0, 0], s: [46, 46] }), L.strokeItem(BRAND.lime, 8)])], {
       op: OP,
       ks: {
         a: L.staticProp([0, 0]),
-        p: L.animProp([
-          { t: t0, v: [CX, CY] },
-          { t: t2, v: [CX + end[0], CY + end[1]] },
-        ]),
-        r: L.animProp([
-          { t: t0, v: 0 },
-          { t: t2, v: p.spin },
-        ]),
-        s: L.animProp([
-          { t: t0, v: [20, 20] },
-          { t: t1, v: [100, 100] },
-          { t: t2, v: [86, 86] },
-        ]),
-        o: L.animProp([
-          { t: t0, v: 0 },
-          { t: t1, v: 100 },
-          { t: t2, v: 100 },
-          { t: t3, v: 0 },
-        ]),
+        p: L.staticProp([pos[0] + n[0] * 1.7, pos[1] + n[1] * 1.7]),
+        s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(34 + i * 9, [0, 0]), M.bake({ t0: 34 + i * 9, dur: 30, from: [30, 30], to: [190, 190], curve: M.curves.expoOut, step: 3 }))),
+        o: L.animProp(M.seq(M.hold(0, 0), M.hold(34 + i * 9, 90), M.bake({ t0: 34 + i * 9, dur: 30, from: 90, to: 0, curve: M.curves.easeOut, step: 3 }), M.hold(OP, 0))),
       },
-    });
-  });
+    })
+  );
+  emit('reaction-brain', OP, [
+    ...pulses,
+    ...C.buildSticker({
+      canvas: W,
+      op: OP,
+      icon: 'brain',
+      entrance: 'pop',
+      iconSize: 320,
+      accents: { sparks: [[150, -128, 56, 20, 26]] },
+    }),
+  ]);
+}
 
-  const pop = L.groupItem('Pop', [L.ellipseItem({ p: [0, 0], s: [60, 60] }), L.fillItem(L.BRAND.lime)]);
-  const popLayer = L.shapeLayer('Pop flash', [pop], {
+// =========================================================
+// 12. ГЛАЗА — появляются, моргают и косятся по сторонам
+// =========================================================
+function eyes() {
+  L.resetLayerIndex();
+  const OP = 120;
+  const layers = [];
+  for (const side of [-1, 1]) {
+    const pos = [CX + side * 92, CY];
+    const t0 = side < 0 ? 0 : 4;
+    layers.push(
+      L.shapeLayer(side < 0 ? 'Eye L' : 'Eye R', [C.iconGroup('eye', baseStyle(12), 200)], {
+        op: OP,
+        ks: {
+          a: L.staticProp([0, 0]),
+          p: L.animProp(M.seq(M.hold(0, pos), M.sway({ t0: 40, t1: OP, base: pos[0], amp: 12, cycles: 1 }).map((k) => ({ ...k, v: [k.v, pos[1]] })))),
+          s: L.animProp(
+            M.seq(
+              M.hold(0, [0, 0]),
+              M.hold(t0, [0, 0]),
+              M.popIn({ t0, dur: 26, to: 100, lag: 3 }),
+              M.blink({ t0: 36, t1: OP, at: [46, 84], dur: 8 })
+            )
+          ),
+          r: L.animProp(M.seq(M.wobble({ t0: t0 + 2, dur: 30, amp: 8 }), M.sway({ t0: 40, t1: OP, amp: 2, cycles: 1 }))),
+          o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.hold(t0 + 2, 100), M.hold(OP, 100))),
+        },
+      })
+    );
+  }
+  emit('reaction-eyes', OP, [C.sparkLayer({ pos: [CX + 190, CY - 110], size: 54, t0: 28, spin: 22, op: OP }), ...layers]);
+}
+
+// =========================================================
+// 13. КОРОНА — падает сверху и садится с бликами
+// =========================================================
+function crown() {
+  sticker('reaction-crown', 128, {
+    icon: 'crown',
+    entrance: 'drop',
+    iconSize: 320,
+    center: [CX, CY + 10],
+    accents: {
+      burst: { count: 7, t0: 26, radius: 230, len: 40, width: 12 },
+      sparks: [
+        [-150, -104, 58, 32, -24],
+        [152, -96, 50, 38, 26],
+        [8, -150, 44, 44, 20],
+      ],
+    },
+  });
+}
+
+// =========================================================
+// 14. МОЛНИЯ — резкий удар с вспышкой
+// =========================================================
+function bolt() {
+  L.resetLayerIndex();
+  const OP = 112;
+  const flashLayer = L.shapeLayer('Flash', [L.groupItem('f', [L.ellipseItem({ p: [0, 0], s: [300, 300] }), L.fillItem(BRAND.lime)])], {
     op: OP,
     ks: {
       a: L.staticProp([0, 0]),
       p: L.staticProp([CX, CY]),
-      o: L.animProp([
-        { t: 0, v: 100 },
-        { t: 10, v: 0 },
-        { t: OP, v: 0 },
-      ]),
-      s: L.animProp([
-        { t: 0, v: [40, 40] },
-        { t: 10, v: [160, 160] },
-      ]),
+      s: L.animProp(M.seq(M.hold(0, [30, 30]), M.hold(14, [40, 40]), M.bake({ t0: 15, dur: 20, from: [60, 60], to: [230, 230], curve: M.curves.expoOut, step: 2 }))),
+      o: L.animProp(M.seq(M.hold(0, 0), M.hold(14, 0), M.hold(16, 70), M.bake({ t0: 16, dur: 20, from: 70, to: 0, curve: M.curves.easeOut, step: 3 }), M.hold(OP, 0))),
     },
   });
-
-  finish('reaction-confetti', OP, [popLayer, ...layers]);
+  emit('reaction-bolt', OP, [
+    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 8, t0: 16, radius: 250, len: 48, width: 14 }),
+    ...C.buildSticker({
+      canvas: W,
+      op: OP,
+      icon: 'bolt',
+      entrance: 'stamp',
+      iconSize: 300,
+      accents: { ring: { t0: 16, size: 180 } },
+    }),
+    flashLayer,
+  ]);
 }
 
-// ---------------------------------------------------------------
-// 8. GRAD CAP — «Отличник» (выпускная шапочка)
-// ---------------------------------------------------------------
-function buildGradCap() {
+// =========================================================
+// 15. КУБОК — вырастает с сиянием
+// =========================================================
+function trophy() {
+  sticker('reaction-trophy', 126, {
+    icon: 'trophy',
+    entrance: 'anticipate',
+    iconSize: 310,
+    accents: {
+      burst: { count: 8, t0: 20, radius: 240, len: 42, width: 12, color: BRAND.lime },
+      ring: { t0: 20, size: 170 },
+      sparks: [
+        [140, -120, 58, 26, 26],
+        [-146, -88, 48, 34, -22],
+      ],
+    },
+  });
+}
+
+// =========================================================
+// 16. В ТОЧКУ — дротик влетает и попадает в мишень
+// =========================================================
+function target() {
   L.resetLayerIndex();
   const OP = 130;
+  const HIT = 34;
+  const from = [CX + 320, CY - 300];
+  const to = [CX + 16, CY - 8];
 
-  const capTop = L.groupItem(
-    'Cap top',
-    [L.rectItem({ p: [0, 0], s: [196, 196], r: 16 }), L.strokeItem(L.BRAND.ink, 14), L.fillItem(L.BRAND.lime)],
-    { r: 45 }
-  );
-  const band = L.groupItem('Band', [L.rectItem({ p: [0, 0], s: [96, 34], r: 14 }), L.fillItem(L.BRAND.ink)], {
-    p: [0, 58],
-  });
-
-  const capLayer = L.shapeLayer('Cap', [band, capTop], {
+  const dart = L.shapeLayer('Dart', [
+    L.groupItem('tip', [L.rectItem({ p: [0, 0], s: [22, 128], r: 10 }), L.strokeItem(BRAND.ink, 10), L.fillItem(BRAND.lime)], { r: 45 }),
+    L.groupItem('tail', [L.starItem({ p: [46, -46], pt: 3, or_: 34, ir: 14, rot: 20 }), L.fillItem(BRAND.ink)]),
+  ], {
     op: OP,
     ks: {
       a: L.staticProp([0, 0]),
-      p: L.animProp([
-        { t: 0, v: [CX, CY - 70] },
-        { t: 20, v: [CX, CY + 6] },
-        { t: 30, v: [CX, CY - 12] },
-        { t: 40, v: [CX, CY] },
-        { t: OP, v: [CX, CY] },
-      ]),
-      r: L.animProp([
-        { t: 0, v: -18 },
-        { t: 26, v: 6 },
-        { t: 40, v: 0 },
-        { t: OP, v: 0 },
-      ]),
-      s: L.animProp([
-        { t: 0, v: [70, 70] },
-        { t: 20, v: [108, 108] },
-        { t: 40, v: [100, 100] },
-        { t: OP, v: [100, 100] },
-      ]),
-      o: L.animProp([
-        { t: 0, v: 0 },
-        { t: 6, v: 100 },
-        { t: OP, v: 100 },
-      ]),
+      p: L.animProp(M.seq(M.hold(0, from), M.hold(10, from), M.bake({ t0: 10, dur: HIT - 10, from, to, curve: M.curves.expoIn, step: 2 }), M.hold(OP, to))),
+      s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(10, [130, 130]), M.hold(HIT, [100, 100]), M.squash({ t: HIT, amount: 0.16, recover: 20 }))),
+      r: L.animProp(M.seq(M.hold(0, 0), M.wobble({ t0: HIT, dur: 40, amp: 12 }))),
+      o: L.animProp(M.seq(M.hold(0, 0), M.hold(10, 100), M.hold(OP, 100))),
     },
   });
 
-  // кисточка свисает от центра шапки и покачивается вокруг точки крепления
-  const attach = [CX, CY];
-  const thread = L.groupItem('Thread', [L.rectItem({ p: [0, 75], s: [7, 150], r: 4 }), L.fillItem(L.BRAND.ink)]);
-  const bead = L.groupItem('Bead', [
-    L.ellipseItem({ p: [0, 150], s: [26, 26] }),
-    L.strokeItem(L.BRAND.ink, 8),
-    L.fillItem(L.BRAND.lime),
+  emit('reaction-target', OP, [
+    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 8, t0: HIT, radius: 240, len: 40, width: 12 }),
+    C.ringLayer({ pos: [CX, CY], t0: HIT, size: 170, op: OP }),
+    dart,
+    ...C.buildSticker({
+      canvas: W,
+      op: OP,
+      icon: 'target',
+      entrance: 'pop',
+      iconSize: 330,
+      patchMotion: (mo) => ({
+        ...mo,
+        // мишень «принимает» удар: короткое сплющивание в кадре попадания
+        s: M.seq(mo.s.filter((k) => k.t < HIT - 1), M.squash({ t: HIT, amount: 0.12, recover: 22 }), M.breathe({ t0: HIT + 24, t1: OP, base: 100, amp: 2, cycles: 1 })),
+      }),
+    }),
   ]);
-  const tasselLayer = L.shapeLayer('Tassel', [bead, thread], {
-    op: OP,
-    ks: {
-      a: L.staticProp([0, 0]),
-      p: L.animProp([
-        { t: 0, v: attach },
-        { t: 40, v: attach },
-      ]),
-      r: L.animProp([
-        { t: 40, v: 2 },
-        { t: 62, v: 28 },
-        { t: 86, v: 6 },
-        { t: 110, v: 22 },
-        { t: OP, v: 2 },
-      ]),
-      o: L.animProp([
-        { t: 0, v: 0 },
-        { t: 40, v: 0 },
-        { t: 46, v: 100 },
-        { t: OP, v: 100 },
-      ]),
-    },
-  });
-
-  const spark = sparkleAccent([CX - 118, CY - 108], 70, 34, 24);
-  finish('reaction-gradcap', OP, [tasselLayer, capLayer, spark]);
 }
 
-module.exports = {
-  buildHeart,
-  buildFire,
-  buildThumbsUp,
-  buildStar,
-  buildLightbulb,
-  buildCheckmark,
-  buildConfetti,
-  buildGradCap,
-};
+// =========================================================
+// 17. КРИСТАЛЛ — разворот с бликом по грани
+// =========================================================
+function gem() {
+  L.resetLayerIndex();
+  const OP = 122;
+  const glint = L.shapeLayer('Glint', [L.groupItem('g', [L.rectItem({ p: [0, 0], s: [46, 320], r: 23 }), L.fillItem(BRAND.white)])], {
+    op: OP,
+    ks: {
+      a: L.staticProp([0, 0]),
+      p: L.animProp(M.seq(M.hold(0, [CX - 190, CY]), M.hold(40, [CX - 190, CY]), M.bake({ t0: 40, dur: 26, from: [CX - 190, CY], to: [CX + 190, CY], curve: M.curves.easeInOut, step: 2 }), M.hold(OP, [CX + 190, CY]))),
+      r: L.staticProp(24),
+      o: L.animProp(M.seq(M.hold(0, 0), M.hold(40, 0), M.hold(46, 62), M.hold(60, 62), M.hold(66, 0), M.hold(OP, 0))),
+    },
+  });
+  emit('reaction-gem', OP, [
+    glint,
+    ...C.buildSticker({
+      canvas: W,
+      op: OP,
+      icon: 'gem',
+      entrance: 'flip',
+      iconSize: 320,
+      accents: { sparks: [[142, -110, 56, 22, 26], [-140, 34, 44, 30, -24]] },
+    }),
+  ]);
+}
+
+// =========================================================
+// 18. ВАУ — звёздный взрыв с кольцами
+// =========================================================
+function wow() {
+  L.resetLayerIndex();
+  const OP = 116;
+  emit('reaction-wow', OP, [
+    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 12, t0: 8, radius: 250, len: 52, width: 13, color: BRAND.ink }),
+    C.ringLayer({ pos: [CX, CY], t0: 8, size: 150, op: OP, width: 12 }),
+    C.ringLayer({ pos: [CX, CY], t0: 18, size: 150, op: OP, width: 8, color: BRAND.lime }),
+    ...C.buildSticker({
+      canvas: W,
+      op: OP,
+      icon: 'spark',
+      entrance: 'zoom',
+      iconSize: 300,
+      accents: {
+        sparks: [
+          [150, -120, 56, 22, 28],
+          [-150, 100, 48, 30, -26],
+          [-120, -140, 42, 38, 22],
+        ],
+      },
+    }),
+  ]);
+}
+
+const ALL = [heart, fire, thumbsUp, star, lightbulb, perfect, confetti, gradcap, clap, rocket, brain, eyes, crown, bolt, trophy, target, gem, wow];
+
+module.exports = { ALL };
 
 if (require.main === module) {
   console.log('Реакции:');
-  buildHeart();
-  buildFire();
-  buildThumbsUp();
-  buildStar();
-  buildLightbulb();
-  buildCheckmark();
-  buildConfetti();
-  buildGradCap();
+  ALL.forEach((fn) => fn());
 }

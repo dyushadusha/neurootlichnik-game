@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const DIR = path.join(__dirname, '..', '..', 'assets', 'lottie');
 let errors = 0;
@@ -172,9 +173,44 @@ function validateFile(fileName) {
   }
 }
 
+/* Требования Telegram к анимационным стикерам и кастомным эмодзи:
+   векторный Lottie, упакованный gzip'ом в .tgs, не длиннее 3 секунд,
+   30 или 60 fps, канвас 512×512 у стикеров и 100×100 у эмодзи,
+   и не тяжелее 64 КБ в упакованном виде. Проверяем это здесь, чтобы
+   ограничения ловились на сборке, а не в боте @Stickers. */
+function checkTelegram(fileName) {
+  const full = path.join(DIR, fileName);
+  const data = JSON.parse(fs.readFileSync(full, 'utf8'));
+  const isEmoji = fileName.startsWith('emoji-');
+  const isWide = fileName.startsWith('logo-wordmark') || fileName.startsWith('logo-lockup');
+
+  const duration = (data.op - data.ip) / data.fr;
+  if (duration > 3) err(fileName, `длительность ${duration.toFixed(2)} с — Telegram допускает максимум 3 с`);
+  if (data.fr !== 30 && data.fr !== 60) err(fileName, `частота ${data.fr} fps — допустимы только 30 или 60`);
+
+  const expect = isEmoji ? 100 : 512;
+  if (!isWide && (data.w !== expect || data.h !== expect)) {
+    err(fileName, `канвас ${data.w}×${data.h}, ожидался ${expect}×${expect}`);
+  }
+
+  const gz = zlib.gzipSync(fs.readFileSync(full), { level: 9 }).length;
+  if (gz > 64 * 1024) err(fileName, `${(gz / 1024).toFixed(1)} КБ в .tgs — больше лимита 64 КБ`);
+  return { gz, duration, wide: isWide };
+}
+
 const files = fs.readdirSync(DIR).filter((f) => f.endsWith('.json'));
 console.log(`Проверяю ${files.length} файлов в assets/lottie/…\n`);
 files.forEach(validateFile);
 
+let maxGz = 0;
+let wide = 0;
+files.forEach((f) => {
+  const r = checkTelegram(f);
+  if (r.gz > maxGz) maxGz = r.gz;
+  if (r.wide) wide++;
+});
+
+console.log(`\nTelegram: самый тяжёлый .tgs — ${(maxGz / 1024).toFixed(1)} КБ из 64 КБ;`);
+console.log(`${wide} файла — широкий формат (не для стикер-пака, только как обычная Lottie).`);
 console.log(`\nИтого: ${errors} ошибок, ${warnings} предупреждений.`);
 process.exit(errors > 0 ? 1 : 0);

@@ -253,13 +253,25 @@ function easeIn(dim) {
   return { x: new Array(dim).fill(0.58), y: new Array(dim).fill(1) };
 }
 
-// list: [{t, v, hold?}]  -> Lottie keyframe array
+function linearOut(dim) {
+  return { x: new Array(dim).fill(0), y: new Array(dim).fill(0) };
+}
+function linearIn(dim) {
+  return { x: new Array(dim).fill(1), y: new Array(dim).fill(1) };
+}
+
+/* list: [{t, v, hold?, linear?}] -> массив ключей Lottie.
+   linear:true нужен для «запечённых» кривых из motion.js — форма
+   движения уже задана плотными сэмплами, и лишний ease между ними
+   только размазал бы пружину. */
 function keyframes(list) {
   return list.map((kfr, idx) => {
     const dim = dimOf(kfr.v);
     const val = asArr(kfr.v);
     if (kfr.hold) return { t: kfr.t, s: val, h: 1 };
-    const obj = { t: kfr.t, s: val, o: easeOut(dim), i: easeIn(dim) };
+    const obj = kfr.linear
+      ? { t: kfr.t, s: val, o: linearOut(dim), i: linearIn(dim) }
+      : { t: kfr.t, s: val, o: easeOut(dim), i: easeIn(dim) };
     if (idx < list.length - 1) obj.e = asArr(list[idx + 1].v);
     return obj;
   });
@@ -268,7 +280,13 @@ function keyframes(list) {
 function staticProp(v) {
   return { a: 0, k: v };
 }
+/* Свойство с единственным ключом lottie-web разбирает некорректно
+   (у последнего ключа нет пары для интерполяции — трансформация
+   слоя уходит в NaN и он просто не рисуется). Поэтому такой список
+   схлопываем в статическое значение. */
 function animProp(list) {
+  if (!Array.isArray(list) || list.length === 0) throw new Error('animProp: пустой список ключей');
+  if (list.length === 1) return staticProp(list[0].v);
   return { a: 1, k: keyframes(list) };
 }
 
@@ -277,9 +295,13 @@ let __ind = 1;
 function resetLayerIndex() {
   __ind = 1;
 }
-function shapeLayer(nm, shapes, { ks = {}, ip = 0, op = 180, st = 0 } = {}) {
+/* parent — индекс родительского слоя. Ребёнок наследует трансформацию
+   родителя и добавляет свою поверх: так делается вторичное движение
+   (кисточка на шапочке, блик на грани), когда деталь должна ехать
+   вместе с объектом, но жить с собственной задержкой. */
+function shapeLayer(nm, shapes, { ks = {}, ip = 0, op = 180, st = 0, parent } = {}) {
   const ind = __ind++;
-  return {
+  const layer = {
     ddd: 0,
     ind,
     ty: 4,
@@ -299,6 +321,14 @@ function shapeLayer(nm, shapes, { ks = {}, ip = 0, op = 180, st = 0 } = {}) {
     st,
     bm: 0,
   };
+  if (parent != null) layer.parent = parent;
+  return layer;
+}
+
+/* Индекс, который получит следующий созданный слой — нужен, чтобы
+   назначить родителя ещё до его создания. */
+function nextLayerIndex() {
+  return __ind;
 }
 
 function animation({ w, h, fr = 60, op = 180, nm, layers }) {
@@ -326,6 +356,8 @@ function writeJson(file, data) {
 
 module.exports = {
   BRAND,
+  round4,
+  nextLayerIndex,
   hexToRgba,
   parseSvgPath,
   bboxOfSubpaths,
