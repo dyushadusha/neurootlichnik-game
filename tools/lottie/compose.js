@@ -140,8 +140,19 @@ function burstLayers({ pos, count = 8, t0 = 10, radius = 190, len = 40, width = 
 // =========================================================
 // ДВИЖЕНИЕ ОСНОВНОГО ОБЪЁМА
 // =========================================================
+/* Сколько можно оторвать объект от pos по вертикали, не пересекая
+   край канваса — с запасом на сплющивание/перелёт при посадке и на
+   обводку (она снаружи контура и тоже масштабируется трансформом слоя,
+   см. paint() в icons.js). overshoot покрывает анизотропное растяжение
+   формы в момент приземления/удара, pad — фиксированный запас под
+   удвоенную внешнюю обводку и лёгкий поворот (wobble). */
+function verticalSafeTravel(centerY, iconSize, overshoot = 1.35, pad = 18, margin = 6) {
+  const halfExtent = (iconSize / 2) * overshoot + pad;
+  return Math.max(0, centerY - halfExtent - margin);
+}
+
 /* Возвращает { s, r, p } — готовые анимированные свойства слоя. */
-function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
+function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100, iconSize = 300 } = {}) {
   const S = iconScale;
   switch (kind) {
     // мягкое пружинное появление с замахом — база набора
@@ -168,9 +179,15 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
 
     // падение сверху с отскоком и сплющиванием на посадке
     case 'drop': {
-      // Telegram требует, чтобы объект не выходил за канвас, поэтому
-      // падение короче, а первые кадры объект ещё прозрачен
-      const from = [pos[0], pos[1] - 150];
+      // Раньше высота падения была фиксированной (150px) и объект
+      // прятали прозрачностью, пока он не влетал в кадр — из-за этого
+      // первые ~12 кадров ролик был полностью пустым, а Telegram берёт
+      // превью пака как раз из ранних кадров, поэтому иконка не была
+      // видна в списке. Теперь высота падения считается так, чтобы
+      // объект в принципе не пересекал край канваса — прятать
+      // прозрачностью больше не нужно.
+      const travel = Math.min(150, verticalSafeTravel(pos[1], iconSize));
+      const from = [pos[0], pos[1] - travel];
       const land = 26;
       return {
         s: M.seq(
@@ -186,7 +203,8 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
 
     // «штамп»: замах вверх, резкий удар вниз, тряска
     case 'stamp': {
-      const high = [pos[0], pos[1] - 40];
+      const windup = Math.min(40, verticalSafeTravel(pos[1], iconSize));
+      const high = [pos[0], pos[1] - windup];
       const hit = 16;
       return {
         s: M.seq(
@@ -229,16 +247,16 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
   }
 }
 
-/* Прозрачность появления — общая для всех входов. */
+/* Прозрачность появления — общая для всех входов.
+   Раньше «падение» и «штамп» держали объект прозрачным 10-12 кадров,
+   пока он летел из-за края канваса — из-за этого Telegram, который
+   берёт превью стикера/эмодзи из ранних кадров, показывал в списке
+   пустую плашку (сама анимация при этом играла нормально). Теперь
+   entranceMotion считает высоту замаха/падения так, чтобы объект не
+   пересекал край канваса, поэтому прятать его прозрачностью не нужно —
+   держим ноль всего два кадра, как у остальных входов, чтобы не было
+   мигания на первом кадре при scale=0. */
 function entranceOpacity(kind, op) {
-  // «падение» и «штамп» стартуют выше центра — пока объект не вошёл
-  // в кадр целиком, он прозрачен: так он не нарушает правило Telegram
-  // «objects must not leave the canvas»
-  // держим ноль до самого входа в кадр: без промежуточного ключа
-  // прозрачность нарастала линейно с нулевого кадра и объект был
-  // уже частично виден, ещё находясь за краем
-  if (kind === 'drop') return M.seq(M.hold(0, 0), M.hold(9, 0), M.hold(12, 100), M.hold(op, 100));
-  if (kind === 'stamp') return M.seq(M.hold(0, 0), M.hold(8, 0), M.hold(10, 100), M.hold(op, 100));
   return M.seq(M.hold(0, 0), M.hold(2, 100), M.hold(op, 100));
 }
 
@@ -266,7 +284,7 @@ function buildSticker({
   const pos = center || [CX, CY];
 
   const style = { ...baseStyle(sw), ...iconStyleOverride };
-  let motion = entranceMotion(entrance, { pos, op });
+  let motion = entranceMotion(entrance, { pos, op, iconSize });
   if (patchMotion) motion = patchMotion(motion, { pos, op, M });
   const opacity = entranceOpacity(entrance, op);
 
