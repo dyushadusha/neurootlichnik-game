@@ -145,11 +145,11 @@ function popIn({ t0 = 0, dur = 26, from = 0, to = 100, lag = 3, bounces = 2.2, d
 }
 
 /* Появление с замахом: объект сначала чуть сжимается, потом выстреливает. */
-function popInAnticipated({ t0 = 0, dur = 30, to = 100, lag = 3, step = 2 } = {}) {
+function popInAnticipated({ t0 = 0, dur = 30, from = 0, to = 100, lag = 3, step = 2 } = {}) {
   return bake({
     t0,
     dur,
-    from: [0, 0],
+    from: [from, from],
     to: [to, to],
     curve: curves.anticipate({ back: 0.18, at: 0.26, k: 1.8 }),
     lag,

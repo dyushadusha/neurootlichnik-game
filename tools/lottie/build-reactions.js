@@ -47,7 +47,7 @@ function heart() {
     },
     patchMotion: (mo) => ({
       ...mo,
-      s: M.seq(M.popIn({ t0: 0, dur: 30, to: 100, lag: 3 }), M.heartbeat({ t0: 34, t1: 120, base: 100, amp: 0.11 })),
+      s: M.seq(M.popIn({ t0: 0, dur: 30, from: 62, to: 100, lag: 3 }), M.heartbeat({ t0: 34, t1: 120, base: 100, amp: 0.11 })),
     }),
   });
 }
@@ -64,7 +64,7 @@ function fire() {
     accents: { sparks: [[110, -140, 52, 22, 30]] },
     patchMotion: (mo, { pos }) => ({
       s: M.seq(
-        M.popIn({ t0: 0, dur: 26, to: 100, lag: 4 }),
+        M.popIn({ t0: 0, dur: 26, from: 62, to: 100, lag: 4 }),
         // пламя живёт неровным ритмом: вертикаль тянется, горизонталь поджимается
         M.breathe({ t0: 30, t1: 110, base: 100, amp: 5.5, cycles: 3, phaseLag: 0.5 })
       ),
@@ -476,7 +476,7 @@ function eyes() {
       patchMotion: (mo) => ({
         ...mo,
         // очки надеваются пружиной, потом дважды моргают
-        s: M.seq(M.popIn({ t0: 0, dur: 28, to: 100, lag: 3 }), M.blink({ t0: 34, t1: OP, at: [48, 88], dur: 9 })),
+        s: M.seq(M.popIn({ t0: 0, dur: 28, from: 62, to: 100, lag: 3 }), M.blink({ t0: 34, t1: OP, at: [48, 88], dur: 9 })),
         r: M.seq(M.wobble({ t0: 2, dur: 34, amp: 11 }), M.sway({ t0: 38, t1: OP, amp: 2.4, cycles: 1 })),
       }),
     }),

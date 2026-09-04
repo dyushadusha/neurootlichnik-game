@@ -120,7 +120,7 @@ function iconWink() {
       ...mo,
       // на подмигивании знак чуть кивает — как живое лицо
       r: M.seq(M.wobble({ t0: 2, dur: 34, amp: 9 }), M.sway({ t0: 40, t1: OP, amp: 3.5, cycles: 2 })),
-      s: M.seq(M.popIn({ t0: 0, dur: 30, to: 100, lag: 3 }), M.breathe({ t0: 34, t1: OP, base: 100, amp: 2.4, cycles: 1 })),
+      s: M.seq(M.popIn({ t0: 0, dur: 30, from: 62, to: 100, lag: 3 }), M.breathe({ t0: 34, t1: OP, base: 100, amp: 2.4, cycles: 1 })),
     }),
   });
 
@@ -191,7 +191,7 @@ function iconSwing() {
   const motion = {
     p: M.seq(M.hold(0, [CXY[0], CXY[1] - PIVOT])),
     s: M.seq(
-      M.popIn({ t0: 0, dur: 24, to: 100, lag: 3 }),
+      M.popIn({ t0: 0, dur: 24, from: 62, to: 100, lag: 3 }),
       M.breathe({ t0: 30, t1: OP, base: 100, amp: 2, cycles: 1 })
     ),
     r: M.seq(
@@ -257,7 +257,7 @@ function iconPulse() {
         entrance: 'pop',
         patchMotion: (mo) => ({
           ...mo,
-          s: M.seq(M.popIn({ t0: 0, dur: 30, to: 100, lag: 3 }), M.breathe({ t0: 34, t1: OP, base: 100, amp: 3.4, cycles: 3 })),
+          s: M.seq(M.popIn({ t0: 0, dur: 30, from: 62, to: 100, lag: 3 }), M.breathe({ t0: 34, t1: OP, base: 100, amp: 3.4, cycles: 3 })),
         }),
       }),
       ...rings,
@@ -298,7 +298,7 @@ function iconOrbit() {
         entrance: 'pop',
         patchMotion: (mo) => ({
           ...mo,
-          s: M.seq(M.popIn({ t0: 0, dur: 30, to: 100, lag: 3 }), M.breathe({ t0: 34, t1: OP, base: 100, amp: 2.6, cycles: 2 })),
+          s: M.seq(M.popIn({ t0: 0, dur: 30, from: 62, to: 100, lag: 3 }), M.breathe({ t0: 34, t1: OP, base: 100, amp: 2.6, cycles: 2 })),
           r: M.seq(M.wobble({ t0: 2, dur: 38, amp: 10 }), M.sway({ t0: 40, t1: OP, amp: 3, cycles: 1 })),
         }),
       }),

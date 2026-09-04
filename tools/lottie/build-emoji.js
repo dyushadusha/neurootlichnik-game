@@ -74,15 +74,15 @@ const SET = [
 /* Индивидуальные ритмы: эмодзи должен «жить» в строке, а не
    застывать после появления. */
 const PATCHES = {
-  beat: (mo) => ({ ...mo, s: M.seq(M.popIn({ t0: 0, dur: 26, to: 100, lag: 3 }), M.heartbeat({ t0: 30, t1: OP, base: 100, amp: 0.13 })) }),
+  beat: (mo) => ({ ...mo, s: M.seq(M.popIn({ t0: 0, dur: 26, from: 62, to: 100, lag: 3 }), M.heartbeat({ t0: 30, t1: OP, base: 100, amp: 0.13 })) }),
   flicker: (mo) => ({
     ...mo,
-    s: M.seq(M.popIn({ t0: 0, dur: 24, to: 100, lag: 4 }), M.breathe({ t0: 28, t1: OP, base: 100, amp: 6, cycles: 2, phaseLag: 0.5 })),
+    s: M.seq(M.popIn({ t0: 0, dur: 24, from: 62, to: 100, lag: 4 }), M.breathe({ t0: 28, t1: OP, base: 100, amp: 6, cycles: 2, phaseLag: 0.5 })),
     r: M.seq(M.wobble({ t0: 2, dur: 26, amp: 9 }), M.jitter({ t0: 28, t1: OP, amp: 4, seed: 11, step: 5 })),
   }),
-  blink: (mo) => ({ ...mo, s: M.seq(M.popIn({ t0: 0, dur: 26, to: 100, lag: 3 }), M.blink({ t0: 30, t1: OP, at: [40, 62], dur: 7 })) }),
+  blink: (mo) => ({ ...mo, s: M.seq(M.popIn({ t0: 0, dur: 26, from: 62, to: 100, lag: 3 }), M.blink({ t0: 30, t1: OP, at: [40, 62], dur: 7 })) }),
   tick: (mo) => ({ ...mo, r: M.seq(M.wobble({ t0: 2, dur: 30, amp: 12 }), M.sway({ t0: 34, t1: OP, amp: 7, cycles: 2 })) }),
-  wave: (mo) => ({ ...mo, s: M.seq(M.popIn({ t0: 0, dur: 24, to: 100, lag: 3 }), M.breathe({ t0: 28, t1: OP, base: 100, amp: 5, cycles: 2 })) }),
+  wave: (mo) => ({ ...mo, s: M.seq(M.popIn({ t0: 0, dur: 24, from: 62, to: 100, lag: 3 }), M.breathe({ t0: 28, t1: OP, base: 100, amp: 5, cycles: 2 })) }),
 };
 
 function buildAll() {

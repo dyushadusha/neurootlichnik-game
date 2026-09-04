@@ -156,10 +156,13 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100, iconSize 
   const S = iconScale;
   switch (kind) {
     // мягкое пружинное появление с замахом — база набора
+    // старт не с нуля, а с ~1/3 размера: Telegram берёт превью пака
+    // из ранних кадров, и на нулевом масштабе иконка на превью не
+    // видна вообще, хотя сама анимация проигрывается нормально
     case 'pop':
       return {
         s: M.seq(
-          M.popIn({ t0: 0, dur: 30, to: S, lag: 3, bounces: 2.2, decay: 5.2 }),
+          M.popIn({ t0: 0, dur: 30, from: S * 0.62, to: S, lag: 3, bounces: 2.2, decay: 5.2 }),
           M.breathe({ t0: settle, t1: op, base: S, amp: S * 0.025, cycles: 1 })
         ),
         r: M.seq(M.wobble({ t0: 2, dur: 38, amp: 10 }), M.sway({ t0: settle, t1: op, amp: 1.6, cycles: 1 })),
@@ -170,7 +173,7 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100, iconSize 
     case 'anticipate':
       return {
         s: M.seq(
-          M.popInAnticipated({ t0: 0, dur: 34, to: S, lag: 3 }),
+          M.popInAnticipated({ t0: 0, dur: 34, from: S * 0.62, to: S, lag: 3 }),
           M.breathe({ t0: settle + 4, t1: op, base: S, amp: S * 0.03, cycles: 1 })
         ),
         r: M.seq(M.wobble({ t0: 6, dur: 40, amp: 14 }), M.sway({ t0: settle + 4, t1: op, amp: 2, cycles: 1 })),
@@ -219,16 +222,20 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100, iconSize 
     }
 
     // разворот «в профиль»: X проходит через ноль — эффект флипа
-    case 'flip':
+    case 'flip': {
+      // X=0 на первом кадре — иконка буквально нулевой ширины, значит
+      // пустая для превью пака; начинаем с узкого, но видимого профиля
+      const startX = S * 0.55;
       return {
         s: M.seq(
-          M.hold(0, [0, S * 0.9]),
-          M.bake({ t0: 0, dur: 34, from: [0, S * 0.9], to: [S, S], curve: M.curves.spring({ bounces: 2.4, decay: 5 }), lag: 4 }),
+          M.hold(0, [startX, S * 0.9]),
+          M.bake({ t0: 0, dur: 34, from: [startX, S * 0.9], to: [S, S], curve: M.curves.spring({ bounces: 2.4, decay: 5 }), lag: 4 }),
           M.breathe({ t0: settle + 6, t1: op, base: S, amp: S * 0.022, cycles: 1 })
         ),
         r: M.seq(M.wobble({ t0: 8, dur: 36, amp: 8 }), M.sway({ t0: settle + 6, t1: op, amp: 1.4, cycles: 1 })),
         p: M.seq(M.hold(0, pos)),
       };
+    }
 
     // наплыв из крупного плана с растяжкой вместо мото-блюра
     case 'zoom':
@@ -248,16 +255,18 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100, iconSize 
 }
 
 /* Прозрачность появления — общая для всех входов.
-   Раньше «падение» и «штамп» держали объект прозрачным 10-12 кадров,
-   пока он летел из-за края канваса — из-за этого Telegram, который
-   берёт превью стикера/эмодзи из ранних кадров, показывал в списке
-   пустую плашку (сама анимация при этом играла нормально). Теперь
-   entranceMotion считает высоту замаха/падения так, чтобы объект не
-   пересекал край канваса, поэтому прятать его прозрачностью не нужно —
-   держим ноль всего два кадра, как у остальных входов, чтобы не было
-   мигания на первом кадре при scale=0. */
-function entranceOpacity(kind, op) {
-  return M.seq(M.hold(0, 0), M.hold(2, 100), M.hold(op, 100));
+   Раньше здесь был двухкадровый прыжок с 0 до 100: сам по себе он
+   безобиден для проигрывания, но Telegram строит статичное превью
+   стикера/эмодзи в списке пака из САМОГО РАННЕГО кадра, и при
+   прозрачности 0 на нём превью получалось пустым — анимация при этом
+   играла нормально, стоило открыть пак. Раньше это маскировалось тем,
+   что и масштаб иконки на нулевом кадре был нулевым (см. entranceMotion:
+   pop/anticipate/flip стартовали от size=0) — то есть кадр был бы пуст
+   даже при полной непрозрачности. Теперь оба свойства ненулевые с
+   самого первого кадра — превью показывает узнаваемую, просто ещё не
+   доигравшую до конца иконку. */
+function entranceOpacity() {
+  return M.seq(M.hold(0, 100));
 }
 
 // =========================================================
