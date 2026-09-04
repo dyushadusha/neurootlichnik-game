@@ -50,11 +50,23 @@ function checkAnimatable(file, label, prop, expectDim) {
       lastT = kfr.t;
       if (!Array.isArray(kfr.s)) err(file, `${label} kf${idx}: "s" не массив`);
       else kfr.s.forEach((n, i) => checkNumber(file, `${label} kf${idx}.s[${i}]`, n));
-      if (!kfr.h) {
-        if (idx < prop.k.length - 1) {
-          if (!Array.isArray(kfr.e)) err(file, `${label} kf${idx}: нет "e" для не-последнего кейфрейма`);
-        }
+      const isLast = idx === prop.k.length - 1;
+      /* Два правила ради rlottie — движка, на котором Telegram
+         проигрывает .tgs. Он строже lottie-web, и нарушение любого
+         из них даёт не кривую анимацию, а полностью пустой стикер:
+         значение свойства застревает на первом ключе, а стартовый
+         масштаб у входов нулевой. */
+      if (isLast) {
+        if (kfr.i || kfr.o) err(file, `${label} kf${idx}: у последнего ключа не должно быть easing i/o`);
+        if (kfr.e) err(file, `${label} kf${idx}: у последнего ключа не должно быть "e"`);
+      } else if (!kfr.h) {
+        if (!Array.isArray(kfr.e)) err(file, `${label} kf${idx}: нет "e" для не-последнего кейфрейма`);
         if (!kfr.i || !kfr.o) err(file, `${label} kf${idx}: нет easing i/o`);
+        for (const [side, ease] of [['o', kfr.o], ['i', kfr.i]]) {
+          for (const x of (ease && ease.x) || []) {
+            if (x <= 0 || x >= 1) err(file, `${label} kf${idx}: вырожденный easing ${side}.x=${x} (rlottie ломается)`);
+          }
+        }
       }
     });
   } else {

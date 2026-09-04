@@ -89,6 +89,10 @@ function convert(file) {
   return { name, size: gz.length, out };
 }
 
+// чистим папку назначения, иначе рядом с новыми останутся файлы
+// прошлой сборки и в пак уедет устаревшая версия
+fs.rmSync(DEST, { recursive: true, force: true });
+
 const files = fs.readdirSync(SRC).filter((f) => f.endsWith('.json'));
 const done = [];
 const skipped = [];

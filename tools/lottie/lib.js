@@ -265,18 +265,28 @@ function dimOf(v) {
 function asArr(v) {
   return Array.isArray(v) ? v : [v];
 }
-function easeOut(dim) {
-  return { x: new Array(dim).fill(0.42), y: new Array(dim).fill(0) };
+function easeOut() {
+  return { x: [0.42], y: [0] };
 }
-function easeIn(dim) {
-  return { x: new Array(dim).fill(0.58), y: new Array(dim).fill(1) };
+function easeIn() {
+  return { x: [0.58], y: [1] };
 }
 
-function linearOut(dim) {
-  return { x: new Array(dim).fill(0), y: new Array(dim).fill(0) };
+/* Easing пишется одним значением, как это делает Bodymovin.
+
+   ВАЖНО про rlottie (движок Telegram, он строже lottie-web):
+   • вырожденные ручки (x = 0 или x = 1) он не переваривает — свойство
+     застревает на стартовом значении, а поскольку почти все входы
+     стартуют с нулевого масштаба, стикер выходит полностью пустым;
+     поэтому строго линейная кривая задаётся как cubic-bezier
+     (1/3, 1/3, 2/3, 2/3) — математически то же самое, но валидно;
+   • у ПОСЛЕДНЕГО ключа не должно быть i/o вообще — он терминатор
+     (только t и s). С easing на нём rlottie ломает всё свойство. */
+function linearOut() {
+  return { x: [0.333], y: [0.333] };
 }
-function linearIn(dim) {
-  return { x: new Array(dim).fill(1), y: new Array(dim).fill(1) };
+function linearIn() {
+  return { x: [0.667], y: [0.667] };
 }
 
 /* list: [{t, v, hold?, linear?}] -> массив ключей Lottie.
@@ -284,14 +294,16 @@ function linearIn(dim) {
    движения уже задана плотными сэмплами, и лишний ease между ними
    только размазал бы пружину. */
 function keyframes(list) {
+  const last = list.length - 1;
   return list.map((kfr, idx) => {
-    const dim = dimOf(kfr.v);
     const val = asArr(kfr.v);
+    // последний ключ — терминатор: только время и значение
+    if (idx === last) return { t: kfr.t, s: val };
     if (kfr.hold) return { t: kfr.t, s: val, h: 1 };
     const obj = kfr.linear
-      ? { t: kfr.t, s: val, o: linearOut(dim), i: linearIn(dim) }
-      : { t: kfr.t, s: val, o: easeOut(dim), i: easeIn(dim) };
-    if (idx < list.length - 1) obj.e = asArr(list[idx + 1].v);
+      ? { t: kfr.t, s: val, o: linearOut(), i: linearIn() }
+      : { t: kfr.t, s: val, o: easeOut(), i: easeIn() };
+    obj.e = asArr(list[idx + 1].v);
     return obj;
   });
 }
