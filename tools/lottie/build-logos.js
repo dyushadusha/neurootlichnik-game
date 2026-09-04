@@ -525,7 +525,7 @@ const ALL = [
   wordmarkType,
 ];
 
-module.exports = { ALL, brandMark, brandMarkSubpaths };
+module.exports = { ALL, brandMark, brandMarkSubpaths, wordmarkGlyphs };
 
 if (require.main === module) {
   console.log('Логотипы:');
