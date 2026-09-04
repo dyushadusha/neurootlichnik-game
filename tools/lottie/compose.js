@@ -104,7 +104,7 @@ function ringLayer({ pos, t0 = 10, size = 150, grow = 2.4, color = BRAND.ink, wi
 }
 
 /* Лучи удара — короткие штрихи, разлетающиеся из центра. */
-function burstLayers({ pos, count = 8, t0 = 10, radius = 200, len = 40, width = 12, color = BRAND.ink, op }) {
+function burstLayers({ pos, count = 8, t0 = 10, radius = 190, len = 40, width = 12, color = BRAND.ink, op }) {
   const layers = [];
   for (let i = 0; i < count; i++) {
     const angle = (i * 360) / count - 90;
@@ -168,13 +168,15 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
 
     // падение сверху с отскоком и сплющиванием на посадке
     case 'drop': {
-      const from = [pos[0], pos[1] - 260];
+      // Telegram требует, чтобы объект не выходил за канвас, поэтому
+      // падение короче, а первые кадры объект ещё прозрачен
+      const from = [pos[0], pos[1] - 150];
       const land = 26;
       return {
         s: M.seq(
           M.hold(0, [S * 0.86, S * 1.18]),
           M.bake({ t0: 6, dur: 20, from: [S * 0.86, S * 1.18], to: [S, S], curve: M.curves.easeOut, step: 3 }),
-          M.squash({ t: land, amount: 0.26, recover: 24, base: S }),
+          M.squash({ t: land, amount: 0.17, recover: 24, base: S }),
           M.breathe({ t0: settle + 16, t1: op, base: S, amp: S * 0.022, cycles: 1 })
         ),
         r: M.seq(M.hold(0, -6), M.wobble({ t0: land, dur: 40, amp: 9 }), M.sway({ t0: settle + 16, t1: op, amp: 1.4, cycles: 1 })),
@@ -184,13 +186,13 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
 
     // «штамп»: замах вверх, резкий удар вниз, тряска
     case 'stamp': {
-      const high = [pos[0], pos[1] - 120];
+      const high = [pos[0], pos[1] - 76];
       const hit = 16;
       return {
         s: M.seq(
-          M.hold(0, [S * 1.34, S * 1.34]),
-          M.bake({ t0: 0, dur: hit, from: [S * 1.34, S * 1.34], to: [S * 1.02, S * 0.9], curve: M.curves.expoIn, step: 2 }),
-          M.squash({ t: hit, amount: 0.3, recover: 26, base: S }),
+          M.hold(0, [S * 1.16, S * 1.16]),
+          M.bake({ t0: 0, dur: hit, from: [S * 1.16, S * 1.16], to: [S * 1.02, S * 0.9], curve: M.curves.expoIn, step: 2 }),
+          M.squash({ t: hit, amount: 0.2, recover: 26, base: S }),
           M.breathe({ t0: settle + 16, t1: op, base: S, amp: S * 0.02, cycles: 1 })
         ),
         r: M.seq(M.hold(0, 8), M.bake({ t0: 0, dur: hit, from: 8, to: 0, curve: M.curves.expoIn, step: 2 }), M.wobble({ t0: hit, dur: 34, amp: 7 })),
@@ -214,8 +216,8 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
     case 'zoom':
       return {
         s: M.seq(
-          M.hold(0, [S * 2.3, S * 2.3]),
-          M.bake({ t0: 0, dur: 26, from: [S * 2.3, S * 2.3], to: [S, S], curve: M.curves.spring({ bounces: 1.9, decay: 5.6 }), lag: 3 }),
+          M.hold(0, [S * 1.24, S * 1.24]),
+          M.bake({ t0: 0, dur: 26, from: [S * 1.24, S * 1.24], to: [S, S], curve: M.curves.spring({ bounces: 1.9, decay: 5.6 }), lag: 3 }),
           M.breathe({ t0: settle, t1: op, base: S, amp: S * 0.024, cycles: 1 })
         ),
         r: M.seq(M.hold(0, -10), M.wobble({ t0: 4, dur: 36, amp: 10 })),
@@ -229,7 +231,11 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
 
 /* Прозрачность появления — общая для всех входов. */
 function entranceOpacity(kind, op) {
-  if (kind === 'drop' || kind === 'stamp') return M.seq(M.hold(0, 100));
+  // «падение» и «штамп» стартуют выше центра — пока объект не вошёл
+  // в кадр целиком, он прозрачен: так он не нарушает правило Telegram
+  // «objects must not leave the canvas»
+  if (kind === 'drop') return M.seq(M.hold(0, 0), M.hold(8, 100), M.hold(op, 100));
+  if (kind === 'stamp') return M.seq(M.hold(0, 0), M.hold(5, 100), M.hold(op, 100));
   return M.seq(M.hold(0, 0), M.hold(2, 100), M.hold(op, 100));
 }
 

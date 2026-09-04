@@ -171,21 +171,37 @@ function rectItem({ p = [0, 0], s = [50, 50], r = 0 } = {}, nm = 'Rect') {
   return { ty: 'rc', p: { a: 0, k: p }, s: { a: 0, k: s }, r: { a: 0, k: r }, nm, d: 1 };
 }
 
-// sy: 1 = звезда, 2 = многоугольник
+/* Звезда/многоугольник (sy: 1 = звезда, 2 = многоугольник).
+
+   Telegram НЕ поддерживает в .tgs параметрический Star Shape (ty:"sr") —
+   такой файл бот @Stickers отклоняет целиком. Поэтому звезда считается
+   здесь по вершинам и отдаётся обычным контуром (ty:"sh"), который
+   поддерживается везде. Сигнатура осталась прежней, так что все места
+   вызова не меняются.
+
+   os/is — скругление внешних и внутренних углов в процентах: тангенсы
+   направляются по касательной к окружности вершины. */
 function starItem({ p = [0, 0], pt = 5, or_ = 50, ir = 25, os = 0, is = 0, rot = 0, sy = 1 } = {}, nm = 'Star') {
-  return {
-    ty: 'sr',
-    p: { a: 0, k: p },
-    pt: { a: 0, k: pt },
-    or: { a: 0, k: or_ },
-    ir: { a: 0, k: ir },
-    os: { a: 0, k: os },
-    is: { a: 0, k: is },
-    r: { a: 0, k: rot },
-    sy,
-    nm,
-    d: 1,
-  };
+  const total = sy === 2 ? pt : pt * 2;
+  const v = [];
+  const inT = [];
+  const outT = [];
+  for (let i = 0; i < total; i++) {
+    const outer = sy === 2 || i % 2 === 0;
+    const r = outer ? or_ : ir;
+    const round = (outer ? os : is) / 100;
+    const ang = ((rot + (i * 360) / total) * Math.PI) / 180;
+    const cx = Math.cos(ang) * r;
+    const cy = Math.sin(ang) * r;
+    v.push([round4(p[0] + cx), round4(p[1] + cy)]);
+    // касательная к окружности в этой вершине
+    const tx = -Math.sin(ang);
+    const ty = Math.cos(ang);
+    const len = round ? r * round * (Math.PI / total) : 0;
+    inT.push([round4(-tx * len), round4(-ty * len)]);
+    outT.push([round4(tx * len), round4(ty * len)]);
+  }
+  return { ty: 'sh', ks: { a: 0, k: { i: inT, o: outT, v, c: true } }, nm, ix: 1 };
 }
 
 /* rule: 1 — nonzero (по умолчанию), 2 — even-odd. Чётно-нечётное

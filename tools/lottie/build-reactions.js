@@ -87,7 +87,7 @@ function thumbsUp() {
     iconSize: 300,
     center: [CX + 6, CY + 10],
     accents: {
-      burst: { count: 6, t0: 14, radius: 230, len: 44, width: 14 },
+      burst: { count: 6, t0: 14, radius: 192, len: 44, width: 14 },
       sparks: [[112, -132, 62, 18, -24]],
     },
   });
@@ -124,8 +124,8 @@ function lightbulb() {
   for (let i = 0; i < RAYS; i++) {
     const a = (i * 360) / RAYS - 90;
     const rad = (a * Math.PI) / 180;
-    const near = [pos[0] + Math.cos(rad) * 168, pos[1] + Math.sin(rad) * 168];
-    const far = [pos[0] + Math.cos(rad) * 208, pos[1] + Math.sin(rad) * 208];
+    const near = [pos[0] + Math.cos(rad) * 150, pos[1] + Math.sin(rad) * 150];
+    const far = [pos[0] + Math.cos(rad) * 186, pos[1] + Math.sin(rad) * 186];
     const t0 = 22 + i * 2;
     rays.push(
       L.shapeLayer(`Ray ${i}`, [
@@ -169,7 +169,7 @@ function perfect() {
     entrance: 'stamp',
     iconSize: 330,
     accents: {
-      burst: { count: 10, t0: 16, radius: 250, len: 46, width: 14 },
+      burst: { count: 10, t0: 16, radius: 196, len: 46, width: 14 },
       ring: { t0: 16, size: 200 },
       sparks: [
         [150, -140, 58, 24, 26],
@@ -241,7 +241,7 @@ function confetti() {
     ks: {
       a: L.staticProp([0, 0]),
       p: L.staticProp([CX, CY]),
-      s: L.animProp(M.seq(M.hold(0, [20, 20]), M.bake({ t0: 0, dur: 16, from: [20, 20], to: [210, 210], curve: M.curves.expoOut, step: 2 }))),
+      s: L.animProp(M.seq(M.hold(0, [20, 20]), M.bake({ t0: 0, dur: 16, from: [20, 20], to: [180, 180], curve: M.curves.expoOut, step: 2 }))),
       o: L.animProp(M.seq(M.hold(0, 100), M.bake({ t0: 0, dur: 16, from: 100, to: 0, curve: M.curves.easeOut, step: 2 }), M.hold(OP, 0))),
     },
   });
@@ -308,7 +308,7 @@ function gradcap() {
   });
 
   emit('reaction-gradcap', OP, [
-    ...C.burstLayers({ pos: [CX, CY + 40], op: OP, count: 6, t0: 26, radius: 210, len: 40, width: 12 }),
+    ...C.burstLayers({ pos: [CX, CY + 40], op: OP, count: 6, t0: 26, radius: 188, len: 40, width: 12 }),
     C.sparkLayer({ pos: [CX - 150, CY - 120], size: 60, t0: 30, spin: 24, op: OP }),
     tassel,
     capLayer,
@@ -326,7 +326,7 @@ function clap() {
   const hands = [];
   for (const side of [-1, 1]) {
     const rest = [CX + side * 44, CY + 14];
-    const wide = [CX + side * 190, CY + 40];
+    const wide = [CX + side * 120, CY + 30];
     hands.push(
       L.shapeLayer(side < 0 ? 'Hand L' : 'Hand R', [C.iconGroup('clapHand', baseStyle(13), 230, 'icon', { mirror: side > 0 })], {
         op: OP,
@@ -349,7 +349,7 @@ function clap() {
     );
   }
   emit('reaction-clap', OP, [
-    ...C.burstLayers({ pos: [CX, CY + 10], op: OP, count: 8, t0: HIT, radius: 220, len: 42, width: 13 }),
+    ...C.burstLayers({ pos: [CX, CY + 10], op: OP, count: 8, t0: HIT, radius: 190, len: 42, width: 13 }),
     C.ringLayer({ pos: [CX, CY + 10], t0: HIT, size: 150, op: OP }),
     ...hands,
   ]);
@@ -361,7 +361,7 @@ function clap() {
 function rocket() {
   L.resetLayerIndex();
   const OP = 126;
-  const start = [CX, CY + 190];
+  const start = [CX, CY + 150];
   const peak = [CX, CY - 10];
 
   // след: штрихи, убегающие вниз
@@ -386,7 +386,7 @@ function rocket() {
     p: M.seq(
       M.hold(0, start),
       // приседание перед стартом, затем выброс вверх
-      M.bake({ t0: 0, dur: 10, from: start, to: [CX, CY + 214], curve: M.curves.easeOut, step: 2 }),
+      M.bake({ t0: 0, dur: 10, from: start, to: [CX, CY + 168], curve: M.curves.easeOut, step: 2 }),
       M.bake({ t0: 10, dur: 26, from: [CX, CY + 214], to: peak, curve: M.curves.spring({ bounces: 1.7, decay: 5.4 }), step: 2 }),
       M.sway({ t0: 40, t1: OP, base: peak[1], amp: 12, cycles: 1 }).map((k) => ({ ...k, v: [CX, k.v] }))
     ),
@@ -472,7 +472,7 @@ function eyes() {
       op: OP,
       icon: 'glasses',
       entrance: 'pop',
-      iconSize: 340,
+      iconSize: 300,
       patchMotion: (mo) => ({
         ...mo,
         // очки надеваются пружиной, потом дважды моргают
@@ -493,7 +493,7 @@ function crown() {
     iconSize: 320,
     center: [CX, CY + 10],
     accents: {
-      burst: { count: 7, t0: 26, radius: 230, len: 40, width: 12 },
+      burst: { count: 7, t0: 26, radius: 192, len: 40, width: 12 },
       sparks: [
         [-150, -104, 58, 32, -24],
         [152, -96, 50, 38, 26],
@@ -509,17 +509,17 @@ function crown() {
 function bolt() {
   L.resetLayerIndex();
   const OP = 112;
-  const flashLayer = L.shapeLayer('Flash', [L.groupItem('f', [L.ellipseItem({ p: [0, 0], s: [300, 300] }), L.fillItem(BRAND.lime)])], {
+  const flashLayer = L.shapeLayer('Flash', [L.groupItem('f', [L.ellipseItem({ p: [0, 0], s: [240, 240] }), L.fillItem(BRAND.lime)])], {
     op: OP,
     ks: {
       a: L.staticProp([0, 0]),
       p: L.staticProp([CX, CY]),
-      s: L.animProp(M.seq(M.hold(0, [30, 30]), M.hold(14, [40, 40]), M.bake({ t0: 15, dur: 20, from: [60, 60], to: [230, 230], curve: M.curves.expoOut, step: 2 }))),
+      s: L.animProp(M.seq(M.hold(0, [30, 30]), M.hold(14, [40, 40]), M.bake({ t0: 15, dur: 20, from: [60, 60], to: [190, 190], curve: M.curves.expoOut, step: 2 }))),
       o: L.animProp(M.seq(M.hold(0, 0), M.hold(14, 0), M.hold(16, 70), M.bake({ t0: 16, dur: 20, from: 70, to: 0, curve: M.curves.easeOut, step: 3 }), M.hold(OP, 0))),
     },
   });
   emit('reaction-bolt', OP, [
-    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 8, t0: 16, radius: 250, len: 48, width: 14 }),
+    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 8, t0: 16, radius: 196, len: 48, width: 14 }),
     ...C.buildSticker({
       canvas: W,
       op: OP,
@@ -541,7 +541,7 @@ function trophy() {
     entrance: 'anticipate',
     iconSize: 310,
     accents: {
-      burst: { count: 8, t0: 20, radius: 240, len: 42, width: 12, color: BRAND.lime },
+      burst: { count: 8, t0: 20, radius: 194, len: 42, width: 12, color: BRAND.lime },
       ring: { t0: 20, size: 170 },
       sparks: [
         [140, -120, 58, 26, 26],
@@ -558,7 +558,7 @@ function hundred() {
   L.resetLayerIndex();
   const OP = 124;
   emit('reaction-hundred', OP, [
-    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 8, t0: 18, radius: 250, len: 44, width: 13 }),
+    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 8, t0: 18, radius: 196, len: 44, width: 13 }),
     C.ringLayer({ pos: [CX, CY], t0: 18, size: 190, op: OP }),
     C.sparkLayer({ pos: [CX + 150, CY - 130], size: 58, t0: 26, spin: 26, op: OP }),
     C.sparkLayer({ pos: [CX - 156, CY - 112], size: 46, t0: 34, spin: -22, op: OP }),
@@ -567,7 +567,7 @@ function hundred() {
       op: OP,
       icon: 'hundred',
       entrance: 'stamp',
-      iconSize: 360,
+      iconSize: 300,
     }),
   ]);
 }
@@ -578,11 +578,11 @@ function hundred() {
 function gem() {
   L.resetLayerIndex();
   const OP = 122;
-  const glint = L.shapeLayer('Glint', [L.groupItem('g', [L.rectItem({ p: [0, 0], s: [46, 320], r: 23 }), L.fillItem(BRAND.white)])], {
+  const glint = L.shapeLayer('Glint', [L.groupItem('g', [L.rectItem({ p: [0, 0], s: [40, 300], r: 20 }), L.fillItem(BRAND.white)])], {
     op: OP,
     ks: {
       a: L.staticProp([0, 0]),
-      p: L.animProp(M.seq(M.hold(0, [CX - 190, CY]), M.hold(40, [CX - 190, CY]), M.bake({ t0: 40, dur: 26, from: [CX - 190, CY], to: [CX + 190, CY], curve: M.curves.easeInOut, step: 2 }), M.hold(OP, [CX + 190, CY]))),
+      p: L.animProp(M.seq(M.hold(0, [CX - 150, CY]), M.hold(40, [CX - 150, CY]), M.bake({ t0: 40, dur: 26, from: [CX - 150, CY], to: [CX + 150, CY], curve: M.curves.easeInOut, step: 2 }), M.hold(OP, [CX + 150, CY]))),
       r: L.staticProp(24),
       o: L.animProp(M.seq(M.hold(0, 0), M.hold(40, 0), M.hold(46, 62), M.hold(60, 62), M.hold(66, 0), M.hold(OP, 0))),
     },
@@ -607,7 +607,7 @@ function wow() {
   L.resetLayerIndex();
   const OP = 116;
   emit('reaction-wow', OP, [
-    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 12, t0: 8, radius: 250, len: 52, width: 13, color: BRAND.ink }),
+    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 12, t0: 8, radius: 196, len: 52, width: 13, color: BRAND.ink }),
     C.ringLayer({ pos: [CX, CY], t0: 8, size: 150, op: OP, width: 12 }),
     C.ringLayer({ pos: [CX, CY], t0: 18, size: 150, op: OP, width: 8, color: BRAND.lime }),
     ...C.buildSticker({

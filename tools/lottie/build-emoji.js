@@ -2,11 +2,13 @@
 /* =========================================================
    КАСТОМНЫЕ ЭМОДЗИ — 20 штук, канвас 100×100, 60 fps
    =========================================================
-   Отдельный формат: Telegram показывает кастомные эмодзи в
-   размере строки текста, поэтому здесь другие правила, чем у
-   реакций — крупный силуэт, утолщённая обводка, короткий
-   энергичный вход и минимум мелких акцентов, которые всё равно
-   не прочитаются на 20 пикселях.
+   Канвас — те же 512×512, что и у стикеров: Telegram требует этот
+   размер для ВСЕХ анимированных .tgs, включая кастомные эмодзи
+   (100×100 — это про статичные картинки-эмодзи, не про анимацию).
+   Отличается не размер файла, а рисунок: Telegram показывает эмодзи
+   в размере строки текста, поэтому силуэт крупнее, обводка толще,
+   вход короче и почти нет мелких акцентов — на 20 пикселях они
+   всё равно не прочитаются.
    ========================================================= */
 
 const path = require('path');
@@ -16,11 +18,11 @@ const C = require('./compose');
 const { BRAND } = require('./icons');
 
 const OUT_DIR = path.join(__dirname, '..', '..', 'assets', 'lottie');
-const SIZE = 100;
+const SIZE = 512;
 const FR = 60;
 const OP = 76; // ~1,3 c — эмодзи должен «отыграть» быстро
-const ICON = 72;
-const SW = 17; // обводка целиком снаружи (см. icons.paint) → ≈6 px на канвасе 100
+const ICON = 300; // крупнее, чем у реакций, но с запасом: объекты не должны выходить за канвас
+const SW = 17; // обводка целиком снаружи (см. icons.paint) — вдвое толще, чем у реакций
 
 function emoji(nm, opts) {
   L.resetLayerIndex();
@@ -29,7 +31,7 @@ function emoji(nm, opts) {
     op: OP,
     iconSize: ICON,
     sw: SW,
-    shadowOffset: 3,
+    shadowOffset: 14,
     ...opts,
   });
   L.writeJson(path.join(OUT_DIR, `emoji-${nm}.json`), L.animation({ w: SIZE, h: SIZE, fr: FR, op: OP, nm: `emoji-${nm}`, layers }));
@@ -38,18 +40,18 @@ function emoji(nm, opts) {
 /* Микро-искра сбоку — единственный акцент, который читается
    в размере строки. Задаётся в координатах канваса 100×100. */
 function tinySpark(dx, dy, t0 = 16) {
-  return { sparks: [[dx, dy, 20, t0, 24]] };
+  return { sparks: [[dx, dy, 92, t0, 24]] };
 }
 
 const SET = [
   // --- базовая реакция на текст ---
-  ['check', { icon: 'checkPlain', entrance: 'anticipate', ...tinySpark(26, -24) }],
-  ['cross', { icon: 'cross', entrance: 'stamp' }],
-  ['star', { icon: 'star', entrance: 'zoom', ...tinySpark(28, -22) }],
+  ['check', { icon: 'checkPlain', entrance: 'anticipate', ...tinySpark(126, -120) }],
+  ['cross', { icon: 'cross', entrance: 'anticipate' }],
+  ['star', { icon: 'star', entrance: 'pop', ...tinySpark(134, -112) }],
   ['heart', { icon: 'heart', entrance: 'pop', patch: 'beat' }],
   ['fire', { icon: 'fire', entrance: 'pop', patch: 'flicker' }],
-  ['spark', { icon: 'spark', entrance: 'zoom' }],
-  ['bolt', { icon: 'bolt', entrance: 'stamp' }],
+  ['spark', { icon: 'spark', entrance: 'pop' }],
+  ['bolt', { icon: 'bolt', entrance: 'anticipate' }],
 
   // --- навигация и акценты в постах ---
   ['arrow-up', { icon: 'arrowUp', entrance: 'drop' }],
@@ -66,7 +68,7 @@ const SET = [
   ['house', { icon: 'house', entrance: 'drop' }],
   ['camera', { icon: 'camera', entrance: 'pop' }],
   ['palette', { icon: 'palette', entrance: 'pop' }],
-  ['bulb', { icon: 'bulb', entrance: 'anticipate', ...tinySpark(26, -26) }],
+  ['bulb', { icon: 'bulb', entrance: 'anticipate', ...tinySpark(126, -128) }],
 ];
 
 /* Индивидуальные ритмы: эмодзи должен «жить» в строке, а не

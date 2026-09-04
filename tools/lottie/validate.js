@@ -181,16 +181,15 @@ function validateFile(fileName) {
 function checkTelegram(fileName) {
   const full = path.join(DIR, fileName);
   const data = JSON.parse(fs.readFileSync(full, 'utf8'));
-  const isEmoji = fileName.startsWith('emoji-');
   const isWide = fileName.startsWith('logo-wordmark') || fileName.startsWith('logo-lockup');
 
   const duration = (data.op - data.ip) / data.fr;
   if (duration > 3) err(fileName, `длительность ${duration.toFixed(2)} с — Telegram допускает максимум 3 с`);
   if (data.fr !== 30 && data.fr !== 60) err(fileName, `частота ${data.fr} fps — допустимы только 30 или 60`);
 
-  const expect = isEmoji ? 100 : 512;
-  if (!isWide && (data.w !== expect || data.h !== expect)) {
-    err(fileName, `канвас ${data.w}×${data.h}, ожидался ${expect}×${expect}`);
+  // 512×512 обязателен для всех анимированных .tgs, эмодзи в том числе
+  if (!isWide && (data.w !== 512 || data.h !== 512)) {
+    err(fileName, `канвас ${data.w}×${data.h}, ожидался 512×512`);
   }
 
   const gz = zlib.gzipSync(fs.readFileSync(full), { level: 9 }).length;

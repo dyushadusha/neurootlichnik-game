@@ -159,7 +159,7 @@ function iconWink() {
 function iconBounce() {
   markSticker('logo-icon-bounce', 132, {
     entrance: 'drop',
-    accents: { burst: { count: 6, t0: 26, radius: 220, len: 38, width: 12 }, ring: { t0: 26, size: 170 } },
+    accents: { burst: { count: 6, t0: 26, radius: 190, len: 38, width: 12 }, ring: { t0: 26, size: 170 } },
   });
 }
 
@@ -174,7 +174,7 @@ function iconStamp() {
   markSticker('logo-icon-stamp', 124, {
     entrance: 'stamp',
     accents: {
-      burst: { count: 10, t0: 16, radius: 250, len: 46, width: 14 },
+      burst: { count: 10, t0: 16, radius: 196, len: 46, width: 14 },
       ring: { t0: 16, size: 190 },
     },
   });
@@ -273,7 +273,7 @@ function iconOrbit() {
   const OP = 168;
   const CXY = [256, 256];
   const orbiters = [0, 0.33, 0.66].map((phase, i) => {
-    const pts = M.orbit({ t0: 0, t1: OP, cx: CXY[0], cy: CXY[1], r: 190, turns: 1, phase, step: 4 });
+    const pts = M.orbit({ t0: 0, t1: OP, cx: CXY[0], cy: CXY[1], r: 168, turns: 1, phase, step: 4 });
     return L.shapeLayer(`Orbiter ${i}`, [
       L.groupItem('o', [L.starItem({ p: [0, 0], pt: 4, or_: 26 - i * 4, ir: 8, sy: 1 }), L.fillItem(i === 1 ? BRAND.ink : BRAND.lime)]),
     ], {
