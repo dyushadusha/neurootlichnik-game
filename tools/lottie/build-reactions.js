@@ -374,7 +374,7 @@ function rocket() {
         op: OP,
         ks: {
           a: L.staticProp([0, 0]),
-          p: L.animProp(M.seq(M.hold(0, [x, CY + 130]), M.hold(t0, [x, CY + 130]), M.bake({ t0, dur: 40, from: [x, CY + 130], to: [x, CY + 300], curve: M.curves.easeOut, step: 3 }))),
+          p: L.animProp(M.seq(M.hold(0, [x, CY + 96]), M.hold(t0, [x, CY + 96]), M.bake({ t0, dur: 40, from: [x, CY + 96], to: [x, CY + 196], curve: M.curves.easeOut, step: 3 }))),
           s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(t0, [100, 130]), M.bake({ t0, dur: 40, from: [100, 130], to: [40, 30], curve: M.curves.easeOut, step: 4 }))),
           o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 100), M.hold(t0 + 34, 0))),
         },
