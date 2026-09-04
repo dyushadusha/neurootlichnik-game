@@ -234,8 +234,11 @@ function entranceOpacity(kind, op) {
   // «падение» и «штамп» стартуют выше центра — пока объект не вошёл
   // в кадр целиком, он прозрачен: так он не нарушает правило Telegram
   // «objects must not leave the canvas»
-  if (kind === 'drop') return M.seq(M.hold(0, 0), M.hold(8, 100), M.hold(op, 100));
-  if (kind === 'stamp') return M.seq(M.hold(0, 0), M.hold(5, 100), M.hold(op, 100));
+  // держим ноль до самого входа в кадр: без промежуточного ключа
+  // прозрачность нарастала линейно с нулевого кадра и объект был
+  // уже частично виден, ещё находясь за краем
+  if (kind === 'drop') return M.seq(M.hold(0, 0), M.hold(9, 0), M.hold(12, 100), M.hold(op, 100));
+  if (kind === 'stamp') return M.seq(M.hold(0, 0), M.hold(5, 0), M.hold(7, 100), M.hold(op, 100));
   return M.seq(M.hold(0, 0), M.hold(2, 100), M.hold(op, 100));
 }
 

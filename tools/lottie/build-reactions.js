@@ -361,7 +361,7 @@ function clap() {
 function rocket() {
   L.resetLayerIndex();
   const OP = 126;
-  const start = [CX, CY + 150];
+  const start = [CX, CY + 96];
   const peak = [CX, CY - 10];
 
   // след: штрихи, убегающие вниз
@@ -386,7 +386,7 @@ function rocket() {
     p: M.seq(
       M.hold(0, start),
       // приседание перед стартом, затем выброс вверх
-      M.bake({ t0: 0, dur: 10, from: start, to: [CX, CY + 168], curve: M.curves.easeOut, step: 2 }),
+      M.bake({ t0: 0, dur: 10, from: start, to: [CX, CY + 118], curve: M.curves.easeOut, step: 2 }),
       M.bake({ t0: 10, dur: 26, from: [CX, CY + 214], to: peak, curve: M.curves.spring({ bounces: 1.7, decay: 5.4 }), step: 2 }),
       M.sway({ t0: 40, t1: OP, base: peak[1], amp: 12, cycles: 1 }).map((k) => ({ ...k, v: [CX, k.v] }))
     ),
@@ -472,7 +472,7 @@ function eyes() {
       op: OP,
       icon: 'glasses',
       entrance: 'pop',
-      iconSize: 300,
+      iconSize: 264,
       patchMotion: (mo) => ({
         ...mo,
         // очки надеваются пружиной, потом дважды моргают
