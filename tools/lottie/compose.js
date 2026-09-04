@@ -186,7 +186,7 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
 
     // «штамп»: замах вверх, резкий удар вниз, тряска
     case 'stamp': {
-      const high = [pos[0], pos[1] - 76];
+      const high = [pos[0], pos[1] - 40];
       const hit = 16;
       return {
         s: M.seq(
@@ -238,7 +238,7 @@ function entranceOpacity(kind, op) {
   // прозрачность нарастала линейно с нулевого кадра и объект был
   // уже частично виден, ещё находясь за краем
   if (kind === 'drop') return M.seq(M.hold(0, 0), M.hold(9, 0), M.hold(12, 100), M.hold(op, 100));
-  if (kind === 'stamp') return M.seq(M.hold(0, 0), M.hold(5, 0), M.hold(7, 100), M.hold(op, 100));
+  if (kind === 'stamp') return M.seq(M.hold(0, 0), M.hold(8, 0), M.hold(10, 100), M.hold(op, 100));
   return M.seq(M.hold(0, 0), M.hold(2, 100), M.hold(op, 100));
 }
 
