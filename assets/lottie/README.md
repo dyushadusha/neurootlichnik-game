@@ -103,9 +103,9 @@ gzip-сжатый Lottie: до 3 секунд, 30 или 60 fps, 512×512 для
    lottie_convert.py assets/lottie/reaction-heart.json reaction-heart.tgs
    ```
 
-Три широких файла (`logo-wordmark-*`, `logo-lockup`) в стикер-пак не
-идут — у них не квадратный канвас. Это заставки для видео, сайта и
-шапок, а не стикеры.
+Три широких файла (`logo-wordmark-wave`, `logo-wordmark-wipe`,
+`logo-wordmark-type`) в стикер-пак не идут — у них не квадратный
+канвас. Это заставки для видео, сайта и шапок, а не стикеры.
 
 ## Как пересобрать или изменить
 
