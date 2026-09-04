@@ -27,8 +27,12 @@ const DOODLES_DIR = path.join(__dirname, '..', '..', 'assets', 'doodles');
    под нужный кегль. Обводка масштабируется вместе с формой, поэтому
    вес линии остаётся одинаковым и на 512, и на 100 пикселях. */
 function iconGroup(iconKey, style, size, nm = 'icon', { mirror = false } = {}) {
-  const k = L.round4((size / 200) * 100);
-  const items = typeof iconKey === 'function' ? iconKey(style) : ICONS[iconKey](style);
+  const def = typeof iconKey === 'function' ? { fit: 1, draw: iconKey } : ICONS[iconKey];
+  if (!def) throw new Error('Неизвестная иконка: ' + iconKey);
+  // fit уравнивает не габарит, а видимую массу: круг при том же
+  // размере выглядит крупнее квадрата, а звезда — легче обоих
+  const k = L.round4((size / 200) * 100 * (def.fit || 1));
+  const items = def.draw(style);
   /* Внутри группы Lottie рисует ПЕРВЫЙ элемент поверх остальных.
      Иконки же описаны в естественном порядке рисования — сначала
      основная форма, потом детали поверх неё, — поэтому список
@@ -184,8 +188,8 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
       const hit = 16;
       return {
         s: M.seq(
-          M.hold(0, [S * 1.6, S * 1.6]),
-          M.bake({ t0: 0, dur: hit, from: [S * 1.6, S * 1.6], to: [S * 1.02, S * 0.9], curve: M.curves.expoIn, step: 2 }),
+          M.hold(0, [S * 1.34, S * 1.34]),
+          M.bake({ t0: 0, dur: hit, from: [S * 1.34, S * 1.34], to: [S * 1.02, S * 0.9], curve: M.curves.expoIn, step: 2 }),
           M.squash({ t: hit, amount: 0.3, recover: 26, base: S }),
           M.breathe({ t0: settle + 16, t1: op, base: S, amp: S * 0.02, cycles: 1 })
         ),
@@ -210,8 +214,8 @@ function entranceMotion(kind, { pos, op, settle = 34, iconScale = 100 } = {}) {
     case 'zoom':
       return {
         s: M.seq(
-          M.hold(0, [S * 3.4, S * 3.4]),
-          M.bake({ t0: 0, dur: 26, from: [S * 3.4, S * 3.4], to: [S, S], curve: M.curves.spring({ bounces: 1.9, decay: 5.6 }), lag: 3 }),
+          M.hold(0, [S * 2.3, S * 2.3]),
+          M.bake({ t0: 0, dur: 26, from: [S * 2.3, S * 2.3], to: [S, S], curve: M.curves.spring({ bounces: 1.9, decay: 5.6 }), lag: 3 }),
           M.breathe({ t0: settle, t1: op, base: S, amp: S * 0.024, cycles: 1 })
         ),
         r: M.seq(M.hold(0, -10), M.wobble({ t0: 4, dur: 36, amp: 10 })),

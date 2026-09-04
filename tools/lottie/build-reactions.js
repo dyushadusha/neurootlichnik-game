@@ -208,9 +208,11 @@ function confetti() {
     const mid = [CX + Math.cos(rad) * p.d * 0.7, CY + Math.sin(rad) * p.d * 0.7];
     const color = p.c === 'lime' ? BRAND.lime : BRAND.ink;
     let item;
-    if (p.k === 'rect') item = L.rectItem({ p: [0, 0], s: [p.s, p.s], r: 5 });
-    else if (p.k === 'circle') item = L.ellipseItem({ p: [0, 0], s: [p.s, p.s] });
-    else item = L.starItem({ p: [0, 0], pt: 3, or_: p.s * 0.72, ir: p.s * 0.34, sy: 1 });
+    // вытянутая полоска — то, что и читается как конфетти;
+    // квадратики и кружки одного размера выглядели как «пыль»
+    if (p.k === 'rect') item = L.rectItem({ p: [0, 0], s: [p.s * 0.8, p.s * 2.7], r: p.s * 0.3 });
+    else if (p.k === 'circle') item = L.ellipseItem({ p: [0, 0], s: [p.s * 1.15, p.s * 1.15] });
+    else item = L.starItem({ p: [0, 0], pt: 3, or_: p.s * 1.05, ir: p.s * 0.5, sy: 1 });
 
     const t0 = p.t;
     return L.shapeLayer(`Particle ${i}`, [L.groupItem('p', [item, L.fillItem(color)])], {
@@ -226,7 +228,7 @@ function confetti() {
             M.bake({ t0: t0 + 30, dur: 34, from: mid, to: end, curve: M.curves.easeOut, step: 4 })
           )
         ),
-        r: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.bake({ t0, dur: 60, from: 0, to: p.spin, curve: M.curves.easeOut, step: 5 }))),
+        r: L.animProp(M.seq(M.hold(0, p.a), M.hold(t0, p.a), M.bake({ t0, dur: 60, from: p.a, to: p.a + p.spin, curve: M.curves.easeOut, step: 5 }))),
         s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(t0, [0, 0]), M.popIn({ t0, dur: 16, to: 100, lag: 2 }), M.bake({ t0: t0 + 44, dur: 22, from: [100, 100], to: [55, 55], curve: M.curves.easeIn, step: 3 }))),
         o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.hold(t0 + 3, 100), M.hold(t0 + 46, 100), M.hold(t0 + 66, 0))),
       },
@@ -458,36 +460,27 @@ function brain() {
 }
 
 // =========================================================
-// 12. ГЛАЗА — появляются, моргают и косятся по сторонам
+// 12. ГЛАЗА — фирменные очки: моргают и косятся по сторонам
 // =========================================================
 function eyes() {
   L.resetLayerIndex();
-  const OP = 120;
-  const layers = [];
-  for (const side of [-1, 1]) {
-    const pos = [CX + side * 92, CY];
-    const t0 = side < 0 ? 0 : 4;
-    layers.push(
-      L.shapeLayer(side < 0 ? 'Eye L' : 'Eye R', [C.iconGroup('eye', baseStyle(12), 200)], {
-        op: OP,
-        ks: {
-          a: L.staticProp([0, 0]),
-          p: L.animProp(M.seq(M.hold(0, pos), M.sway({ t0: 40, t1: OP, base: pos[0], amp: 12, cycles: 1 }).map((k) => ({ ...k, v: [k.v, pos[1]] })))),
-          s: L.animProp(
-            M.seq(
-              M.hold(0, [0, 0]),
-              M.hold(t0, [0, 0]),
-              M.popIn({ t0, dur: 26, to: 100, lag: 3 }),
-              M.blink({ t0: 36, t1: OP, at: [46, 84], dur: 8 })
-            )
-          ),
-          r: L.animProp(M.seq(M.wobble({ t0: t0 + 2, dur: 30, amp: 8 }), M.sway({ t0: 40, t1: OP, amp: 2, cycles: 1 }))),
-          o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.hold(t0 + 2, 100), M.hold(OP, 100))),
-        },
-      })
-    );
-  }
-  emit('reaction-eyes', OP, [C.sparkLayer({ pos: [CX + 190, CY - 110], size: 54, t0: 28, spin: 22, op: OP }), ...layers]);
+  const OP = 122;
+  emit('reaction-eyes', OP, [
+    C.sparkLayer({ pos: [CX + 176, CY - 104], size: 56, t0: 30, spin: 22, op: OP }),
+    ...C.buildSticker({
+      canvas: W,
+      op: OP,
+      icon: 'glasses',
+      entrance: 'pop',
+      iconSize: 340,
+      patchMotion: (mo) => ({
+        ...mo,
+        // очки надеваются пружиной, потом дважды моргают
+        s: M.seq(M.popIn({ t0: 0, dur: 28, to: 100, lag: 3 }), M.blink({ t0: 34, t1: OP, at: [48, 88], dur: 9 })),
+        r: M.seq(M.wobble({ t0: 2, dur: 34, amp: 11 }), M.sway({ t0: 38, t1: OP, amp: 2.4, cycles: 1 })),
+      }),
+    }),
+  ]);
 }
 
 // =========================================================
@@ -559,44 +552,22 @@ function trophy() {
 }
 
 // =========================================================
-// 16. В ТОЧКУ — дротик влетает и попадает в мишень
+// 16. СТО БАЛЛОВ — оценка отличника
 // =========================================================
-function target() {
+function hundred() {
   L.resetLayerIndex();
-  const OP = 130;
-  const HIT = 34;
-  const from = [CX + 320, CY - 300];
-  const to = [CX + 16, CY - 8];
-
-  const dart = L.shapeLayer('Dart', [
-    L.groupItem('tip', [L.rectItem({ p: [0, 0], s: [22, 128], r: 10 }), L.strokeItem(BRAND.ink, 10), L.fillItem(BRAND.lime)], { r: 45 }),
-    L.groupItem('tail', [L.starItem({ p: [46, -46], pt: 3, or_: 34, ir: 14, rot: 20 }), L.fillItem(BRAND.ink)]),
-  ], {
-    op: OP,
-    ks: {
-      a: L.staticProp([0, 0]),
-      p: L.animProp(M.seq(M.hold(0, from), M.hold(10, from), M.bake({ t0: 10, dur: HIT - 10, from, to, curve: M.curves.expoIn, step: 2 }), M.hold(OP, to))),
-      s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(10, [130, 130]), M.hold(HIT, [100, 100]), M.squash({ t: HIT, amount: 0.16, recover: 20 }))),
-      r: L.animProp(M.seq(M.hold(0, 0), M.wobble({ t0: HIT, dur: 40, amp: 12 }))),
-      o: L.animProp(M.seq(M.hold(0, 0), M.hold(10, 100), M.hold(OP, 100))),
-    },
-  });
-
-  emit('reaction-target', OP, [
-    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 8, t0: HIT, radius: 240, len: 40, width: 12 }),
-    C.ringLayer({ pos: [CX, CY], t0: HIT, size: 170, op: OP }),
-    dart,
+  const OP = 124;
+  emit('reaction-hundred', OP, [
+    ...C.burstLayers({ pos: [CX, CY], op: OP, count: 8, t0: 18, radius: 250, len: 44, width: 13 }),
+    C.ringLayer({ pos: [CX, CY], t0: 18, size: 190, op: OP }),
+    C.sparkLayer({ pos: [CX + 150, CY - 130], size: 58, t0: 26, spin: 26, op: OP }),
+    C.sparkLayer({ pos: [CX - 156, CY - 112], size: 46, t0: 34, spin: -22, op: OP }),
     ...C.buildSticker({
       canvas: W,
       op: OP,
-      icon: 'target',
-      entrance: 'pop',
-      iconSize: 330,
-      patchMotion: (mo) => ({
-        ...mo,
-        // мишень «принимает» удар: короткое сплющивание в кадре попадания
-        s: M.seq(mo.s.filter((k) => k.t < HIT - 1), M.squash({ t: HIT, amount: 0.12, recover: 22 }), M.breathe({ t0: HIT + 24, t1: OP, base: 100, amp: 2, cycles: 1 })),
-      }),
+      icon: 'hundred',
+      entrance: 'stamp',
+      iconSize: 360,
     }),
   ]);
 }
@@ -656,7 +627,7 @@ function wow() {
   ]);
 }
 
-const ALL = [heart, fire, thumbsUp, star, lightbulb, perfect, confetti, gradcap, clap, rocket, brain, eyes, crown, bolt, trophy, target, gem, wow];
+const ALL = [heart, fire, thumbsUp, star, lightbulb, perfect, confetti, gradcap, clap, rocket, brain, eyes, crown, bolt, trophy, hundred, gem, wow];
 
 module.exports = { ALL };
 

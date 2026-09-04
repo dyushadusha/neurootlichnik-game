@@ -90,35 +90,67 @@ function markSticker(nm, op, opts) {
 }
 
 // =========================================================
-// 1. Прорисовка контура и заливка (обновлённая классика)
+// 1. Подмигивание — знак читается как очки, и правый «глаз»
+//    (тот, что со зрачком) прикрывается веком
 // =========================================================
-function iconDraw() {
+function iconWink() {
   L.resetLayerIndex();
-  const OP = 150;
-  const DRAW = 54;
-  const FILL = 74;
+  const OP = 138;
+  const SIZE = 300;
+  const k = SIZE / 200; // знак нарисован в боксе 200
   const CXY = [256, 256];
-  const groups = brandMarkSubpaths().map((subpaths, gi) =>
-    L.groupItem(`contour-${gi}`, [
-      ...subpaths.map((sp, j) => L.pathShapeItem(sp, `p${j}`)),
-      L.trimItem({ s: 0, e: L.animProp(M.seq(M.hold(0, 0), M.bake({ t0: 0, dur: DRAW, from: 0, to: 100, curve: M.curves.easeInOut, step: 2 }))), o: 0 }),
-      L.strokeItem(BRAND.ink, 7),
-      L.fillItem(BRAND.lime, L.animProp(M.seq(M.hold(DRAW, 0), M.bake({ t0: DRAW, dur: FILL - DRAW, from: 0, to: 100, curve: M.curves.easeOut, step: 2 })))),
-    ])
-  );
-  emit('logo-icon-draw', {
+
+  /* Геометрия линз берётся из самого контура знака, а не на глаз:
+     во внешнем контуре оправы отверстия — это и есть линзы. */
+  const holes = brandMarkSubpaths()[0].slice(1).map((sp) => L.bboxOfSubpaths([sp]));
+  const lens = holes.reduce((a, b) => (a.w * a.h > b.w * b.h ? a : b)); // правая, крупная
+  const lensCx = (lens.minX + lens.w / 2) * k;
+  const lensTop = lens.minY * k;
+  const lensW = lens.w * k;
+  const lensH = lens.h * k;
+
+  const markInd = L.nextLayerIndex();
+  const markLayers = C.buildSticker({
+    canvas: 512,
     op: OP,
-    layers: [
-      L.shapeLayer('Mark', [L.groupItem('icon', groups.slice().reverse(), { s: [150, 150] })], {
-        op: OP,
-        ks: {
-          a: L.staticProp([0, 0]),
-          p: L.staticProp(CXY),
-          s: L.animProp(M.seq(M.hold(0, [88, 88]), M.bake({ t0: DRAW, dur: 26, from: [88, 88], to: [100, 100], curve: M.curves.spring({ bounces: 2, decay: 5 }), step: 2 }), M.breathe({ t0: 84, t1: OP, base: 100, amp: 2.6, cycles: 1 }))),
-        },
-      }),
-    ],
+    icon: brandMark,
+    iconSize: SIZE,
+    entrance: 'pop',
+    patchMotion: (mo) => ({
+      ...mo,
+      // на подмигивании знак чуть кивает — как живое лицо
+      r: M.seq(M.wobble({ t0: 2, dur: 34, amp: 9 }), M.sway({ t0: 40, t1: OP, amp: 3.5, cycles: 2 })),
+      s: M.seq(M.popIn({ t0: 0, dur: 30, to: 100, lag: 3 }), M.breathe({ t0: 34, t1: OP, base: 100, amp: 2.4, cycles: 1 })),
+    }),
   });
+
+  /* Веко — ребёнок знака: едет вместе с ним и закрывается по Y от
+     верхнего края линзы. Эллипс смещён вниз на половину высоты,
+     поэтому локальный ноль слоя лежит ровно на верхнем крае. */
+  const lid = L.shapeLayer(
+    'Wink lid',
+    [L.groupItem('lid', [L.ellipseItem({ p: [0, lensH / 2], s: [lensW * 1.02, lensH * 1.04] }), L.fillItem(BRAND.lime)])],
+    {
+      op: OP,
+      parent: markInd,
+      ks: {
+        a: L.staticProp([0, 0]),
+        p: L.staticProp([lensCx, lensTop]),
+        s: L.animProp(
+          M.seq(
+            M.hold(0, [100, 0]),
+            M.hold(44, [100, 0]),
+            M.bake({ t0: 44, dur: 7, from: [100, 0], to: [100, 100], curve: M.curves.easeOut, step: 1 }),
+            M.hold(62, [100, 100]),
+            M.bake({ t0: 62, dur: 9, from: [100, 100], to: [100, 0], curve: M.curves.easeOut, step: 1 }),
+            M.hold(OP, [100, 0])
+          )
+        ),
+      },
+    }
+  );
+
+  emit('logo-icon-wink', { op: OP, layers: [lid, ...markLayers] });
 }
 
 // =========================================================
@@ -148,11 +180,44 @@ function iconStamp() {
   });
 }
 
-function iconZoom() {
-  markSticker('logo-icon-zoom', 120, {
-    entrance: 'zoom',
-    accents: { ring: { t0: 10, size: 180 } },
-  });
+function iconSwing() {
+  L.resetLayerIndex();
+  const OP = 144;
+  const CXY = [256, 256];
+  const PIVOT = 190; // точка подвеса выше знака
+
+  /* Знак висит на невидимой нити: якорь вынесен над ним, поэтому
+     поворот читается как маятник, а не как вращение на месте. */
+  const motion = {
+    p: M.seq(M.hold(0, [CXY[0], CXY[1] - PIVOT])),
+    s: M.seq(
+      M.popIn({ t0: 0, dur: 24, to: 100, lag: 3 }),
+      M.breathe({ t0: 30, t1: OP, base: 100, amp: 2, cycles: 1 })
+    ),
+    r: M.seq(
+      M.hold(0, 34),
+      M.bake({ t0: 0, dur: 26, from: 34, to: -18, curve: M.curves.easeInOut, step: 2 }),
+      M.wobble({ t0: 26, dur: 76, amp: -18, bounces: 2.6, decay: 2.6 }),
+      M.sway({ t0: 102, t1: OP, amp: 2.6, cycles: 1 })
+    ),
+  };
+
+  const layers = [
+    L.shapeLayer('Mark', [C.iconGroup(brandMark, baseStyle(13), 300)], {
+      op: OP,
+      ks: { a: L.staticProp([0, -PIVOT]), p: L.animProp(motion.p), s: L.animProp(motion.s), r: L.animProp(motion.r) },
+    }),
+    L.shapeLayer('Shadow', [C.iconGroup(brandMark, shadowStyle(13), 300)], {
+      op: OP,
+      ks: {
+        a: L.staticProp([0, -PIVOT]),
+        p: L.animProp(motion.p.map((kf) => ({ ...kf, v: [kf.v[0] + 12, kf.v[1] + 12] }))),
+        s: L.animProp(motion.s),
+        r: L.animProp(motion.r),
+      },
+    }),
+  ];
+  emit('logo-icon-swing', { op: OP, layers });
 }
 
 function iconPop() {
@@ -381,66 +446,83 @@ function wordmarkWipe() {
 }
 
 // =========================================================
-// 15. Лок-ап — знак и леттеринг собираются вместе
+// 15. Леттеринг — печатная машинка с лаймовым курсором
 // =========================================================
-function lockup() {
+function wordmarkType() {
   L.resetLayerIndex();
   const W = 1600;
-  const H = 560;
-  const OP = 156;
-  const glyphs = wordmarkGlyphs(1120);
-  const wordY = H / 2 + 96;
-  const markPos = [W / 2, H / 2 - 96];
+  const H = 420;
+  const OP = 160;
+  const glyphs = wordmarkGlyphs(W - 220);
+  const STEP = 5; // кадров на букву
+  const typedAt = (i) => 10 + i * STEP;
+  const doneAt = typedAt(glyphs.length - 1) + 8;
 
-  const glyphLayers = glyphs.map((g, i) => {
-    const t0 = 26 + i * 2.2;
-    const home = [W / 2 + g.cx, wordY + g.cy];
+  const layers = glyphs.map((g, i) => {
+    const t0 = typedAt(i);
+    const home = [W / 2 + g.cx, H / 2 + g.cy];
     return L.shapeLayer(`Glyph ${i}`, [
       L.groupItem('g', [...g.sub.map((sp, j) => L.pathShapeItem(sp, `p${j}`)), L.fillItem(BRAND.lime)], { p: [-g.cx, -g.cy] }),
     ], {
       op: OP,
       ks: {
         a: L.staticProp([0, 0]),
-        p: L.animProp(M.seq(M.hold(0, [home[0], home[1] + 46]), M.hold(t0, [home[0], home[1] + 46]), M.bake({ t0, dur: 26, from: [home[0], home[1] + 46], to: home, curve: M.curves.spring({ bounces: 2, decay: 5.4 }), step: 2 }))),
-        s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(t0, [0, 0]), M.popIn({ t0, dur: 24, to: 100, lag: 2 }))),
-        o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.hold(t0 + 2, 100), M.hold(OP, 100))),
+        p: L.staticProp(home),
+        // каждая буква «впечатывается»: короткий удар с перелётом
+        s: L.animProp(M.seq(M.hold(0, [0, 0]), M.hold(t0, [0, 0]), M.popIn({ t0, dur: 14, to: 100, lag: 1, bounces: 1.8, decay: 6 }))),
+        o: L.animProp(M.seq(M.hold(0, 0), M.hold(t0, 0), M.hold(t0 + 1, 100), M.hold(OP, 100))),
       },
     });
   });
 
-  emit('logo-lockup', {
-    w: W,
-    h: H,
-    op: OP,
-    layers: [
-      ...glyphLayers,
-      ...C.buildSticker({
-        canvas: W,
-        op: OP,
-        icon: brandMark,
-        iconSize: 330,
-        center: markPos,
-        entrance: 'drop',
-        shadowOffset: 10,
-        accents: { ring: { t0: 26, size: 150 } },
-      }),
-    ],
+  /* Курсор стоит у правого края последней набранной буквы. */
+  const caretX = glyphs.map((g) => {
+    const b = L.bboxOfSubpaths(g.sub);
+    return W / 2 + b.maxX + 26;
   });
+  const caretPos = M.seq(
+    M.hold(0, [W / 2 - (W - 220) / 2 - 10, H / 2]),
+    ...glyphs.map((g, i) => M.hold(typedAt(i), [caretX[i], H / 2]))
+  );
+  const caret = L.shapeLayer('Caret', [
+    L.groupItem('c', [L.rectItem({ p: [0, 0], s: [26, 150], r: 6 }), L.fillItem(BRAND.lime)]),
+  ], {
+    op: OP,
+    ks: {
+      a: L.staticProp([0, 0]),
+      p: L.animProp(caretPos),
+      s: L.animProp(M.seq(M.hold(0, [100, 100]), M.hold(OP, [100, 100]))),
+      // после набора курсор мигает — узнаваемая деталь терминала
+      o: L.animProp(
+        M.seq(
+          M.hold(0, 100),
+          M.hold(doneAt, 100),
+          ...[0, 1, 2, 3].flatMap((n) => [
+            { t: doneAt + n * 22, v: 100, hold: true },
+            { t: doneAt + n * 22 + 11, v: 0, hold: true },
+          ]),
+          M.hold(OP, 100)
+        )
+      ),
+    },
+  });
+
+  emit('logo-wordmark-type', { w: W, h: H, op: OP, layers: [caret, ...layers] });
 }
 
 const ALL = [
-  iconDraw,
-  iconBounce,
-  iconFlip,
-  iconStamp,
-  iconZoom,
+  iconWink,
   iconPop,
+  iconBounce,
+  iconStamp,
+  iconFlip,
+  iconSwing,
   iconPulse,
   iconOrbit,
   iconGlitch,
   wordmarkWave,
   wordmarkWipe,
-  lockup,
+  wordmarkType,
 ];
 
 module.exports = { ALL, brandMark, brandMarkSubpaths };

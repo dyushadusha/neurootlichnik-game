@@ -188,8 +188,11 @@ function starItem({ p = [0, 0], pt = 5, or_ = 50, ir = 25, os = 0, is = 0, rot =
   };
 }
 
-function fillItem(hex, opacity = 100, nm = 'Fill') {
-  return { ty: 'fl', c: { a: 0, k: hexToRgba(hex) }, o: isAnim(opacity) ? opacity : { a: 0, k: opacity }, r: 1, nm };
+/* rule: 1 — nonzero (по умолчанию), 2 — even-odd. Чётно-нечётное
+   правило нужно, когда фигура собрана из внешнего и внутреннего
+   контуров и середина должна остаться прозрачной (кольцо, ноль). */
+function fillItem(hex, opacity = 100, rule = 1, nm = 'Fill') {
+  return { ty: 'fl', c: { a: 0, k: hexToRgba(hex) }, o: isAnim(opacity) ? opacity : { a: 0, k: opacity }, r: rule, nm };
 }
 
 function strokeItem(hex, width, opacity = 100, nm = 'Stroke') {

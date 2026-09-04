@@ -19,8 +19,8 @@ const OUT_DIR = path.join(__dirname, '..', '..', 'assets', 'lottie');
 const SIZE = 100;
 const FR = 60;
 const OP = 76; // ~1,3 c — эмодзи должен «отыграть» быстро
-const ICON = 74;
-const SW = 17; // в боксе 200 → ≈6 px на канвасе 100: читается в строке текста
+const ICON = 72;
+const SW = 17; // обводка целиком снаружи (см. icons.paint) → ≈6 px на канвасе 100
 
 function emoji(nm, opts) {
   L.resetLayerIndex();
