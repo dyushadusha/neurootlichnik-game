@@ -44,6 +44,28 @@
     box-shadow:0 30px 70px -30px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.2);
   }
 
+  @media (max-width:600px){
+    body{
+      padding:0;
+      align-items:stretch;
+      min-height:100dvh;
+    }
+    .wrap{
+      max-width:none;
+      min-height:100dvh;
+      display:flex;
+    }
+    .card{
+      flex:1;
+      border-radius:0;
+      border:none;
+      box-shadow:none;
+    }
+    .card::before{
+      display:none;
+    }
+  }
+
   .card::before{
     content:"";
     position:absolute;
