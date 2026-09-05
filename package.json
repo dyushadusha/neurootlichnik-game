@@ -11,6 +11,7 @@
     "leads:enrich": "node tools/outreach/enrich-emails.js",
     "leads:draft": "node tools/outreach/generate-drafts.js",
     "leads:send": "node tools/outreach/send-emails.js",
+    "leads:radar": "node tools/outreach/radar-telegram.js",
     "leads:status": "node tools/outreach/status.js",
     "leads:bot": "node tools/outreach/bot.js"
   },

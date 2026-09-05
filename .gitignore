@@ -4,4 +4,5 @@ node_modules/
 # черновики писем, журнал отправки и креды — не для гита.
 tools/outreach/.env
 tools/outreach/config.json
+tools/outreach/radar.json
 tools/outreach/data/

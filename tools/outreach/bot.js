@@ -58,6 +58,7 @@ function isBusinessHoursNow() {
 }
 
 const MENU = inlineKeyboard([
+  [{ text: '📡 Проверить сигналы', data: 'radar' }],
   [{ text: '📊 Статус', data: 'status' }],
   [
     { text: '🔎 Найти лиды', data: 'discover' },
@@ -103,6 +104,18 @@ function tailLines(text, n) {
 async function handleStatus(bot, chatId) {
   const { text } = buildReport(DATA_DIR);
   await sendLong(bot, chatId, text, { replyMarkup: MENU });
+}
+
+async function handleRadar(bot, chatId) {
+  await bot.sendMessage(chatId, '⏳ Смотрю, кто в каналах ищет визуализацию…');
+  // --notify не передаём: сигналы придут в этот же чат ответом ниже,
+  // иначе они продублируются самим радаром.
+  const res = await runScript('radar-telegram.js', []);
+  if (!res.ok) {
+    await sendLong(bot, chatId, `Радар не отработал:\n${tailLines(res.stderr || res.stdout, 12)}`, { replyMarkup: MENU });
+    return;
+  }
+  await sendLong(bot, chatId, res.stdout.trim() || 'Пусто — новых сигналов нет.', { replyMarkup: MENU });
 }
 
 async function handleDiscover(bot, chatId) {
@@ -187,6 +200,7 @@ async function handleSendConfirm(bot, chatId, expectedCount) {
 
 async function routeCallback(bot, chatId, data) {
   if (data === 'status') return handleStatus(bot, chatId);
+  if (data === 'radar') return withBusyGuard(bot, chatId, 'проверка сигналов', () => handleRadar(bot, chatId));
   if (data === 'discover') return withBusyGuard(bot, chatId, 'поиск лидов', () => handleDiscover(bot, chatId));
   if (data === 'enrich') return withBusyGuard(bot, chatId, 'поиск email', () => handleEnrich(bot, chatId));
   if (data === 'draft') return withBusyGuard(bot, chatId, 'сборка черновиков', () => handleDraft(bot, chatId));

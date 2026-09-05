@@ -94,4 +94,29 @@ function buildEmail(ctx) {
   return { subject, text: lines.join('\n') };
 }
 
-module.exports = { buildEmail };
+// --- Ответ на «сигнал» из Telegram (radar-telegram.js) ---
+//
+// Это НЕ автоответ: бот приносит готовый текст, вы читаете его, правите под
+// конкретное сообщение и отправляете сами, со своего аккаунта. Поэтому текст
+// короткий и без питча на три абзаца — в чате это читается как спам.
+
+const SIGNAL_REPLIES = [
+  ({ brand }) =>
+    `Добрый день! Мы делаем архитектурную визуализацию по BIM/CAD-модели — ${brand.valueProps.speed}, с точным попаданием в геометрию. Могу скинуть пару похожих кадров из портфолио, если актуально.`,
+  ({ brand }) =>
+    `Здравствуйте! Если ещё актуально — можем взяться. Работаем прямо из модели, ${brand.valueProps.price}. Готов сделать один тестовый ракурс, чтобы вы оценили качество до оплаты.`,
+  ({ brand }) =>
+    `Добрый день! Занимаемся такой визуализацией — ${brand.valueProps.accuracy}. Скажите объём и срок, за день вернусь со стоимостью.`,
+];
+
+/**
+ * @param {object} ctx — { brand, seed }
+ * @returns {string} черновик короткого ответа для ручной отправки
+ */
+function buildSignalReply(ctx) {
+  const seed = ctx.seed || 'signal';
+  const reply = SIGNAL_REPLIES[pickIndex(seed, 'signal-reply', SIGNAL_REPLIES.length)]({ brand: ctx.brand });
+  return `${reply}\n\nПортфолио: ${ctx.brand.website} · ${ctx.brand.telegramChannel}`;
+}
+
+module.exports = { buildEmail, buildSignalReply };
