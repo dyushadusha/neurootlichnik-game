@@ -122,7 +122,7 @@ async function main() {
       console.log(`Достигнут лимит на этот запуск (--limit ${limit}), останавливаюсь.`);
       break;
     }
-    if (!dryRun && sentTodayBefore + sent >= dailyCap) {
+    if (sentTodayBefore + sent >= dailyCap) {
       console.log(`Достигнут дневной лимит (--daily-cap ${dailyCap}), останавливаюсь.`);
       break;
     }
