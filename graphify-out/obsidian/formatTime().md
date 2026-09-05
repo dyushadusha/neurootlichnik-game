@@ -1,0 +1,19 @@
+---
+source_file: "src/game.js"
+type: "code"
+community: "Game Timer"
+location: "L247"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Game_Timer
+---
+
+# formatTime()
+
+## Connections
+- [[finishLevel()]] - `calls` [EXTRACTED]
+- [[game.js]] - `contains` [EXTRACTED]
+- [[updateTimer()]] - `calls` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Game_Timer
