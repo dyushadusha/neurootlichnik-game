@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<!--
+  ===========================================================================
+  КАЛЬКУЛЯТОР СТОИМОСТИ — «Нейро Отличник»
+  ===========================================================================
+  Этот файл ПОЛНОСТЬЮ самодостаточен: вся вёрстка, стили и скрипт лежат
+  в одном файле, ничего не подгружается из этого репозитория. Сделано
+  специально, чтобы страницу можно было:
+
+    А) захостить как обычную html-страницу (например, на Vercel вместе
+       с игрой — тогда получаете отдельный адрес вида .../brief.html);
+
+    Б) вставить как есть в блок «свой код» / embed на вашем сайте на
+       Taptop — тогда калькулятор откроется прямо на neurootlichnik.ru,
+       без стороннего адреса в браузере. Если виджет Taptop просит именно
+       содержимое <body> (без <html>/<head>) — скопируйте всё начиная
+       с komментария "НАЧАЛО ВИДИМОЙ ЧАСТИ" и до конца файла, включая
+       оба <style> и <script> — они прекрасно работают и без внешних
+       <head>/<body>.
+
+  ЧТО НУЖНО ПОПРАВИТЬ ПЕРЕД ПУБЛИКАЦИЕЙ:
+    1. Блок PRICING ниже (в <script> в конце файла) — это ЧЕРНОВЫЕ цены
+       и коэффициенты. Поправьте на свои реальные — больше нигде в коде
+       ничего трогать не нужно.
+    2. Константу SUBMIT_ENDPOINT (тоже в <script>) — впишите адрес
+       serverless-функции, которая шлёт заявки в Telegram (см. файл
+       api/submit-brief.js и .env.example в этом репозитории). Пока она
+       не настроена, форма просто покажет готовый текст заявки, который
+       можно скопировать и отправить вручную.
+  ===========================================================================
+-->
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Калькулятор стоимости визуализации — Нейро Отличник</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* =======================================================================
+     ПЕРЕМЕННЫЕ БРЕНДА — те же 3 цвета, что и в игре «Найди 5 отличий»
+     ======================================================================= */
+  :root{
+    --bg:#ffffff;
+    --card:#ffffff;
+    --ink:#2a2a2a;
+    --text:#2a2a2a;
+    --text-muted:#767671;
+    --accent:#dbfc3b;
+    --accent-hover:#c3e02f;
+    --accent-contrast:#2a2a2a;
+    --border:#2a2a2a;
+    --bw:3px;
+    --shadow:5px 5px 0 var(--ink);
+    --shadow-sm:3px 3px 0 var(--ink);
+    --font-sans:'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display:'Unbounded', var(--font-sans);
+    --radius:18px 24px 16px 22px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:var(--font-sans);
+    color:var(--text);
+    line-height:1.5;
+    padding-bottom:110px; /* место под липкую панель с ценой */
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:24px 16px 40px;}
+
+  /* ---------- Шапка ---------- */
+  .brief-header{text-align:center;margin-bottom:28px;}
+  .brief-header__badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--ink);color:var(--bg);
+    font-family:var(--font-display);font-weight:600;font-size:13px;
+    padding:6px 14px;border-radius:999px;margin-bottom:14px;
+  }
+  .brief-header__badge::before{content:'●';color:var(--accent);}
+  .brief-header h1{
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(24px,6vw,34px);line-height:1.2;margin-bottom:8px;
+  }
+  .brief-header p{color:var(--text-muted);font-size:15px;max-width:440px;margin:0 auto;}
+
+  /* ---------- Секции ---------- */
+  .section{
+    background:var(--card);
+    border:var(--bw) solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .section:nth-child(even){border-radius:22px 16px 24px 18px;}
+  .section__title{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:600;font-size:16px;
+    margin-bottom:14px;
+  }
+  .section__num{
+    flex-shrink:0;width:26px;height:26px;border-radius:50%;
+    background:var(--accent);color:var(--accent-contrast);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;
+  }
+  .section__hint{font-size:13px;color:var(--text-muted);margin:-8px 0 14px 36px;}
+
+  /* ---------- Карточки-варианты (радио/чекбокс) ---------- */
+  .option-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:420px){.option-grid{grid-template-columns:1fr;}}
+  .option-card{
+    position:relative;cursor:pointer;
+    border:var(--bw) solid var(--border);border-radius:14px 18px 12px 16px;
+    padding:12px 14px;background:var(--bg);
+    transition:transform .1s ease, box-shadow .1s ease, background .1s ease;
+  }
+  .option-card input{position:absolute;opacity:0;width:1px;height:1px;}
+  .option-card__title{font-family:var(--font-display);font-weight:600;font-size:14px;}
+  .option-card__sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .option-card.is-checked{background:var(--accent);box-shadow:var(--shadow-sm);}
+  .option-card.is-checked .option-card__sub{color:color-mix(in srgb, var(--accent-contrast) 65%, transparent);}
+  .option-card:active{transform:translate(2px,2px);}
+
+  /* ---------- Сегментированный переключатель ---------- */
+  .segmented{display:flex;border:var(--bw) solid var(--border);border-radius:12px;overflow:hidden;}
+  .segmented button{
+    flex:1;border:none;background:var(--bg);color:var(--ink);
+    font-family:var(--font-sans);font-weight:600;font-size:13px;
+    padding:11px 8px;cursor:pointer;
+  }
+  .segmented button+button{border-left:var(--bw) solid var(--border);}
+  .segmented button[aria-pressed='true']{background:var(--accent);}
+  .segmented-hint{font-size:12px;color:var(--text-muted);text-align:center;margin-top:8px;}
+
+  /* ---------- Степпер (счётчик) ---------- */
+  .stepper{display:flex;align-items:center;gap:14px;}
+  .stepper button{
+    width:38px;height:38px;border-radius:10px;border:var(--bw) solid var(--border);
+    background:var(--bg);font-family:var(--font-display);font-size:18px;font-weight:700;
+    cursor:pointer;
+  }
+  .stepper button:active{transform:translate(2px,2px);}
+  .stepper__value{font-family:var(--font-display);font-size:20px;font-weight:700;min-width:40px;text-align:center;}
+  .stepper__label{font-size:13px;color:var(--text-muted);}
+
+  /* ---------- Поля ввода ---------- */
+  .field{margin-bottom:12px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;}
+  .field input[type='text'],
+  .field input[type='tel'],
+  .field input[type='email'],
+  .field input[type='number'],
+  .field textarea{
+    width:100%;border:2px solid var(--border);border-radius:10px;
+    padding:11px 12px;font-family:var(--font-sans);font-size:15px;color:var(--text);
+    background:var(--bg);
+  }
+  .field textarea{resize:vertical;min-height:70px;}
+  .field input:focus,.field textarea:focus{outline:2px solid var(--accent-hover);outline-offset:1px;}
+  .field--required label::after{content:' *';color:#c0392b;}
+  /* honeypot — скрыто от людей, но доступно ботам-заполнителям форм */
+  .hp-field{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
+
+  /* ---------- Липкая панель с ценой ---------- */
+  .price-bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:var(--bg);border-top:var(--bw) solid var(--border);
+    box-shadow:0 -4px 0 rgba(0,0,0,.03);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .price-bar__inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+  .price-bar__estimate{flex:1;min-width:0;}
+  .price-bar__label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;}
+  .price-bar__value{
+    font-family:var(--font-display);font-weight:700;font-size:clamp(15px,4.4vw,20px);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .price-bar__value span{background:var(--accent);padding:1px 6px;border-radius:6px;}
+  .price-bar button{
+    flex-shrink:0;font-family:var(--font-display);font-weight:700;font-size:14px;
+    padding:13px 20px;border:var(--bw) solid var(--border);border-radius:14px 18px 14px 18px;
+    background:var(--accent);color:var(--accent-contrast);cursor:pointer;
+    box-shadow:var(--shadow-sm);white-space:nowrap;
+  }
+  .price-bar button:hover{background:var(--accent-hover);}
+  .price-bar button:active{transform:translate(2px,2px);box-shadow:none;}
+  .price-bar button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
+
+  /* ---------- Результат отправки ---------- */
+  .result-screen{display:none;text-align:center;padding:40px 16px;}
+  .result-screen.is-visible{display:block;}
+  .result-screen__icon{font-size:44px;margin-bottom:12px;}
+  .result-screen h2{font-family:var(--font-display);font-size:22px;margin-bottom:10px;}
+  .result-screen p{color:var(--text-muted);font-size:14px;max-width:420px;margin:0 auto 16px;}
+  .result-summary{
+    text-align:left;max-width:480px;margin:0 auto 16px;
+    border:var(--bw) solid var(--border);border-radius:var(--radius);
+    padding:14px;background:var(--card);box-shadow:var(--shadow-sm);
+  }
+  .result-summary textarea{
+    width:100%;min-height:160px;border:none;font-family:monospace;font-size:12.5px;
+    color:var(--text);resize:vertical;background:transparent;
+  }
+  .result-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .btn-outline{
+    font-family:var(--font-display);font-weight:600;font-size:13px;
+    padding:11px 18px;border:var(--bw) solid var(--border);border-radius:12px;
+    background:var(--bg);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block;
+  }
+  .field-error{color:#c0392b;font-size:12px;margin-top:6px;display:none;}
+  .field-error.is-visible{display:block;}
+</style>
+</head>
+<body>
+<!-- НАЧАЛО ВИДИМОЙ ЧАСТИ -->
+<div class="wrap">
+
+  <header class="brief-header">
+    <span class="brief-header__badge">Нейро Отличник · архитектурная визуализация</span>
+    <h1>Рассчитайте стоимость визуализации онлайн</h1>
+    <p>Ответьте на несколько вопросов о проекте — вы сразу увидите ориентировочную цену и сможете отправить заявку нам в работу.</p>
+  </header>
+
+  <form id="briefForm" novalidate>
+
+    <!-- 1. Тип объекта -->
+    <section class="section">
+      <div class="section__title"><span class="section__num">1</span>Что нужно визуализировать?</div>
+      <div class="option-grid" data-group="type">
+        <label class="option-card"><input type="radio" name="type" value="interior" checked>
+          <div class="option-card__title">Интерьер</div>
+          <div class="option-card__sub">Квартира, дом, коммерческое помещение</div>
+        </label>
+        <label class="option-card"><input type="radio" name="type" value="exterior">
+          <div class="option-card__title">Экстерьер / фасад</div>
+          <div class="option-card__sub">Здание снаружи, придомовая территория</div>
+        </label>
+        <label class="option-card"><input type="radio" name="type" value="landscape">
+          <div class="option-card__title">Генплан / ландшафт</div>
+          <div class="option-card__sub">Вид сверху, благоустройство, участок</div>
+        </label>
+        <label class="option-card"><input type="radio" name="type" value="video">
+          <div class="option-card__title">Видео-облёт</div>
+          <div class="option-card__sub">Анимационный ролик по 3D-сцене</div>
+        </label>
+      </div>
+    </section>
+
+    <!-- 2а. Количество ракурсов (для статичных рендеров) -->
+    <section class="section" id="frameCountSection">
+      <div class="section__title"><span class="section__num">2</span>Сколько нужно ракурсов/кадров?</div>
+      <div class="section__hint">Каждый следующий кадр дешевле первого — считаем это автоматически.</div>
+      <div class="stepper">
+        <button type="button" data-step="frameCount" data-dir="-1" aria-label="Меньше">−</button>
+        <span class="stepper__value" id="frameCountValue">1</span>
+        <button type="button" data-step="frameCount" data-dir="1" aria-label="Больше">+</button>
+        <span class="stepper__label">ракурс(ов)</span>
+      </div>
+    </section>
+
+    <!-- 2б. Длительность (для видео) -->
+    <section class="section" id="videoDurationSection" style="display:none;">
+      <div class="section__title"><span class="section__num">2</span>Какая длительность ролика?</div>
+      <div class="section__hint">Минимум 15 секунд.</div>
+      <div class="stepper">
+        <button type="button" data-step="videoDuration" data-dir="-5" aria-label="Меньше">−</button>
+        <span class="stepper__value" id="videoDurationValue">15</span>
+        <button type="button" data-step="videoDuration" data-dir="5" aria-label="Больше">+</button>
+        <span class="stepper__label">секунд</span>
+      </div>
+    </section>
+
+    <!-- 3. Сложность -->
+    <section class="section">
+      <div class="section__title"><span class="section__num">3</span>Насколько сложная сцена?</div>
+      <div class="segmented" data-group="complexity">
+        <button type="button" data-value="simple">Простая</button>
+        <button type="button" data-value="standard" aria-pressed="true">Стандартная</button>
+        <button type="button" data-value="complex">Сложная</button>
+      </div>
+      <p class="segmented-hint" id="complexityHint"></p>
+    </section>
+
+    <!-- 4. Исходные данные -->
+    <section class="section">
+      <div class="section__title"><span class="section__num">4</span>Какие есть исходные материалы?</div>
+      <div class="option-grid" data-group="sourceData" style="grid-template-columns:1fr;">
+        <label class="option-card"><input type="radio" name="sourceData" value="model3d">
+          <div class="option-card__title">Есть готовая 3D-модель / чертежи</div>
+        </label>
+        <label class="option-card"><input type="radio" name="sourceData" value="drawings" checked>
+          <div class="option-card__title">Есть только чертежи / эскизы</div>
+        </label>
+        <label class="option-card"><input type="radio" name="sourceData" value="scratch">
+          <div class="option-card__title">Ничего нет — только фото / референсы</div>
+        </label>
+      </div>
+    </section>
+
+    <!-- 5. Сроки -->
+    <section class="section">
+      <div class="section__title"><span class="section__num">5</span>Какие нужны сроки?</div>
+      <div class="segmented" data-group="rush">
+        <button type="button" data-value="standard" aria-pressed="true">10–14 дней</button>
+        <button type="button" data-value="fast">5–7 дней</button>
+        <button type="button" data-value="urgent">2–3 дня</button>
+      </div>
+    </section>
+
+    <!-- 6. Доп. услуги -->
+    <section class="section">
+      <div class="section__title"><span class="section__num">6</span>Нужно что-то ещё?</div>
+      <div class="option-grid" style="grid-template-columns:1fr;">
+        <label class="option-card"><input type="checkbox" name="addon" value="flythrough" data-group="addons">
+          <div class="option-card__title">Видео-облёт по готовой сцене</div>
+        </label>
+        <label class="option-card"><input type="checkbox" name="addon" value="socialPack" data-group="addons">
+          <div class="option-card__title">Адаптация для соцсетей</div>
+        </label>
+        <label class="option-card"><input type="checkbox" name="addon" value="printPack" data-group="addons">
+          <div class="option-card__title">Файлы для печати / баннеров</div>
+        </label>
+      </div>
+      <div class="stepper" style="margin-top:14px;">
+        <button type="button" data-step="extraRevisions" data-dir="-1" aria-label="Меньше">−</button>
+        <span class="stepper__value" id="extraRevisionsValue">0</span>
+        <button type="button" data-step="extraRevisions" data-dir="1" aria-label="Больше">+</button>
+        <span class="stepper__label">доп. правок сверх включённых</span>
+      </div>
+    </section>
+
+    <!-- 7. Контакты -->
+    <section class="section">
+      <div class="section__title"><span class="section__num">7</span>Как с вами связаться?</div>
+      <div class="field field--required">
+        <label for="fName">Имя</label>
+        <input type="text" id="fName" name="name" autocomplete="name" required>
+      </div>
+      <div class="field field--required">
+        <label for="fContact">Телефон или Telegram</label>
+        <input type="text" id="fContact" name="contact" placeholder="+7 999 000-00-00 или @username" autocomplete="tel" required>
+      </div>
+      <div class="field">
+        <label for="fEmail">Email (необязательно)</label>
+        <input type="email" id="fEmail" name="email" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="fComment">Комментарий к проекту (необязательно)</label>
+        <textarea id="fComment" name="comment" placeholder="Например: ссылка на референсы, площадь объекта, адрес"></textarea>
+      </div>
+      <!-- honeypot: обычные посетители это поле не видят и не заполняют -->
+      <div class="hp-field" aria-hidden="true">
+        <label for="fWebsite">Website</label>
+        <input type="text" id="fWebsite" name="website" tabindex="-1" autocomplete="off">
+      </div>
+      <p class="field-error" id="formError"></p>
+    </section>
+
+  </form>
+
+  <div class="result-screen" id="resultScreen">
+    <div class="result-screen__icon" id="resultIcon">✅</div>
+    <h2 id="resultTitle">Заявка отправлена</h2>
+    <p id="resultText">Мы получили расчёт и скоро свяжемся с вами, чтобы уточнить детали проекта.</p>
+    <div class="result-summary" id="resultSummaryBlock" style="display:none;">
+      <textarea id="resultSummary" readonly></textarea>
+    </div>
+    <div class="result-actions" id="resultActions"></div>
+  </div>
+
+</div>
+
+<div class="price-bar" id="priceBar">
+  <div class="price-bar__inner">
+    <div class="price-bar__estimate">
+      <div class="price-bar__label">Ориентировочно</div>
+      <div class="price-bar__value" id="priceValue"><span>0 ₽</span></div>
+    </div>
+    <button type="button" id="submitBtn">Отправить заявку</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     PRICING — ЧЕРНОВЫЕ цены и коэффициенты (в рублях).
+     Правьте цифры здесь — остальной код трогать не нужно.
+     ========================================================= */
+  var PRICING = {
+    // Цена ПЕРВОГО ракурса/кадра для каждого типа объекта
+    basePerType: {
+      interior: 15000,
+      exterior: 18000,
+      landscape: 20000
+    },
+    // Видео считается отдельно: цена за секунду ролика
+    videoPricePerSecond: 3000,
+    videoMinDurationSec: 15,
+
+    // Каждый следующий ракурс дешевле первого в это число раз
+    extraFrameFactor: 0.65,
+
+    complexity: {
+      simple:   { label: 'Простая',      mult: 0.85, hint: 'Немного мебели/деталей, стандартные материалы и свет' },
+      standard: { label: 'Стандартная',  mult: 1,    hint: 'Обычный уровень детализации, характерный для большинства проектов' },
+      complex:  { label: 'Сложная',      mult: 1.4,  hint: 'Много деталей, сложный свет/материалы, кастомная мебель' }
+    },
+
+    sourceData: {
+      model3d:  { mult: 0.9 },
+      drawings: { mult: 1 },
+      scratch:  { mult: 1.3 }
+    },
+
+    rush: {
+      standard: { mult: 1 },
+      fast:     { mult: 1.3 },
+      urgent:   { mult: 1.6 }
+    },
+
+    addons: {
+      flythrough: { label: 'Видео-облёт по готовой сцене', price: 25000 },
+      socialPack: { label: 'Адаптация для соцсетей',        price: 6000 },
+      printPack:  { label: 'Файлы для печати / баннеров',   price: 5000 }
+    },
+
+    extraRevisionPrice: 2000,
+    includedRevisions: 2,
+
+    // Разброс итоговой вилки "от – до"
+    estimateSpreadPct: 0.15,
+    roundTo: 500
+  };
+
+  /* =========================================================
+     Адрес serverless-функции, отправляющей заявку в Telegram.
+     Впишите после деплоя (см. api/submit-brief.js и .env.example).
+     Пока пусто — форма просто покажет готовый текст заявки.
+     ========================================================= */
+  var SUBMIT_ENDPOINT = '';
+
+  var LABELS = {
+    type: { interior: 'Интерьер', exterior: 'Экстерьер / фасад', landscape: 'Генплан / ландшафт', video: 'Видео-облёт' },
+    sourceData: { model3d: 'Есть готовая 3D-модель / чертежи', drawings: 'Есть только чертежи / эскизы', scratch: 'Ничего нет — только фото / референсы' },
+    rush: { standard: '10–14 дней', fast: '5–7 дней', urgent: '2–3 дня' }
+  };
+
+  var state = {
+    type: 'interior',
+    frameCount: 1,
+    videoDuration: 15,
+    complexity: 'standard',
+    sourceData: 'drawings',
+    rush: 'standard',
+    addons: [],
+    extraRevisions: 0
+  };
+
+  var form = document.getElementById('briefForm');
+
+  // Обращаемся к этим полям через getElementById, а не form.name —
+  // у HTMLFormElement уже есть своё встроенное свойство "name",
+  // и оно "перекрывает" поле формы с name="name" (частая ловушка).
+  var fields = {
+    name: document.getElementById('fName'),
+    contact: document.getElementById('fContact'),
+    email: document.getElementById('fEmail'),
+    comment: document.getElementById('fComment'),
+    website: document.getElementById('fWebsite')
+  };
+
+  function round(n, step) { return Math.round(n / step) * step; }
+
+  function calcEstimate() {
+    var base;
+    if (state.type === 'video') {
+      var dur = Math.max(state.videoDuration, PRICING.videoMinDurationSec);
+      base = PRICING.videoPricePerSecond * dur;
+    } else {
+      var perFrame = PRICING.basePerType[state.type];
+      var frames = Math.max(1, state.frameCount);
+      base = perFrame * (1 + (frames - 1) * PRICING.extraFrameFactor);
+    }
+
+    var total = base
+      * PRICING.complexity[state.complexity].mult
+      * PRICING.sourceData[state.sourceData].mult
+      * PRICING.rush[state.rush].mult;
+
+    total += state.extraRevisions * PRICING.extraRevisionPrice;
+
+    state.addons.forEach(function (key) {
+      total += PRICING.addons[key].price;
+    });
+
+    var low = round(total * (1 - PRICING.estimateSpreadPct), PRICING.roundTo);
+    var high = round(total * (1 + PRICING.estimateSpreadPct), PRICING.roundTo);
+    return { low: low, high: high };
+  }
+
+  function formatMoney(n) {
+    return n.toLocaleString('ru-RU') + ' ₽';
+  }
+
+  function updatePriceBar() {
+    var est = calcEstimate();
+    document.getElementById('priceValue').innerHTML =
+      '<span>' + formatMoney(est.low) + ' – ' + formatMoney(est.high) + '</span>';
+  }
+
+  /* ---------- Тип объекта: переключает блок 2 ---------- */
+  form.querySelectorAll('input[name="type"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      state.type = input.value;
+      syncOptionCards('type');
+      var isVideo = state.type === 'video';
+      document.getElementById('frameCountSection').style.display = isVideo ? 'none' : '';
+      document.getElementById('videoDurationSection').style.display = isVideo ? '' : 'none';
+      updatePriceBar();
+    });
+  });
+
+  /* ---------- Радио-карточки: подсветка выбранной ---------- */
+  function syncOptionCards(groupName) {
+    form.querySelectorAll('[data-group="' + groupName + '"] .option-card').forEach(function (card) {
+      var input = card.querySelector('input');
+      card.classList.toggle('is-checked', input.checked);
+    });
+  }
+
+  form.querySelectorAll('input[name="sourceData"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      state.sourceData = input.value;
+      syncOptionCards('sourceData');
+      updatePriceBar();
+    });
+  });
+
+  form.querySelectorAll('input[data-group="addons"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      state.addons = Array.prototype.slice.call(
+        form.querySelectorAll('input[data-group="addons"]:checked')
+      ).map(function (i) { return i.value; });
+      input.closest('.option-card').classList.toggle('is-checked', input.checked);
+      updatePriceBar();
+    });
+  });
+
+  /* ---------- Сегментированные переключатели ---------- */
+  function bindSegmented(groupName, onChange) {
+    var group = form.querySelector('.segmented[data-group="' + groupName + '"]');
+    group.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+        btn.setAttribute('aria-pressed', 'true');
+        state[groupName] = btn.dataset.value;
+        onChange && onChange();
+        updatePriceBar();
+      });
+    });
+  }
+  bindSegmented('complexity', updateComplexityHint);
+  bindSegmented('rush');
+
+  function updateComplexityHint() {
+    document.getElementById('complexityHint').textContent = PRICING.complexity[state.complexity].hint;
+  }
+  updateComplexityHint();
+
+  /* ---------- Степперы ---------- */
+  var stepperLimits = {
+    frameCount: { min: 1, max: 20 },
+    videoDuration: { min: 15, max: 600 },
+    extraRevisions: { min: 0, max: 15 }
+  };
+  form.querySelectorAll('[data-step]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var key = btn.dataset.step;
+      var dir = parseInt(btn.dataset.dir, 10);
+      var limits = stepperLimits[key];
+      var next = state[key] + dir;
+      next = Math.max(limits.min, Math.min(limits.max, next));
+      state[key] = next;
+      document.getElementById(key + 'Value').textContent = next;
+      updatePriceBar();
+    });
+  });
+
+  /* ---------- Валидация и отправка ---------- */
+  var submitBtn = document.getElementById('submitBtn');
+  var errorEl = document.getElementById('formError');
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.classList.add('is-visible');
+  }
+  function clearError() {
+    errorEl.classList.remove('is-visible');
+  }
+
+  function buildSummaryText(estimate) {
+    var lines = [];
+    lines.push('Новая заявка с калькулятора стоимости');
+    lines.push('');
+    lines.push('Тип: ' + LABELS.type[state.type]);
+    if (state.type === 'video') {
+      lines.push('Длительность ролика: ' + state.videoDuration + ' сек');
+    } else {
+      lines.push('Ракурсов: ' + state.frameCount);
+    }
+    lines.push('Сложность: ' + PRICING.complexity[state.complexity].label);
+    lines.push('Исходные данные: ' + LABELS.sourceData[state.sourceData]);
+    lines.push('Сроки: ' + LABELS.rush[state.rush]);
+    if (state.addons.length) {
+      lines.push('Доп. услуги: ' + state.addons.map(function (a) { return PRICING.addons[a].label; }).join(', '));
+    }
+    if (state.extraRevisions) {
+      lines.push('Доп. правок: ' + state.extraRevisions);
+    }
+    lines.push('Оценка: ' + formatMoney(estimate.low) + ' – ' + formatMoney(estimate.high));
+    lines.push('');
+    lines.push('Имя: ' + fields.name.value.trim());
+    lines.push('Контакт: ' + fields.contact.value.trim());
+    if (fields.email.value.trim()) lines.push('Email: ' + fields.email.value.trim());
+    if (fields.comment.value.trim()) lines.push('Комментарий: ' + fields.comment.value.trim());
+    return lines.join('\n');
+  }
+
+  function showResult(mode, summaryText) {
+    document.getElementById('briefForm').style.display = 'none';
+    document.getElementById('priceBar').style.display = 'none';
+    var screen = document.getElementById('resultScreen');
+    screen.classList.add('is-visible');
+
+    var icon = document.getElementById('resultIcon');
+    var title = document.getElementById('resultTitle');
+    var text = document.getElementById('resultText');
+    var summaryBlock = document.getElementById('resultSummaryBlock');
+    var actions = document.getElementById('resultActions');
+    actions.innerHTML = '';
+
+    if (mode === 'sent') {
+      icon.textContent = '✅';
+      title.textContent = 'Заявка отправлена';
+      text.textContent = 'Мы получили расчёт и скоро свяжемся с вами, чтобы уточнить детали проекта.';
+      summaryBlock.style.display = 'none';
+    } else {
+      icon.textContent = '📋';
+      title.textContent = 'Заявку не удалось отправить автоматически';
+      text.textContent = 'Скопируйте расчёт ниже и отправьте его нам в Telegram или на почту — мы обязательно ответим.';
+      summaryBlock.style.display = '';
+      document.getElementById('resultSummary').value = summaryText;
+
+      var copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'btn-outline';
+      copyBtn.textContent = 'Скопировать текст';
+      copyBtn.addEventListener('click', function () {
+        var ta = document.getElementById('resultSummary');
+        ta.select();
+        document.execCommand('copy');
+        copyBtn.textContent = 'Скопировано!';
+        setTimeout(function () { copyBtn.textContent = 'Скопировать текст'; }, 1500);
+      });
+      actions.appendChild(copyBtn);
+
+      var siteLink = document.createElement('a');
+      siteLink.className = 'btn-outline';
+      siteLink.href = 'https://neurootlichnik.ru/';
+      siteLink.target = '_blank';
+      siteLink.rel = 'noopener';
+      siteLink.textContent = 'Написать студии';
+      actions.appendChild(siteLink);
+    }
+  }
+
+  submitBtn.addEventListener('click', function () {
+    clearError();
+
+    var name = fields.name.value.trim();
+    var contact = fields.contact.value.trim();
+    if (!name || !contact) {
+      showError('Заполните, пожалуйста, имя и телефон/Telegram — иначе мы не сможем с вами связаться.');
+      form.querySelector(!name ? '#fName' : '#fContact').focus();
+      return;
+    }
+
+    var estimate = calcEstimate();
+    var summaryText = buildSummaryText(estimate);
+
+    var payload = {
+      type: state.type,
+      frameCount: state.frameCount,
+      videoDuration: state.videoDuration,
+      complexity: state.complexity,
+      sourceData: state.sourceData,
+      rush: state.rush,
+      addons: state.addons,
+      extraRevisions: state.extraRevisions,
+      estimateLow: estimate.low,
+      estimateHigh: estimate.high,
+      name: name,
+      contact: contact,
+      email: fields.email.value.trim(),
+      comment: fields.comment.value.trim(),
+      website: fields.website.value, // honeypot
+      summaryText: summaryText
+    };
+
+    if (!SUBMIT_ENDPOINT) {
+      showResult('fallback', summaryText);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Отправляем…';
+
+    fetch(SUBMIT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('bad status');
+        showResult('sent');
+      })
+      .catch(function () {
+        showResult('fallback', summaryText);
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Отправить заявку';
+      });
+  });
+
+  /* ---------- Инициализация ---------- */
+  syncOptionCards('type');
+  syncOptionCards('sourceData');
+  updatePriceBar();
+})();
+</script>
+</body>
+</html>
