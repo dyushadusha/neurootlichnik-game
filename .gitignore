@@ -1,1 +1,7 @@
 node_modules/
+
+# Инструмент холодной рассылки (tools/outreach): собранные контакты,
+# черновики писем, журнал отправки и креды — не для гита.
+tools/outreach/.env
+tools/outreach/config.json
+tools/outreach/data/

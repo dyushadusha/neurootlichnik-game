@@ -5,9 +5,18 @@
   "description": "Telegram Mini App игра «Найди 5 отличий» для студии архитектурной нейровизуализации «Нейро Отличник»",
   "scripts": {
     "dev": "npx --yes serve .",
-    "generate-level": "node tools/generate-level.js"
+    "generate-level": "node tools/generate-level.js",
+    "leads:2gis": "node tools/outreach/discover-2gis.js",
+    "leads:yandex": "node tools/outreach/discover-yandex.js",
+    "leads:enrich": "node tools/outreach/enrich-emails.js",
+    "leads:draft": "node tools/outreach/generate-drafts.js",
+    "leads:send": "node tools/outreach/send-emails.js"
   },
   "devDependencies": {
+    "cheerio": "^1.2.0",
+    "csv-parse": "^7.0.2",
+    "csv-stringify": "^6.8.3",
+    "nodemailer": "^10.0.0",
     "sharp": "^0.35.4"
   }
 }
