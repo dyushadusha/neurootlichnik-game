@@ -10,7 +10,9 @@
  * Переменные окружения:
  *   TELEGRAM_BOT_TOKEN   токен бота от @BotFather, обязателен
  *   LOGO_PATH            путь к файлу логотипа, по умолчанию assets/logo-full.svg
- *   WATERMARK_PERCENT    ширина логотипа в % от ширины картинки, по умолчанию 15
+ *   WATERMARK_PERCENT    ширина логотипа в % от ширины картинки, по умолчанию 28
+ *                          (полный логотип очень широкий и низкий, поэтому по
+ *                          ширине ему нужен больший % картинки, чем значку)
  *   WATERMARK_MARGIN     отступ от краёв в % от ширины картинки, по умолчанию 4
  *   WATERMARK_OPACITY    непрозрачность логотипа 0-1, по умолчанию 1
  *
@@ -30,8 +32,9 @@ if (!TOKEN) {
 }
 
 const LOGO_PATH = path.resolve(process.env.LOGO_PATH || path.join(__dirname, '..', 'assets', 'logo-full.svg'));
+const DEFAULT_PERCENT_FOR_FULL_LOGO = 28;
 const WATERMARK_OPTIONS = {
-  percent: process.env.WATERMARK_PERCENT !== undefined ? Number(process.env.WATERMARK_PERCENT) : DEFAULTS.percent,
+  percent: process.env.WATERMARK_PERCENT !== undefined ? Number(process.env.WATERMARK_PERCENT) : DEFAULT_PERCENT_FOR_FULL_LOGO,
   margin: process.env.WATERMARK_MARGIN !== undefined ? Number(process.env.WATERMARK_MARGIN) : DEFAULTS.margin,
   opacity: process.env.WATERMARK_OPACITY !== undefined ? Number(process.env.WATERMARK_OPACITY) : DEFAULTS.opacity,
 };
