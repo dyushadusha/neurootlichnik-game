@@ -19,7 +19,7 @@
  */
 
 const path = require('path');
-const sharp = require('sharp');
+const { addWatermark, DEFAULTS } = require('./lib/watermark');
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -36,24 +36,12 @@ function parseArgs(argv) {
   return args;
 }
 
-async function applyOpacity(buffer, opacity) {
-  if (opacity >= 1) return buffer;
-  const img = sharp(buffer).ensureAlpha();
-  const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
-  for (let p = 3; p < data.length; p += 4) {
-    data[p] = Math.round(data[p] * opacity);
-  }
-  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
-    .png()
-    .toBuffer();
-}
-
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || args._.length < 1 || !args.logo || !args.out) {
     console.log(
       'Использование: node tools/add-watermark.js <image> --logo <logo> --out <result> ' +
-      '[--percent 15] [--margin 4] [--opacity 1]'
+      `[--percent ${DEFAULTS.percent}] [--margin ${DEFAULTS.margin}] [--opacity ${DEFAULTS.opacity}]`
     );
     process.exit(args.help ? 0 : 1);
   }
@@ -62,50 +50,22 @@ async function main() {
   const logoPath = path.resolve(args.logo);
   const outPath = path.resolve(args.out);
 
-  const percent = args.percent !== undefined ? args.percent : 15;
-  const marginPercent = args.margin !== undefined ? args.margin : 4;
-  const opacity = args.opacity !== undefined ? args.opacity : 1;
+  const result = await addWatermark(imagePath, logoPath, {
+    percent: args.percent,
+    margin: args.margin,
+    opacity: args.opacity,
+  });
 
-  if (percent <= 0 || percent > 100) {
-    console.error('--percent должен быть в диапазоне (0, 100].');
-    process.exit(1);
-  }
+  const fs = require('fs');
+  fs.writeFileSync(outPath, result.buffer);
 
-  const base = sharp(imagePath);
-  const baseMeta = await base.metadata();
-  const { width: baseWidth, height: baseHeight } = baseMeta;
-  if (!baseWidth || !baseHeight) {
-    throw new Error(`Не удалось определить размер изображения: ${imagePath}`);
-  }
-
-  const targetLogoWidth = Math.max(1, Math.round((baseWidth * percent) / 100));
-  const margin = Math.round((baseWidth * marginPercent) / 100);
-
-  let logoBuffer = await sharp(logoPath)
-    .resize({ width: targetLogoWidth })
-    .png()
-    .toBuffer();
-
-  logoBuffer = await applyOpacity(logoBuffer, opacity);
-
-  const logoMeta = await sharp(logoBuffer).metadata();
-  const logoWidth = logoMeta.width;
-  const logoHeight = logoMeta.height;
-
-  const left = Math.max(0, baseWidth - logoWidth - margin);
-  const top = margin;
-
-  if (top + logoHeight > baseHeight) {
+  if (result.overflowsBottom) {
     console.warn('⚠ Логотип с текущим --percent/--margin выходит за нижнюю границу изображения.');
   }
 
-  await base
-    .composite([{ input: logoBuffer, left, top }])
-    .toFile(outPath);
-
   console.log(`Готово: ${outPath}`);
-  console.log(`  Изображение: ${baseWidth}x${baseHeight}`);
-  console.log(`  Логотип: ${logoWidth}x${logoHeight} (${percent}% ширины, позиция ${left},${top})`);
+  console.log(`  Изображение: ${result.baseWidth}x${result.baseHeight}`);
+  console.log(`  Логотип: ${result.logoWidth}x${result.logoHeight}, позиция ${result.left},${result.top}`);
 }
 
 main().catch((err) => {
