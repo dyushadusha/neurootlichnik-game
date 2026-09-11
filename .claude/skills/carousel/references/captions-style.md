@@ -30,6 +30,34 @@ and don't have a sourced one, use a qualitative comparison instead of a fabricat
 "часы, а не недели" works, a made-up "от 30 минут" doesn't (this cost a redo the first time this
 skill's process was worked out by hand).
 
+## The "proof list" caption (photo-macro carousels)
+
+For a carousel whose argument is the image itself — the "Это ИИ." format, where macro
+close-ups prove a generated render survives being looked at closely — the client asked for a
+specific caption shape, taken from a reference post they liked (Mobile Editing Club,
+2026-09-11) and adapted to this studio. Use it whenever the carousel is that kind of proof
+post; the pain-point structure below stays the default for everything else.
+
+The shape, in order:
+
+1. A two-word hook plus a down-arrow: `Это ИИ ↓` — it reads as a caption to the image, not a
+   headline.
+2. One line on the gap closing faster than people think.
+3. **The proof list as prose, not bullets** — two short paragraphs naming the specific things
+   in THIS carousel's frames (the depth of a raked joint, the double reflection in a sealed
+   unit, the shadow between soffit slats). The slides already list them tersely; here they
+   read like someone pointing at the picture. Never list a cue the frames don't actually show.
+4. One line closing the list: this is what the eye reads as real, and it is all there.
+5. The insight — perfection is what gives a render away; a real building has tonal variation,
+   dust, an uneven shadow.
+6. The turn: none of it assembles itself without an architect behind the prompt.
+7. P.S. with the offer and the comment/DM gate (a word to write in the direct), then a second,
+   softer CTA for a different intent (bring us your object).
+8. A follow line, then 5–9 hashtags.
+
+Keep the studio's voice through all of it — the reference is a structure, not a tone: no
+"grab the guide!", no stacked emoji, one wink at most.
+
 ## Instagram
 
 Structure: hook line → short body (concrete pain → the reframe/insight → the studio's angle) →
