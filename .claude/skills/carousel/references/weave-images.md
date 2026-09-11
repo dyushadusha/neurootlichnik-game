@@ -26,13 +26,29 @@ credits and still ships a soft image.
 The tool that worked ("Карусели это ИИ"):
 
 ```
-Prompt ──► GPT Image 2.5 ──► Output главное          (1024x1536-class portrait render)
-File   ──► Topaz Image Upscale ──► Output клоузап    (2x, 576x1024 -> 1152x2048)
+Prompt A ──► GPT Image 2.5 ─────────► Output главное    (608x1088 portrait render)
+File + Prompt B ──► Nano Banana Pro ─► Output клоузап   (2K: 1536x2752)
 ```
 
-Two independent branches, two outputs, one run fires both. Ask for exactly this shape:
-a generation branch driven by `Prompt`, and an upscale branch whose image input is exposed
-as a tool input so you can feed it your own crops.
+Two independent branches, two outputs, one run fires both. Ask for exactly this shape: a
+generation branch driven by its own `Prompt`, and a detail branch whose image input AND prompt
+are both exposed as tool inputs so you can feed it your own crops with per-view instructions.
+
+**Generative detail (Nano Banana Pro) beat a classical upscaler (Topaz) decisively** on this
+material, and it is what the client kept. Topaz enlarges cleanly but leaves plaster and gravel
+looking smoothed; Nano Banana rebuilds real micro-texture — plaster stipple, curtain weave,
+seam highlights — which is the entire argument of a photorealism post. The tradeoff is that it
+regenerates rather than enlarges: framing shifts slightly and small elements can appear, so a
+crop is no longer literally the same pixels as the hero. Same building, same light, same
+materials — put that choice to the client rather than deciding it alone if the concept leans on
+"these are literally crops of slide 1".
+
+**Write a real prompt per view, not one generic "upscale" line.** Name what is in THIS frame
+(the impost between the panes, the standing seams and the ridge, the pebbles and paver joints,
+the batten rhythm and the canopy shadow), then constrain it: keep framing, geometry, colours,
+exposure and lighting exactly, move/add/remove nothing, no stylisation, no sharpening halos, no
+text. The specific nouns are what the model reconstructs; without them it drifts toward generic
+"nice architecture".
 
 ## Practical notes
 
@@ -41,18 +57,21 @@ as a tool input so you can feed it your own crops.
   to the repo branch and use its `raw.githubusercontent.com` URL — the repo is public, so this
   is the cheapest way to hand Weave a reachable https URL (no `weave_upload_asset` file picker,
   which needs the user to click). Delete the temp files in a later commit.
-- **Every run fires every branch**, so a generation-only run still spends the upscale branch's
-  time (and vice versa). Cancel the branch you don't need with `weave_cancel_tool_run` once the
-  one you want has completed — failed/cancelled branches cost little; a completed Topaz pass is
-  the expensive part.
+- **Every run fires every branch**, so an upscale-only run also kicks off a full image
+  generation from the other branch. The client watching their Weave canvas sees a queue of
+  unrelated houses appear and will ask what they are — say so before they notice. Cancel those
+  runs with `weave_cancel_tool_run` as soon as the branch you wanted completes; better, ask for
+  the graph to be split into two separate tools (generate / detail) so a run only does the one
+  job.
 - **One `weave_run_tool` call returns several run ids** (one per branch). Poll them all;
   a FAILED sibling doesn't mean your branch failed.
 - **Don't put a Crop node between the file input and the upscaler.** It failed on every input
   with `Failed running Crop: Graphics node: Failed to execute rust-runner`, and it isn't needed:
   cut the crops locally with Pillow at exactly the aspect the upscaler expects.
-- **Costs** (this workspace, 2026-09): the old general tool 6.1 credits/run; the
-  generate+Topaz tool 22 credits/run. A full carousel cycle — one hero plus four macro
-  close-ups, each upscaled — is 6 runs ≈ 132 credits. `weave_run_tool` gates on cost: always
+- **Costs** (this workspace, 2026-09): the old general tool 6.1 credits/run; generate+Topaz
+  22 credits/run; generate+Nano Banana Pro 14 credits/run. A full carousel cycle — one hero
+  plus four macro close-ups, each passed through the detail branch — is 6 runs ≈ 84 credits,
+  and budget for one or two re-cuts on top. `weave_run_tool` gates on cost: always
   put the number to the user with a structured Approve/Cancel prompt before echoing
   `acknowledgedCost`, every run.
 - **Topaz settings for a clean AI render**: model **High Fidelity V2** (fallbacks: Recovery V2
@@ -78,8 +97,18 @@ literally true:
 3. Run each crop, and the hero itself, through the upscaler. The hero needs it too: a
    608×1088 render stretched to a 1080×1920 cover is the softest image in the carousel,
    on the slide that has to sell realism.
-4. Downsample the 1152×2048 results to 1080×1920 (`LANCZOS`, JPEG quality ~84) — downsampling
-   adds apparent sharpness and keeps the seeded canvas under budget.
+4. Downsample the 2K results (1536×2752) to 1080×1920 (`LANCZOS`, JPEG quality ~84) —
+   downsampling adds apparent sharpness and keeps the seeded canvas under budget.
+
+**Compose each crop around where the text will sit.** On these slides the copy block (eyebrow,
+label, rule, five bullets) covers roughly the top 47% of the frame, so the subject belongs in
+the LOWER half with something quiet above it — sky over a roof, plain plaster over a window,
+paving over a gravel bed. A first pass that centred each subject put the window frame and the
+roof seams directly under the bullets; re-cutting with the subject low fixed it at no cost.
+Verify by rendering the actual slides with the draft crops in place (local upscale is fine for
+this) before spending a single credit. Include the defining hardware, too: a window close-up
+without the frame and the impost between the panes doesn't read as a window at all — the client
+asked for exactly that.
 
 Pick crop regions that each contain their slide's bullet points — check by looking at a contact
 sheet of the crops before spending upscale credits. It is worth choosing one crop that also
