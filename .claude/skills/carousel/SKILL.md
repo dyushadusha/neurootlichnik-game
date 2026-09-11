@@ -27,7 +27,7 @@ lime sticker-card look, and the client called it out). The brand tokens in `refe
 keep those. Everything else — the layout language, how bold the type gets, how photos are
 treated, how playful the copy is — should genuinely differ carousel to carousel, chasing
 whatever reads as current in social design right now rather than reusing the last invocation's
-choices wholesale. Five directions that have worked so far, described so you don't just
+choices wholesale. Six directions that have worked so far, described so you don't just
 recreate them: sticker cards (chip-and-badge elements with an offset hard shadow, thick
 borders, a recurring illustrated mascot), editorial poster (huge oversized type bleeding toward
 the frame edges, flat highlight bars instead of shadowed chips, big flat color blocks, a
@@ -43,14 +43,21 @@ behind photos via offset rotated duplicate layers, doodle stickers with hard dro
 busy on purpose, the opposite failure mode from editorial grid's quiet minimalism, reached for
 when the client explicitly asks for "complex," "human," maximalist design; see brand.md's
 "Maximalist bento glass" section for the CSS patterns and the bugs this direction is prone to),
-and technical blueprint (ink as the dominant background rather than white or lime, thin 1-2px
+technical blueprint (ink as the dominant background rather than white or lime, thin 1-2px
 rules instead of card borders, a faint dot grid across every slide, corner registration
 brackets as the recurring signature device, dimension-line callouts — a rule with tick-mark
 ends and a centered tracked-caps label — standing in for chips, "sheet number" styling on the
 slide counter; lime and cream appear only as line/label color, never a filled panel, which
 sidesteps the invisible-text bug class entirely. Reached for when the topic itself is about a
 plan, a promise, or something not yet built — see brand.md's "Technical blueprint" section for
-the CSS patterns and the layout pitfalls it's prone to). Treat those as five points on a
+the CSS patterns and the layout pitfalls it's prone to), and photo macro proof (photography carries every
+slide and the brand system shrinks to type, one lime hairline, lime em-dash bullets and the
+corner logo — no cards, stickers, doodles or mascot, because anything drawn undercuts the "this
+is a photograph" premise; one hero frame on the cover and again on the closer, with macro
+close-ups cropped out of that same frame in between. Reached for when the image itself is the
+argument — see brand.md's "Photo macro proof" section for the scrim/label/bullet CSS and the
+stacking-order bug it is prone to, and references/weave-images.md for producing the frames).
+Treat those as six points on a
 spectrum, not the only options — collage/cutout layering, kinetic-looking diagonal grids,
 brutalist anti-design are all fair game too if they fit the topic and still read as this studio
 when someone glances at the corner logo. If the last one or
@@ -115,7 +122,7 @@ Write the 3 captions now too (Instagram / Telegram / Threads), following
 `references/captions-style.md`'s structure and voice exactly. Do this while the copy is fresh —
 don't leave it as an afterthought after the visual build.
 
-## Step 2 — Ask about real photos, once, then move on
+## Step 2 — Sort out the imagery, once, then move on
 
 Check `assets/portfolio/` first — it holds real (studio-generated) render photos already
 pulled from past client uploads, filenames descriptive of what's in each one. If something
@@ -123,9 +130,18 @@ there fits the topic, use it; no need to ask. Only if nothing there fits, and th
 already supplied images for this specific carousel, ask once whether they have any to use for
 the cover and/or the "visual proof" slide (full-bleed photo background + bold white headline
 overlay — see brand.md for the pattern). If they say no or don't answer, proceed with all 8
-slides in the illustrated brand style — don't block the whole task on this. Never fabricate an
-architectural render to stand in for a real one; that's exactly the "AI slop" this studio's
+slides in the illustrated brand style — don't block the whole task on this. Never pass an image off as something it isn't — a
+generated frame presented as a delivered client project is exactly the "AI slop" this studio's
 whole positioning pushes back against.
+
+Generating imagery from scratch is a third option, and sometimes the only honest one: a
+carousel *about* what AI rendering can do needs a frame nobody has seen before, and the client
+may explicitly rule out reusing portfolio work. The studio's own Weave workspace is reachable
+from this session through the Figma MCP server (`weave_*` tools) — see
+`references/weave-images.md` for the pipeline, the tool shape to ask the client for, the credit
+costs, and the one-photoset rule that keeps every macro close-up provably the same object.
+Weave runs spend the client's credits, so every single run needs an explicit structured
+approval first, with the number in it.
 
 If they paste images directly into the chat, they will NOT be reachable as files in this
 environment — only actual file attachments (or images embedded in a PDF/DOCX they upload) land
@@ -154,9 +170,9 @@ Read `references/brand.md` now (not before — you want the copy locked first) a
 
 ## Step 4 — Export and deliver
 
-1. Export each of the 8 slides as an individual JPEG at true 1080×1350 resolution (same
+1. Export each slide as an individual JPEG at the carousel's true resolution (same
    Playwright approach as the verification pass, `type="jpeg"`, quality ~92).
-2. Send all 8 in one `SendUserFile` call, in slide order, with a short caption like "8 слайдов
+2. Send them all in one `SendUserFile` call, in slide order, with a short caption like "8 слайдов
    карусели, JPEG, по порядку 1→8".
 3. Hand back the 3 captions from Step 1 as plain text in your reply, each clearly labeled
    (Instagram / Telegram / Threads), ready to copy-paste.

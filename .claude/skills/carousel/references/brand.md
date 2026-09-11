@@ -7,6 +7,13 @@ All paths below are relative to the repo root (`/home/user/neurootlichnik-game`)
 Each slide is `1080×1350` px (4:5, Instagram's standard feed-carousel ratio — matches the
 studio's own reference carousel, don't switch to 9:16 or square without being asked).
 
+When the client *does* ask for `1080×1920` (9:16) — as they did for the photo-led "Это ИИ."
+carousel, built to be read full-screen like a Reel — change the canvas size in three places or
+the slides silently clip: `html, body` and `.root` in `BASE_CSS`, and the `w`/`h` of every
+artboard in `canvas.json`. The extra 570px of height is vertical room, not an invitation to add
+elements: the same amount of copy with more air around it is what makes the taller format read
+as deliberate.
+
 ## Colors
 
 Exactly three, straight out of `src/style.css` (`:root` block) — don't introduce a fourth:
@@ -177,7 +184,13 @@ backgrounds per carousel — typically the cover and one "proof" slide, bookendi
 middle, though a strong photo can carry more slides if the topic calls for it (a whole carousel
 can be photo-led if that's the right choice for the topic).
 
-Two treatments, pick whichever the photo actually needs:
+`assets/generated/` holds AI frames generated for a specific carousel and worth reusing:
+`eto-ii-house-hero.jpg` (1080×1920 portrait exterior — warm plaster + dark timber battens,
+standing-seam roof, lime front door and bench) plus four macro crops of that same house
+(`-macro-windows`, `-macro-roof`, `-macro-landscape`, `-macro-facade`). They came out of the
+Weave pipeline in `references/weave-images.md`; reuse them before paying to regenerate a house.
+
+Three treatments, pick whichever the photo actually needs:
 
 ```css
 .photo-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -204,6 +217,54 @@ Compress source photos before embedding — `PIL`, `quality=78, optimize=True` b
 ~400KB JPEGs down to ~230KB each with no visible loss, and the seed-canvas helper's own warning
 threshold (~70KB/image) is a soft guideline, not a hard cap; a few photos in the few-hundred-KB
 range are fine against the 16MB total document budget.
+
+## Photo macro proof
+
+A sixth layout direction (see SKILL.md's "Vary the design every time") for a carousel whose
+argument IS the image — first built for "Это ИИ.", where the claim was that a generated render
+survives being looked at closely. Photography carries every slide; the brand system is reduced
+to type, one lime hairline, lime dashes and the corner logo. No cards, no stickers, no doodles,
+no character illustrations — anything drawn would undercut the "this is a photograph" premise.
+
+The shape: one hero frame on the cover and again (framed, smaller) on the final slide, with
+four macro close-ups **cropped out of that same hero** in between (see
+`references/weave-images.md` for how the frames are produced). Each detail slide is a
+full-bleed photo under a diagonal ink scrim, with a KicaBold label, a short lime rule, and five
+bullets whose markers are lime em-dashes rather than discs:
+
+```css
+/* diagonal scrim — heaviest in the corner the text block sits in, gone by the far corner,
+   so the photo's subject stays visible instead of being flattened under an even veil */
+.scrim-diag {
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(148deg, rgba(16,17,14,0.93) 0%, rgba(16,17,14,0.86) 26%,
+                              rgba(16,17,14,0.62) 48%, rgba(16,17,14,0.16) 70%, rgba(16,17,14,0) 86%);
+}
+.label { font-family: 'KicaBold', sans-serif; font-size: 104px; line-height: 0.96; color: #f5f2e8; }
+.rule-lime { width: 132px; height: 5px; background: #dbfc3b; }
+.bullet { display: flex; gap: 20px; align-items: baseline; font-size: 33px; color: rgba(245,242,232,0.93); }
+.bullet i { font-style: normal; color: #dbfc3b; flex: none; }   /* the em-dash marker */
+```
+
+**A scrim with `z-index: 1` paints over every text element that has no `z-index` of its own —
+invisible-text bug #4.** The cover's headline, subtitle and CTA pill were all authored without
+one, so the scrim veiled them: white type went grey and the lime CTA pill rendered as a muddy
+olive. Positioned elements with `z-index: auto` sit *below* a later sibling that sets
+`z-index: 1`, so "it comes after in the DOM" is not enough. Give every text layer on a photo
+slide an explicit `z-index: 3` (or wrap the whole text block in one positioned container that
+has it) rather than relying on source order.
+
+Scrim strength is a per-photo judgement, not a constant: the same gradient that made text
+legible over a bright sky buried the building on a late-afternoon frame, and the building is
+the proof. Check the render, then trade opacity against legibility — and lean on
+`text-shadow` on the type before darkening the photo any further.
+
+Two more things this direction is prone to. A photo dropped into a *frame* on a text slide
+(the final slide's framed hero) gets cropped by `object-fit: cover` to whatever the frame's
+aspect ratio is — a portrait source in a landscape frame showed a doorway instead of a house,
+which is useless as a "look what we make" proof; size the frame to the source's own aspect and
+re-check what is actually inside it. And a bottom-left corner logo over photography needs its
+own small bottom scrim: lime-on-foliage disappears exactly the way lime-on-lime does.
 
 ## Maximalist bento glass
 
