@@ -246,6 +246,14 @@ bullets whose markers are lime em-dashes rather than discs:
 .bullet i { font-style: normal; color: #dbfc3b; flex: none; }   /* the em-dash marker */
 ```
 
+**The four detail topics are derived from the object, not carried over from the last run.**
+The first house had a seamed pitched roof, so one slide was Кровля; the second had a flat slab
+and no ridge or chimney at all, so that slide became Кирпич — its raked joints are what that
+building actually proves. A third, a travertine villa, ran Камень / Кровля / Стекло / Вода.
+Pick the four materials the frame genuinely shows and write the bullets from them: a bullet
+naming a detail that is not in the picture is the exact failure this whole format exists to
+argue against, and a reader who scrolls back to check will find it.
+
 **A scrim with `z-index: 1` paints over every text element that has no `z-index` of its own —
 invisible-text bug #4.** The cover's headline, subtitle and CTA pill were all authored without
 one, so the scrim veiled them: white type went grey and the lime CTA pill rendered as a muddy
