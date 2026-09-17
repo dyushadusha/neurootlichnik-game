@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """Экспорт сцены генплана в компактный JSON для веб-просмотра (three.js)."""
 import json
-import math
-
-from shapely.geometry import Point
-from shapely.ops import unary_union
+import os
 
 import config as C
 import genplan as G
@@ -19,20 +16,20 @@ def poly_json(g, tol=0.25, nd=2):
         p = p.simplify(tol)
         if p.is_empty or not hasattr(p, 'exterior'):
             continue
-        ext = [[round(x, nd), round(y, nd)] for x, y in p.exterior.coords]
-        holes = [[[round(x, nd), round(y, nd)] for x, y in r.coords] for r in p.interiors]
-        out.append({'e': ext, 'h': holes})
+        out.append({'e': [[round(x, nd), round(y, nd)] for x, y in p.exterior.coords],
+                    'h': [[[round(x, nd), round(y, nd)] for x, y in r.coords]
+                          for r in p.interiors]})
     return out
 
 
 def scene(frame, m, title):
     s = {'title': title, 'site': poly_json(frame.poly, 0.05),
-         'inner': poly_json(m['inner'], 0.2), 'slabs': [], 'water': [],
-         'walls': [], 'roofs': [], 'canopies': [], 'trees': [], 'labels': [],
-         'stalls': [], 'tep': [[n, round(a), round(p, 1)] for n, a, p in G.teп(frame, m)],
+         'slabs': [], 'water': [], 'vols': [], 'roofs': [], 'cyls': [],
+         'equip': [], 'trees': [], 'labels': [], 'stalls': [],
+         'zones': [], 'stallCount': m['nstall'],
+         'tep': [[n, round(a), round(p, 1)] for n, a, p in G.teп(frame, m)],
          'expl': [[r['n'], r['name'], round(r['area']), r['count']]
-                  for r in G.explication(m)],
-         'stallCount': m['nstall']}
+                  for r in G.explication(m)]}
 
     for g in m['roads']:
         s['slabs'] += [dict(p=p, t='road') for p in poly_json(g, 0.35)]
@@ -43,37 +40,62 @@ def scene(frame, m, title):
     for g in m['stalls']:
         s['stalls'] += [[round(x, 2), round(y, 2)] for x, y in g.exterior.coords[:-1]]
 
+    roof_tris = []
     for it in m['items']:
-        for t, g in it['parts']:
-            if t == 'building':
-                for p in poly_json(g, 0.15):
-                    s['walls'].append(dict(p=p, z=0.0, h=round(it['wall'], 2)))
-                rings, capped = model3d.roof_rings(
-                    g, it['wall'], max(it['h'], it['wall'] + 0.6), it['roof'])
-                s['roofs'].append(dict(
-                    r=[[[round(x, 2), round(y, 2), round(z, 2)] for x, y, z in ring]
-                       for ring in rings], c=capped))
+        for t, sp in it['parts']:
+            if t == 'volume':
+                for p in poly_json(sp['poly'], 0.12):
+                    s['vols'].append(dict(p=p, z=round(sp['z0'], 2),
+                                          h=round(sp['wall'] - sp['z0'], 2)))
+                roof_tris += model3d.roof_tris(sp['poly'], sp['roof'], sp['wall'],
+                                               sp['ridge'], sp.get('over', 0.9))
             elif t == 'canopy':
-                for p in poly_json(g, 0.15):
-                    s['canopies'].append(dict(p=p, h=round(max(it['wall'], 3.0), 2)))
+                roof_tris += model3d.roof_tris(sp['poly'], sp['roof'], sp['wall'],
+                                               sp['ridge'], sp.get('over', 1.1))
+                for x, y, r in sp.get('cols', []):
+                    s['cyls'].append([round(x, 2), round(y, 2), round(r, 2),
+                                      round(sp['z0'], 2), round(sp['wall'], 2), 0])
+            elif t == 'column':
+                for x, y, r in sp['pts']:
+                    s['cyls'].append([round(x, 2), round(y, 2), round(r, 2), 0,
+                                      round(sp['h'], 2), 0])
+            elif t == 'chimney':
+                c = sp['poly'].centroid
+                r = max(0.5, (sp['poly'].area / 3.14) ** 0.5)
+                s['cyls'].append([round(c.x, 2), round(c.y, 2), round(r, 2), 0,
+                                  round(sp['h'], 2), 1])
+            elif t == 'tub':
+                c = sp['poly'].centroid
+                r = (sp['poly'].area / 3.14159) ** 0.5
+                s['cyls'].append([round(c.x, 2), round(c.y, 2), round(r, 2), 0,
+                                  round(sp['h'], 2), 2])
+            elif t == 'equip':
+                for p in poly_json(sp['poly'], 0.1):
+                    s['equip'].append(dict(p=p, h=round(sp.get('h', 1.0), 2)))
             elif t == 'water':
-                s['water'] += poly_json(g, 0.15)
-            elif t in ('terrace', 'platform', 'court'):
-                for p in poly_json(g, 0.2):
-                    s['slabs'].append(dict(p=p, t=t))
+                s['water'] += poly_json(sp['poly'], 0.15)
+            elif t in ('deck', 'platform', 'court'):
+                for p in poly_json(sp['poly'], 0.18):
+                    s['slabs'].append(dict(p=p, t=t, z=round(sp.get('h', 0.2), 2)))
         c = it['poly'].centroid
         s['labels'].append([round(c.x, 1), round(c.y, 1), round(it['h'] + 2.0, 1),
                             it['n'], it['name']])
 
+    s['roofs'] = [round(v, 2) for tri in roof_tris for p in tri for v in p]
+
+    for name, color, uv in C.ZONES:
+        pts = [[round(x, 1), round(y, 1)] for x, y in
+               [frame.xy(u, v) for u, v in uv]]
+        s['zones'].append([name, color, pts])
+
     for x, y in m['trees']:
         rnd = (abs(hash((round(x), round(y)))) % 1000) / 1000.0
         s['trees'].append([round(x, 1), round(y, 1),
-                           round(11.0 + rnd * 8.0, 1), round(1.8 + rnd * 1.4, 1)])
+                           round(12.0 + rnd * 8.0, 1), round(1.9 + rnd * 1.5, 1)])
     return s
 
 
 def main():
-    import os
     site, _ = G.load_site(os.path.join(G.OUT, C.DEFAULT_SITE), None, C.DEFAULT_SITE_ORDER)
     frame = G.Frame(site)
     titles = {'A': 'Вариант 1 — с гостиницей', 'B': 'Вариант 2 — с гостевыми домиками'}

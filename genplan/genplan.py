@@ -124,23 +124,31 @@ def ring_line(frame, uv, radius):
 
 
 def parking_lot(frame, spec):
+    """Парковочная зона: ряды машиномест 2,5x5,3 с проездом 6 м."""
     sw, sl = C.PARK_STALL
     cols, rows = spec['cols'], spec['rows']
-    w, d = cols * sw, rows * sl
+    aisle = C.AISLE_W if spec.get('aisle', True) else 0.0
+    w = cols * sw
+    d = rows * sl + aisle
     x, y = frame.xy(*spec['uv'])
     ang = frame.angle(*spec['uv']) + spec.get('rot', 0.0)
-    lot = translate(rotate(Polygon([(-w / 2 - 1, -d / 2 - 3), (w / 2 + 1, -d / 2 - 3),
-                                    (w / 2 + 1, d / 2 + 1), (-w / 2 - 1, d / 2 + 1)]),
-                           ang, origin=(0, 0)), x, y)
+
+    def place(g):
+        return translate(rotate(g, ang, origin=(0, 0)), x, y)
+
+    lot = place(Polygon([(-w / 2 - 1.2, -d / 2 - 0.8), (w / 2 + 1.2, -d / 2 - 0.8),
+                         (w / 2 + 1.2, d / 2 + 0.8), (-w / 2 - 1.2, d / 2 + 0.8)]))
     stalls = []
-    for i in range(cols):
-        for j in range(rows):
+    for j in range(rows):
+        # ряды прижаты к краям, проезд посередине (или вдоль одного края)
+        dy = (-d / 2 + sl / 2) if j == 0 else (d / 2 - sl / 2)
+        for i in range(cols):
             dx = -w / 2 + sw * (i + 0.5)
-            dy = -d / 2 + sl * (j + 0.5)
-            s = translate(Polygon([(-sw / 2 + .1, -sl / 2 + .1), (sw / 2 - .1, -sl / 2 + .1),
-                                   (sw / 2 - .1, sl / 2 - .1), (-sw / 2 + .1, sl / 2 - .1)]),
-                          dx, dy)
-            stalls.append(translate(rotate(s, ang, origin=(0, 0)), x, y))
+            st = Polygon([(dx - sw / 2 + .12, dy - sl / 2 + .12),
+                          (dx + sw / 2 - .12, dy - sl / 2 + .12),
+                          (dx + sw / 2 - .12, dy + sl / 2 - .12),
+                          (dx - sw / 2 + .12, dy + sl / 2 - .12)])
+            stalls.append(place(st))
     return lot, stalls, cols * rows
 
 
@@ -153,14 +161,24 @@ def fire_gap(a, b):
     return C.FIRE_GAP_V_III
 
 
+BUILT = ('volume', 'canopy')          # что считается застройкой и разрывами
+
+
 def materialize(frame, it):
     """Собирает части объекта по его положению и разворачивает по границе."""
     cx, cy = it['center']
-    parts = shapes.make(it['shape'], it['size'][0], it['size'][1], it['angle'], cx, cy)
-    it['parts'] = parts
-    vol = [g for t, g in parts if t == 'building']
-    it['poly'] = unary_union(vol) if vol else unary_union([g for _, g in parts])
+    it['parts'] = shapes.make(it['shape'], it['size'][0], it['size'][1],
+                              it['angle'], cx, cy)
+    vol = [s['poly'] for t, s in it['parts'] if t in BUILT]
+    allp = [s['poly'] for t, s in it['parts'] if 'poly' in s]
+    it['poly'] = unary_union(vol) if vol else unary_union(allp)
+    it['whole'] = unary_union(allp)
     return it
+
+
+def setback_of(it):
+    """Отступ от границы участка: у деревянных объектов больше."""
+    return C.SETBACK_WOOD if it['fire'] == 'V' else C.SETBACK
 
 
 def move(it, dx, dy):
@@ -202,6 +220,7 @@ def push_off(it, obstacle, bounds, clearance=1.0, iters=40, step=1.0):
 
 
 def relax(frame, items, inner, iters=300):
+    bounds = {id(i): frame.poly.buffer(-setback_of(i) + 0.2) for i in items}
     movable = [i for i in items if i['kind'] == 'building' and not i.get('fixed')]
     for _ in range(iters):
         moved = 0.0
@@ -222,7 +241,7 @@ def relax(frame, items, inner, iters=300):
                         t = math.radians(frame.angle(*it['uv']))
                         pr = dx * math.cos(t) + dy * math.sin(t)
                         dx, dy = pr * math.cos(t), pr * math.sin(t)
-                    if inner.buffer(0.05).contains(translate(it['poly'], dx, dy)):
+                    if bounds[id(it)].contains(translate(it['poly'], dx, dy)):
                         move(it, dx, dy)
                         moved += step
         if moved < 0.01:
@@ -248,7 +267,8 @@ def path_network(frame, items, ctx):
         it = by_n.get(node)
         if it is None:
             return None
-        deck = [g for t, g in it['parts'] if t in ('terrace', 'platform')]
+        deck = [sp['poly'] for t, sp in it['parts']
+                if t in ('deck', 'platform') and 'poly' in sp]
         return unary_union(deck + [it['poly']])
 
     def snap(geom, toward):
@@ -287,7 +307,7 @@ def build(frame, variant='A'):
             span = (u1 - u0) * frame.L
             n = max(1, min(nmax, int((span + pitch - C.COTTAGE_SIZE[0]) // pitch)))
             x0 = u0 * frame.L + (span - (n - 1) * pitch) / 2.0
-            vv = min(v, (frame.W - C.SETBACK - C.COTTAGE_SIZE[1] / 2.0) / frame.W)
+            vv = min(v, (frame.W - C.SETBACK_WOOD - C.COTTAGE_SIZE[1]) / frame.W)
             for i in range(n):
                 it = C.B(16, 'Гостевой домик', ((x0 + i * pitch) / frame.L, vv),
                          C.COTTAGE_SIZE, C.COTTAGE_H, C.COTTAGE_FIRE,
@@ -306,20 +326,21 @@ def build(frame, variant='A'):
     lane = roads[1]
     roads += [road_band(frame, r, C.DRIVE_W) for r in C.SPUR_ROADS]
     if variant == 'B':
-        roads.append(road_band(frame, [(0.470, 0.760), (0.600, 0.830), (0.700, 0.855),
-                                       (0.800, 0.840), (0.860, 0.800)], C.DRIVE_W))
+        roads.append(road_band(frame, C.COTTAGE_LANE, C.DRIVE_W))
 
     inner = frame.poly.buffer(-C.SETBACK)
     for it in items:
-        pull_inside(it, inner)
+        pull_inside(it, frame.poly.buffer(-setback_of(it)))
     relax(frame, items, inner)
     ways = unary_union(roads)
     for it in items:                      # ни объём, ни терраса, ни бассейн не лезут на проезд
-        whole = unary_union([g for _, g in it['parts']])
+        whole = it['whole']
+        if it.get('fixed'):               # КПП стоит на воротах: проезд идёт сквозь портал
+            continue
         if it['kind'] == 'building' and whole.distance(ways) < 1.0:
             d0 = it['center']
             probe = dict(it, poly=whole)
-            push_off(probe, ways, inner.buffer(6.0), clearance=1.2)
+            push_off(probe, ways, frame.poly.buffer(-setback_of(it)), clearance=1.2)
             move(it, probe['center'][0] - d0[0], probe['center'][1] - d0[1])
             materialize(FRAME_REF[0], it)
     relax(frame, items, inner, iters=120)
@@ -338,21 +359,19 @@ def build(frame, variant='A'):
     kppg = [i['poly'] for i in items if i['n'] == 1]
     blobs = [roads[0].buffer(C.PAVED_AROUND['drive'])]
     blobs += [g.buffer(C.PAVED_AROUND['kpp']) for g in kppg]
-    blobs += [lots[0].buffer(C.PAVED_AROUND['parking'])] if lots else []
-    apron = unary_union(blobs).convex_hull.intersection(inner)
+    blobs += [l.buffer(C.PAVED_AROUND['parking']) for l in lots]
+    apron = unary_union(blobs).buffer(1.2).buffer(-1.2).intersection(
+        frame.poly.buffer(-C.SETBACK + 3.0))
     for g in kppg:
         apron = apron.difference(g)
     roads.append(apron)
-    for lot in lots[1:]:
-        roads.append(lot.buffer(C.PAVED_AROUND['parking']).convex_hull.intersection(inner))
 
     ctx = dict(lane=lane, apron=apron,
                loop=LineString([frame.xy(u, v) for u, v in smooth(C.LOOP_SOUTH, True)]),
                rings=[ring_line(frame, uv, r) for uv, r in C.RINGS])
     paths = path_network(frame, items, ctx)
 
-    hard = unary_union(roads + paths + lots +
-                       [g for i in items for t, g in i['parts']])
+    hard = unary_union(roads + paths + lots + [i['whole'] for i in items])
     green = frame.poly.buffer(-2.0).difference(hard.buffer(2.5))
     return dict(items=items, roads=roads, paths=paths, lots=lots, stalls=stalls,
                 nstall=nstall, green=green, hard=hard, inner=inner)
@@ -387,15 +406,29 @@ def checks(frame, m):
     site, inner = frame.poly, m['inner']
     msgs = []
     for it in m['items']:
-        whole = unary_union([g for _, g in it['parts']])
-        if not site.buffer(0.05).contains(whole):
+        if not site.buffer(0.05).contains(it['whole']):
             msgs.append('ВЫХОД ЗА ГРАНИЦУ: %s' % it['name'])
-        elif it['kind'] == 'building' and not inner.buffer(0.05).contains(it['poly']):
-            msgs.append('Отступ < %.0f м от границы: %s' % (C.SETBACK, it['name']))
+        elif it['kind'] == 'building':
+            sb = setback_of(it)
+            if not site.buffer(-sb + 0.05).contains(it['poly']):
+                msgs.append('Отступ от границы < %.0f м: %s' % (sb, it['name']))
     for lot, spec in zip(m['lots'], C.PARKING):
         for it in m['items']:
             if it['kind'] == 'building' and lot.intersects(it['poly'].buffer(-0.1)):
                 msgs.append('Парковка «%s» накладывается на %s' % (spec['name'], it['name']))
+    # Связность сети: проезды, дорожки и парковки должны образовывать одно
+    # целое. Объекты работают перемычками — дорожка, упирающаяся в террасу
+    # бани, связана через неё с соседней дорожкой.
+    move = [g.buffer(0.35) for g in m['roads'] + m['paths'] + m['lots']]
+    bridges = [i['whole'].buffer(0.35) for i in m['items']]
+    net = unary_union(move + bridges)
+    blobs = list(net.geoms) if net.geom_type.startswith('Multi') else [net]
+    used = [b for b in blobs if any(b.intersects(g) for g in move)]
+    comps = len(used)
+    if comps > 1:
+        msgs.append('Сеть движения распадается на %d несвязанных кусков' % comps)
+    m['net_components'] = comps
+
     bl = [i for i in m['items'] if i['kind'] == 'building']
     for a in range(len(bl)):
         for b in range(a + 1, len(bl)):
@@ -412,9 +445,10 @@ def teп(frame, m):
     site = frame.poly
     foot = unary_union([i['poly'] for i in m['items']])
     hard = unary_union(m['roads'] + m['paths'] + m['lots'] +
-                       [g for i in m['items'] for t, g in i['parts']
-                        if t in ('terrace', 'platform', 'court')]).difference(foot)
-    water = unary_union([g for i in m['items'] for t, g in i['parts'] if t == 'water'])
+                       [s['poly'] for i in m['items'] for t, s in i['parts']
+                        if t in ('deck', 'platform', 'court')]).difference(foot)
+    water = unary_union([s['poly'] for i in m['items'] for t, s in i['parts']
+                         if t in ('water', 'tub')])
     green = site.difference(unary_union([foot, hard, water]))
     s = site.area
     return [('Площадь участка', s, 100.0),
@@ -431,10 +465,9 @@ def explication(m):
         if key in seen:
             seen[key]['count'] += 1
             seen[key]['area'] += (it['poly'].area if it['kind'] == 'building'
-                                  else unary_union([g for _, g in it['parts']]).area)
+                                  else it['whole'].area)
             continue
-        area = (it['poly'].area if it['kind'] == 'building'
-                else unary_union([g for _, g in it['parts']]).area)
+        area = it['poly'].area if it['kind'] == 'building' else it['whole'].area
         r = dict(n=it['n'], name=key, size=it['size'], h=it['h'], count=1,
                  area=area, kind=it['kind'])
         seen[key] = r
@@ -444,47 +477,69 @@ def explication(m):
 
 
 # --------------------------------------------------------------- экспорт ----
+def draw_part(md, t, sp, it):
+    """Одна часть объекта в 3D."""
+    if t == 'volume':
+        md.prism(sp['poly'], '11 Здания - стены', sp['z0'], sp['wall'] - sp['z0'])
+        md.tris(model3d.roof_tris(sp['poly'], sp['roof'], sp['wall'], sp['ridge'],
+                                  sp.get('over', 0.9)), '12 Здания - кровли')
+    elif t == 'canopy':
+        md.tris(model3d.roof_tris(sp['poly'], sp['roof'], sp['wall'], sp['ridge'],
+                                  sp.get('over', 1.1)), '13 Навесы')
+        for x, y, r in sp.get('cols', []):
+            md.prism(Point(x, y).buffer(r, 12), '14 Колонны, трубы', sp['z0'],
+                     sp['wall'] - sp['z0'])
+    elif t == 'column':
+        for x, y, r in sp['pts']:
+            md.prism(Point(x, y).buffer(r, 10), '14 Колонны, трубы', 0.0, sp['h'])
+    elif t == 'chimney':
+        md.prism(sp['poly'], '14 Колонны, трубы', 0.0, sp['h'])
+    elif t == 'water':
+        rim = sp['poly'].buffer(sp.get('rim', 0.6)).difference(sp['poly'])
+        md.prism(rim, '07 Террасы и настилы', 0.0, 0.4)
+        md.prism(sp['poly'], '10 Вода', -0.4, 0.35)
+    elif t == 'tub':
+        md.prism(sp['poly'].buffer(0.12), '14 Колонны, трубы', 0.0, sp['h'])
+        md.prism(sp['poly'], '10 Вода', sp['h'] - 0.25, 0.2)
+    elif t == 'equip':
+        md.prism(sp['poly'], '16 Оборудование', 0.0, sp.get('h', 1.0))
+    elif t in ('deck', 'platform', 'court'):
+        h = {'deck': 0.45, 'platform': 0.2, 'court': 0.12}[t]
+        md.prism(sp['poly'], model3d.SLAB_LAYER[t], 0.0, sp.get('h', h))
+
+
 def to_3dm(frame, m, path):
     md = model3d.Model()
     md.curve(frame.poly, '01 Граница участка')
     md.curve(m['inner'], '02 Линия отступа')
 
-    fence = frame.poly.buffer(-0.3).exterior.coords
-    for a, b in zip(fence, list(fence)[1:]):
+    fence = list(frame.poly.buffer(-0.3).exterior.coords)
+    for a, b in zip(fence, fence[1:]):
         md.f.Objects.AddPolyline(
             [r3.Point3d(a[0], a[1], 0), r3.Point3d(b[0], b[1], 0),
              r3.Point3d(b[0], b[1], 2.2), r3.Point3d(a[0], a[1], 2.2),
              r3.Point3d(a[0], a[1], 0)], md.att('03 Забор'))
 
     for g in m['roads']:
-        md.prism(g, *reversed(model3d.SLAB['road'][::-1]), z0=-0.12) if False else \
-            md.prism(g, model3d.SLAB['road'][0], -0.12, model3d.SLAB['road'][1])
+        md.prism(g, '04 Проезды', -0.12, 0.14)
     for g in m['paths']:
-        md.prism(g, model3d.SLAB['path'][0], -0.06, model3d.SLAB['path'][1])
+        md.prism(g, '06 Дорожки', -0.06, 0.1)
     for g in m['lots']:
-        md.prism(g, model3d.SLAB['parking'][0], -0.12, model3d.SLAB['parking'][1])
+        md.prism(g, '05 Парковка', -0.12, 0.14)
     for g in m['stalls']:
-        md.curve(g, '05 Парковка', 0.02)
+        md.curve(g, '05 Парковка', 0.03)
 
     for it in m['items']:
-        for t, g in it['parts']:
-            if t == 'building':
-                md.prism(g, '11 Здания - стены', 0.0, it['wall'])
-                model3d.roof(md, g, it['wall'], max(it['h'], it['wall'] + 0.5),
-                             it['roof'])
-            elif t == 'canopy':
-                model3d.canopy(md, g, max(it['wall'], 3.0))
-            elif t == 'water':
-                model3d.pool(md, g)
-            elif t in ('terrace', 'platform', 'court'):
-                lay, th = model3d.SLAB[t]
-                md.prism(g, lay, 0.0, th)
+        for t, sp in it['parts']:
+            draw_part(md, t, sp, it)
         c = it['poly'].centroid
-        md.dot('%d. %s' % (it['n'], it['name']), c.x, c.y, it['h'] + 1.5)
+        md.dot('%d. %s' % (it['n'], it['name']), c.x, c.y, it['h'] + 2.0)
 
-    n = model3d.trees(md, m['green'], count=300)
-    ok = md.f.Write(path, 7)
-    return ok, n, len(md.f.Objects)
+    for x, y in m['trees']:
+        rnd = (abs(hash((round(x), round(y)))) % 1000) / 1000.0
+        md.tris(model3d.tree_tris(x, y, 12.0 + rnd * 8.0, 1.9 + rnd * 1.5),
+                '15 Озеленение')
+    return md.f.Write(path, 7), len(m['trees']), len(md.f.Objects)
 
 
 def to_png(frame, m, path, title):
@@ -531,15 +586,25 @@ def to_png(frame, m, path, title):
     for g in m['stalls']:
         draw(g, facecolor='none', edgecolor='#ffffff', lw=0.6, zorder=5)
 
-    order = {'platform': 6, 'terrace': 7, 'court': 7, 'water': 8, 'canopy': 9,
-             'building': 10}
-    style = {'platform': (K['plat'], '#8a9a72'), 'terrace': (K['terr'], '#9a7748'),
+    order = {'platform': 6, 'deck': 7, 'court': 7, 'water': 8, 'tub': 9,
+             'canopy': 9, 'volume': 11, 'chimney': 12, 'column': 12, 'equip': 10}
+    style = {'platform': (K['plat'], '#8a9a72'), 'deck': (K['terr'], '#9a7748'),
              'court': (K['court'], '#25503a'), 'water': (K['water'], '#3f7fa5'),
-             'canopy': (K['canopy'], '#a08d6d'), 'building': (K['bld'], K['bld_e'])}
+             'tub': (K['water'], '#7a5a34'), 'canopy': (K['canopy'], '#a08d6d'),
+             'volume': (K['bld'], K['bld_e']), 'chimney': ('#8d8378', '#4b443c'),
+             'column': ('#a98a63', '#6b563a'), 'equip': ('#9aa0a6', '#5d6166')}
     for it in m['items']:
-        for t, g in it['parts']:
+        for t, sp in it['parts']:
             fc, ec = style.get(t, (K['plat'], '#777777'))
-            draw(g, facecolor=fc, edgecolor=ec, lw=0.9, zorder=order.get(t, 6))
+            if t == 'column':
+                for x, y, r in sp['pts']:
+                    ax.add_patch(plt.Circle((x, y), r, facecolor=fc, edgecolor=ec,
+                                            lw=0.6, zorder=12))
+                continue
+            draw(sp['poly'], facecolor=fc, edgecolor=ec, lw=0.9, zorder=order.get(t, 6))
+            for x, y, r in sp.get('cols', []):
+                ax.add_patch(plt.Circle((x, y), r, facecolor='#a98a63',
+                                        edgecolor='#6b563a', lw=0.6, zorder=12))
         c = it['poly'].centroid
         ax.text(c.x, c.y, str(it['n']), ha='center', va='center', fontsize=8.5,
                 color='white', zorder=12,
@@ -608,6 +673,64 @@ def to_png(frame, m, path, title):
     plt.close(fig)
 
 
+def to_zoning_png(frame, m, path, title):
+    """Схема функционального зонирования."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import PathPatch, Patch
+    from matplotlib.path import Path as MPath
+
+    fig, ax = plt.subplots(figsize=(15, 11), dpi=150)
+    ax.set_facecolor('#f4f3ea')
+
+    def draw(geom, **kw):
+        if geom.is_empty:
+            return
+        for g in (geom.geoms if geom.geom_type.startswith('Multi') else [geom]):
+            if not hasattr(g, 'exterior'):
+                continue
+            verts, codes = [], []
+            for ring in [g.exterior] + list(g.interiors):
+                pts = list(ring.coords)
+                verts += pts
+                codes += [MPath.MOVETO] + [MPath.LINETO] * (len(pts) - 2) + [MPath.CLOSEPOLY]
+            ax.add_patch(PathPatch(MPath(verts, codes), **kw))
+
+    draw(frame.poly, facecolor='#e8eadb', edgecolor='#cc2222', lw=2.5, zorder=1)
+    handles = []
+    for name, color, uv in C.ZONES:
+        poly = Polygon([frame.xy(u, v) for u, v in uv]).intersection(frame.poly)
+        draw(poly, facecolor=color, edgecolor=color, lw=1.2, alpha=0.30, zorder=2)
+        c = poly.centroid
+        ax.text(c.x, c.y, name.upper(), ha='center', va='center', fontsize=9,
+                color='#2b2f25', zorder=6, weight='bold',
+                bbox=dict(boxstyle='round,pad=0.35', fc='#ffffffcc', ec='none'))
+        handles.append(Patch(facecolor=color, alpha=0.45, label=name))
+
+    for g in m['roads']:
+        draw(g, facecolor='#8c8c92', edgecolor='none', zorder=3, alpha=0.75)
+    for g in m['paths']:
+        draw(g, facecolor='#cfc6b4', edgecolor='none', zorder=3, alpha=0.8)
+    for it in m['items']:
+        draw(it['poly'], facecolor='#5a3c1c', edgecolor='#2e1f0e', lw=0.6, zorder=5)
+        c = it['poly'].centroid
+        ax.text(c.x, c.y, str(it['n']), ha='center', va='center', fontsize=7,
+                color='white', zorder=7)
+
+    minx, miny, maxx, maxy = frame.poly.bounds
+    ax.set_xlim(minx - 14, maxx + 14)
+    ax.set_ylim(miny - 14, maxy + 14)
+    ax.set_aspect('equal')
+    ax.grid(True, color='#ffffff', lw=0.4, alpha=0.7)
+    ax.set_title(title, fontsize=15, pad=12)
+    ax.set_xlabel('X, м (восток)')
+    ax.set_ylabel('Y, м (север)')
+    ax.legend(handles=handles, loc='lower right', fontsize=8.5, framealpha=0.95)
+    fig.savefig(path, bbox_inches='tight')
+    plt.close(fig)
+
+
 def report(frame, m, msgs, path, title):
     lines = [title, '=' * len(title), '',
              'Кадастровый номер: %s' % C.CAD_NUMBER,
@@ -624,7 +747,8 @@ def report(frame, m, msgs, path, title):
     lines += ['', 'Машиномест: %d' % m['nstall'],
               'Объектов на плане: %d (позиций в экспликации: %d)'
               % (len(m['items']), len(explication(m))),
-              'Дорожек в сети: %d, все с привязкой начала и конца' % len(m['paths']),
+              'Дорожек в сети: %d, связных кусков сети: %d'
+              % (len(m['paths']), m.get('net_components', 0)),
               '', 'ПРОВЕРКИ', '-' * 60]
     lines += (['  нарушений не найдено'] if not msgs else ['  ! ' + s for s in msgs])
     open(path, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
@@ -674,6 +798,8 @@ def main():
         base = os.path.join(OUT, 'BOR495_genplan_%s%s' % (v, a.suffix))
         ok, ntree, nobj = to_3dm(frame, m, base + '.3dm')
         to_png(frame, m, base + '.png', titles[v])
+        to_zoning_png(frame, m, base + '_zoning.png',
+                      'БОР 495 — функциональное зонирование (%s)' % v)
         print(report(frame, m, msgs, base + '.txt', titles[v]))
         print('\n3dm: %s (%s), объектов %d, деревьев %d\n' % (base + '.3dm', ok, nobj, ntree))
     if is_placeholder:

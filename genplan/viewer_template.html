@@ -113,6 +113,7 @@
       <button data-layer="trees" aria-pressed="true">Лес</button>
       <button data-layer="labels" aria-pressed="true">Номера</button>
       <button data-layer="paving" aria-pressed="true">Покрытия</button>
+      <button data-layer="zones" aria-pressed="false">Зонирование</button>
     </div>
   </div>
 </nav>
@@ -143,8 +144,8 @@
   var camera = new THREE.PerspectiveCamera(42, 1, 1, 4000);
 
   var SITE = {x:145, z:120};                      // центр участка в координатах сцены
-  var target = new THREE.Vector3(SITE.x, 0, -SITE.z);
-  var sph = {r:430, theta:-0.9, phi:0.95};        // сферические координаты камеры
+  var target = new THREE.Vector3(SITE.x, 0, SITE.z);
+  var sph = {r:350, theta:-0.9, phi:0.92};        // сферические координаты камеры
 
   function applyCam(){
     var r = sph.r, p = Math.max(0.12, Math.min(1.53, sph.phi));
@@ -171,8 +172,14 @@
               transparent:true, opacity:0.85}),
     crown:  new THREE.MeshLambertMaterial({color:0x4f7a42}),
     trunk:  new THREE.MeshLambertMaterial({color:0x5a4632}),
-    hi:     new THREE.MeshLambertMaterial({color:0xe0a54a})
+    column: new THREE.MeshLambertMaterial({color:0xb08a5c}),
+    stone:  new THREE.MeshLambertMaterial({color:0x8d8378}),
+    tub:    new THREE.MeshLambertMaterial({color:0x8a6034}),
+    equip:  new THREE.MeshLambertMaterial({color:0x8d9298}),
+    deck:   new THREE.MeshLambertMaterial({color:0xb5834a}),
+    platform:new THREE.MeshLambertMaterial({color:0xb3bd8e})
   };
+  var CYL = [M.column, M.stone, M.tub];
 
   // --------------------------------------------------------------- хелперы --
   function shapeOf(p){
@@ -257,40 +264,76 @@
   function buildVariant(key){
     var d = DATA[key], root = new THREE.Group();
     var parts = {trees:new THREE.Group(), labels:new THREE.Group(),
-                 paving:new THREE.Group(), build:new THREE.Group()};
+                 paving:new THREE.Group(), build:new THREE.Group(),
+                 zones:new THREE.Group()};
 
-    d.site.forEach(function(p){
-      var m = slab(p, 0.3, -0.3, M.site); m.userData.ground = true; root.add(m);
-    });
+    d.site.forEach(function(p){ root.add(slab(p, 0.3, -0.3, M.site)); });
+
     d.slabs.forEach(function(s){
       var mat = M[s.t] || M.path;
-      var y = s.t==='terrace' ? 0.0 : (s.t==='road'||s.t==='parking' ? -0.02 : -0.01);
-      var h = s.t==='terrace' ? 0.45 : 0.14;
+      var y = (s.t==='deck') ? 0.0 : (s.t==='road'||s.t==='parking' ? -0.02 : -0.01);
+      var h = (s.t==='deck') ? 0.45 : (s.z || 0.14);
       parts.paving.add(slab(s.p, h, y, mat));
     });
-    d.water.forEach(function(p){ parts.paving.add(slab(p, 0.3, -0.35, M.water)); });
+    d.water.forEach(function(p){ parts.paving.add(slab(p, 0.35, -0.4, M.water)); });
+    d.equip.forEach(function(e){ parts.build.add(slab(e.p, e.h, 0, M.equip, true)); });
+    if (d.stalls && d.stalls.length){
+      var sm = new THREE.MeshLambertMaterial({color:0xdfe2e6});
+      for (var si=0; si<d.stalls.length; si+=4){
+        var ring = d.stalls.slice(si, si+4);
+        if (ring.length < 4) break;
+        parts.paving.add(slab({e:ring.concat([ring[0]]), h:[]}, 0.06, 0.01, sm));
+      }
+    }
+
+    d.vols.forEach(function(v){
+      var m = slab(v.p, v.h, v.z, M.wall, true);
+      m.userData.pickable = true;
+      parts.build.add(m);
+    });
+
+    if (d.roofs.length){
+      var g = new THREE.BufferGeometry();
+      var src = d.roofs, pos = new Float32Array(src.length);
+      for (var i=0;i<src.length;i+=3){ pos[i]=src[i]; pos[i+1]=src[i+2]; pos[i+2]=-src[i+1]; }
+      g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+      g.computeVertexNormals();
+      var rm = new THREE.Mesh(g, M.roof);
+      rm.castShadow = true; rm.receiveShadow = true;
+      parts.build.add(rm);
+    }
+
+    d.cyls.forEach(function(c){
+      var h = c[4]-c[3];
+      if (h <= 0.05) return;
+      var geo = new THREE.CylinderGeometry(c[2], c[2]*1.06, h, 12);
+      var m = new THREE.Mesh(geo, CYL[c[5]] || M.column);
+      m.position.set(c[0], c[3]+h/2, -c[1]);
+      m.castShadow = true; parts.build.add(m);
+    });
 
     var byN = {};
-    d.walls.forEach(function(w){
-      var m = slab(w.p, w.h, w.z, M.wall, true);
-      m.userData.pickable = true; parts.build.add(m);
-    });
-    d.roofs.forEach(function(r){
-      var m = new THREE.Mesh(stitch(r.r, r.c), M.roof);
-      m.castShadow = true; m.receiveShadow = true; parts.build.add(m);
-    });
-    d.canopies.forEach(function(c){
-      parts.build.add(slab(c.p, 0.4, c.h, M.canopy, true));
-    });
     d.labels.forEach(function(l){
       var sp = labelSprite(String(l[3]));
       sp.position.set(l[0], l[2]+3, -l[1]);
-      sp.userData.n = l[3]; sp.userData.name = l[4];
       parts.labels.add(sp);
-      byN[l[3]] = byN[l[3]] || {x:l[0], y:l[1], h:l[2], name:l[4]};
+      byN[l[3]] = {x:l[0], y:l[1], h:l[2], name:l[4]};
     });
-    parts.trees.add(treeMesh(d.trees));
 
+    (d.zones||[]).forEach(function(z){
+      var sh = new THREE.Shape();
+      z[2].forEach(function(pt,i){ i ? sh.lineTo(pt[0],pt[1]) : sh.moveTo(pt[0],pt[1]); });
+      var geo = new THREE.ShapeGeometry(sh);
+      var mat = new THREE.MeshBasicMaterial({color:new THREE.Color(z[1]),
+                 transparent:true, opacity:0.32, side:THREE.DoubleSide,
+                 depthWrite:false});
+      var m = new THREE.Mesh(geo, mat);
+      m.rotation.x = -Math.PI/2; m.position.y = 0.55;
+      parts.zones.add(m);
+    });
+    parts.zones.visible = false;
+
+    parts.trees.add(treeMesh(d.trees));
     Object.keys(parts).forEach(function(k){ root.add(parts[k]); });
     root.userData = {parts:parts, byN:byN, data:d};
     root.visible = false;
@@ -304,7 +347,7 @@
   var hemi = new THREE.HemisphereLight(0xdfe7e4, 0x55603f, 0.75);
   scene.add(hemi);
   var sun = new THREE.DirectionalLight(0xfff0d8, 0.95);
-  sun.position.set(SITE.x-210, 260, -SITE.z+180);
+  sun.position.set(SITE.x-190, 300, SITE.z-210);
   sun.target.position.copy(target);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048,2048);
@@ -312,7 +355,7 @@
   sc.left=-330; sc.right=330; sc.top=330; sc.bottom=-330; sc.near=1; sc.far=1200;
   scene.add(sun); scene.add(sun.target);
 
-  var ground = new THREE.Mesh(new THREE.PlaneGeometry(3000,3000),
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
                               new THREE.MeshLambertMaterial({color:0x6f7a55}));
   ground.rotation.x = -Math.PI/2; ground.position.y = -0.45;
   ground.receiveShadow = true; scene.add(ground);
@@ -359,12 +402,13 @@
     });
     document.getElementById('stalls').textContent = d.stallCount + ' м/м';
   }
-  var layers = {trees:true, labels:true, paving:true};
+  var layers = {trees:true, labels:true, paving:true, zones:false};
   function applyLayers(){
     var p = groups[current].userData.parts;
     p.trees.visible = layers.trees;
     p.labels.visible = layers.labels;
     p.paving.visible = layers.paving;
+    p.zones.visible = layers.zones;
   }
   document.getElementById('variants').addEventListener('click', function(e){
     var b = e.target.closest('button'); if (b) setVariant(b.dataset.v);
@@ -377,7 +421,7 @@
   });
 
   var orbiting = false;
-  var VIEWS = {axo:{r:430,theta:-0.9,phi:0.95}, plan:{r:400,theta:0,phi:0.14},
+  var VIEWS = {axo:{r:350,theta:-0.9,phi:0.92}, plan:{r:400,theta:0,phi:0.14},
                entry:{r:190,theta:-1.75,phi:1.30}};
   document.getElementById('views').addEventListener('click', function(e){
     var b = e.target.closest('button'); if (!b) return;
@@ -385,7 +429,7 @@
       orbiting = !orbiting; b.setAttribute('aria-pressed', String(orbiting)); return;
     }
     var v = VIEWS[b.dataset.view];
-    target.set(SITE.x, 0, -SITE.z);
+    target.set(SITE.x, 0, SITE.z);
     tween(v);
   });
   var anim = null;
