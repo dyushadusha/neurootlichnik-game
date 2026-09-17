@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<title>Обложка — макеты для Studio 911</title>
+<!-- Обложка к сообщению для макетной мастерской Studio 911.
+     Рисуется в фирменном стиле «Нейро Отличника» (белая бумага, графит,
+     лайм, толстые обводки, плоские сдвинутые тени, дудлы).
+     Размер холста 1080×1350 — вертикаль 4:5, удобная для мессенджера.
+     Рендер в PNG: python3 promo/std911-cover/render-cover.py -->
+<style>
+@font-face { font-family:'InterTight';     src:url('../../assets/fonts/InterTightSemiBold.ttf') format('truetype'); font-weight:600; }
+@font-face { font-family:'KicaBold';       src:url('../../assets/fonts/KicaBold.ttf') format('truetype');           font-weight:700; }
+@font-face { font-family:'KicaLight';      src:url('../../assets/fonts/KicaLight.ttf') format('truetype');          font-weight:300; }
+@font-face { font-family:'Pershotravneva'; src:url('../../assets/fonts/Pershotravneva55.ttf') format('truetype');   font-weight:400; }
+
+:root{
+  --ink:#2a2a2a;
+  --paper:#ffffff;
+  --accent:#dbfc3b;
+  --bw:3px;
+  --shadow:8px 8px 0 var(--ink);
+  --shadow-sm:5px 5px 0 var(--ink);
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:#e7e7e2; font-family:'InterTight',sans-serif; color:var(--ink); }
+
+.cover{
+  position:relative;
+  width:1080px;
+  height:1350px;
+  background:var(--paper);
+  padding:64px 64px 56px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.cover > *{ flex:0 0 auto; }
+/* грид-ячейки не должны раздуваться под натуральный размер картинок */
+.showcase > *, .models > *{ min-width:0; min-height:0; }
+
+/* --- фоновые дудлы --- */
+.doodles{ position:absolute; inset:0; pointer-events:none; }
+.doodles img{ position:absolute; opacity:.2; }
+
+/* --- шапка --- */
+.top{ display:flex; align-items:center; justify-content:space-between; gap:24px; position:relative; z-index:2; }
+.top__logo{ height:34px; }
+.pill{
+  font-family:'KicaBold',sans-serif;
+  font-size:22px; letter-spacing:.06em; text-transform:uppercase;
+  background:var(--accent); color:var(--ink);
+  border:var(--bw) solid var(--ink); border-radius:999px;
+  padding:9px 22px 10px;
+  box-shadow:var(--shadow-sm);
+  white-space:nowrap;
+}
+
+/* --- заголовок --- */
+h1{
+  position:relative; z-index:2;
+  font-family:'KicaBold',sans-serif;
+  font-size:96px; line-height:.94; letter-spacing:-.01em;
+  text-transform:uppercase;
+  margin-top:38px;
+}
+h1 .mark{
+  background:var(--accent);
+  box-shadow:0 0 0 10px var(--accent);
+  border-radius:2px;
+}
+.lead{
+  position:relative; z-index:2;
+  font-family:'InterTight',sans-serif;
+  font-size:28px; line-height:1.42;
+  max-width:880px;
+  margin-top:30px;
+  color:var(--ink);
+}
+.lead .hl{
+  background:var(--accent);
+  box-shadow:0 0 0 5px var(--accent);
+  border-radius:2px;
+}
+
+/* --- витрина: рендер слева, макеты справа --- */
+.showcase{
+  position:relative; z-index:2;
+  margin-top:auto;
+  display:grid;
+  grid-template-columns:326px 1fr;
+  gap:20px;
+  height:540px;
+}
+
+.card{
+  position:relative;
+  border:var(--bw) solid var(--ink);
+  border-radius:16px;
+  overflow:hidden;
+  background:var(--paper);
+  box-shadow:var(--shadow);
+}
+.card img{ display:block; width:100%; height:100%; object-fit:cover; }
+
+.card__tag{
+  position:absolute; left:14px; bottom:14px;
+  font-family:'KicaBold',sans-serif;
+  font-size:18px; letter-spacing:.08em; text-transform:uppercase;
+  background:var(--paper); color:var(--ink);
+  border:var(--bw) solid var(--ink); border-radius:999px;
+  padding:5px 16px 6px;
+}
+.card__tag--accent{ background:var(--accent); }
+
+.hero{ height:100%; }
+
+.models{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  grid-template-rows:repeat(3,1fr);
+  gap:18px;
+}
+.models .card{ border-radius:14px; box-shadow:var(--shadow-sm); }
+
+/* последняя ячейка сетки — лаймовый стикер вместо шестого макета */
+.sticker{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px;
+  background:var(--accent);
+  border:var(--bw) solid var(--ink);
+  border-radius:14px;
+  box-shadow:var(--shadow-sm);
+  text-align:center;
+  padding:10px;
+}
+.sticker{ flex-direction:row; gap:16px; }
+.sticker__num{ font-family:'KicaBold',sans-serif; font-size:86px; line-height:.8; }
+.sticker__txt{
+  font-family:'KicaBold',sans-serif;
+  font-size:23px; letter-spacing:.05em; text-transform:uppercase; line-height:1.12;
+  text-align:left;
+}
+
+/* --- честная приписка под витриной --- */
+.note{
+  position:relative; z-index:2;
+  margin-top:22px;
+  display:flex; align-items:center; gap:14px;
+  font-family:'InterTight',sans-serif;
+  font-size:22px; line-height:1.2;
+}
+.note__dot{
+  width:16px; height:16px; flex:0 0 16px;
+  background:var(--accent);
+  border:var(--bw) solid var(--ink);
+  border-radius:50%;
+}
+
+/* --- подвал --- */
+.bottom{
+  position:relative; z-index:2;
+  margin-top:24px;
+  display:flex; align-items:center; justify-content:space-between; gap:24px;
+  border-top:var(--bw) solid var(--ink);
+  padding-top:22px;
+}
+.bottom__left{ font-family:'KicaBold',sans-serif; font-size:24px; letter-spacing:.02em; text-transform:uppercase; }
+.bottom__right{ font-family:'InterTight',sans-serif; font-size:23px; opacity:.72; }
+</style>
+</head>
+<body>
+<div class="cover">
+
+  <div class="doodles">
+    <img src="../../assets/doodles/spiral-a.svg"   style="top:168px; right:60px; width:104px;" alt="" />
+    <img src="../../assets/doodles/zigzag.svg"     style="top:372px; right:96px; width:120px;" alt="" />
+    <img src="../../assets/doodles/sparkle.svg"    style="top:262px; left:-8px; width:74px;" alt="" />
+    <img src="../../assets/doodles/arrow-curve.svg" style="top:484px; right:150px; width:86px;" alt="" />
+    <img src="../../assets/doodles/dots.svg"       style="bottom:150px; left:18px; width:70px;" alt="" />
+  </div>
+
+  <div class="top">
+    <img class="top__logo" src="../../assets/logo-full-dark.svg" alt="Нейро Отличник" />
+    <span class="pill">для Studio 911</span>
+  </div>
+
+  <h1>Макет,<br />которого<br /><span class="mark">ещё нет</span></h1>
+
+  <p class="lead">
+    Беру один рендер объекта и показываю его <span class="hl">как физический макет</span>:
+    картон, бетон с дубом, акрил с подсветкой, латунь — ещё до того,
+    как мастерская взялась за резак.
+  </p>
+
+  <div class="showcase">
+    <div class="card hero">
+      <img src="img/render.jpg" alt="Исходный рендер объекта" />
+      <span class="card__tag">рендер на входе</span>
+    </div>
+
+    <div class="models">
+      <div class="card"><img src="img/model-1.jpg" alt="Макет из белого картона" /></div>
+      <div class="card"><img src="img/model-2.jpg" alt="Макет из бетона и дуба" /></div>
+      <div class="card"><img src="img/model-3.jpg" alt="Акриловый макет с подсветкой" /></div>
+      <div class="card"><img src="img/model-4.jpg" alt="Латунный макет" /></div>
+      <div class="card"><img src="img/model-5.jpg" alt="Макет из крафт-картона" /></div>
+      <div class="sticker">
+        <span class="sticker__num">5</span>
+        <span class="sticker__txt">макетов<br />за вечер</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="note__dot"></span>
+    <span>Ни одного из этих макетов не существует — это генерации по одному рендеру.</span>
+  </div>
+
+  <div class="bottom">
+    <span class="bottom__left">Нейро Отличник · нейровизуализация</span>
+    <span class="bottom__right">neurootlichnik.ru</span>
+  </div>
+
+</div>
+</body>
+</html>
