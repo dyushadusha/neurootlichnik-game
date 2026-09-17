@@ -46,48 +46,55 @@ def load_site(path, size=None, order='egrn'):
 
 
 class Frame(object):
-    """Локальная система координат участка: (u,v) -> (x,y).
+    """Локальная система координат участка: (u,v) -> (x,y), билинейно по 4 углам.
 
-    u — вдоль длинной оси от въездного торца; v — поперёк, от «фасадной»
-    границы (вдоль неё выстроены бани) вглубь участка.
+    Композиция снята с исходной схемы (косая перспектива) после проективного
+    выпрямления и хранится в нормированных координатах:
+      u: 0 — западный торец (въезд), 1 — восточный торец;
+      v: 0 — северная граница (вдоль неё стоит ряд бань), 1 — южная граница.
+    Билинейное отображение переносит её на любой четырёхугольный контур:
+    вдоль каждой стороны координата линейна, поэтому расстановка ряда
+    считается в метрах честно.
     """
 
-    def __init__(self, poly, entry_hint):
-        rect = poly.minimum_rotated_rectangle
-        c = list(rect.exterior.coords)[:4]
-        e = [(c[i], c[(i + 1) % 4]) for i in range(4)]
-        lens = [math.dist(a, b) for a, b in e]
-        i_long = int(np.argmax(lens))
-        self.L = lens[i_long]
-        self.W = lens[(i_long + 1) % 4]
-        # два угла ближней к въезду короткой стороны
-        d = sorted(c, key=lambda p: math.dist(p, entry_hint))
-        near = d[:2]
-        # начало — тот из них, что севернее: тогда v растёт на юг,
-        # а v=0 ложится на «фасадную» границу (как на схеме — бани вдоль неё)
-        o = max(near, key=lambda p: p[1])
-        other = near[0] if near[1] == o else near[1]
-        far = max(c, key=lambda p: math.dist(p, o))
-        # ex — вдоль длинной оси
-        cand = [p for p in c if p is not o]
-        ex_pt = min(cand, key=lambda p: abs(math.dist(p, o) - self.L))
-        self.o = np.array(o, float)
-        self.ex = (np.array(ex_pt, float) - self.o) / self.L
-        ey_pt = np.array(other, float)
-        self.ey = (ey_pt - self.o) / max(math.dist(other, o), 1e-9)
-        if abs(float(np.dot(self.ex, self.ey))) > 0.05:        # страховка
-            self.ey = np.array([-self.ex[1], self.ex[0]])
+    def __init__(self, poly, entry_hint=None):
         self.poly = poly
-        self.rect = rect
-        self.far = far
+        c = self._corners(poly)
+        # A — западный конец северной стороны, дальше по часовой: B, C, D
+        north = sorted(c, key=lambda p: -p[1])[:2]
+        A, B = sorted(north, key=lambda p: p[0])
+        rest = [p for p in c if p is not A and p is not B]
+        C = min(rest, key=lambda p: math.dist(p, B))
+        D = [p for p in rest if p is not C][0]
+        self.A, self.B, self.C, self.D = (np.array(p, float) for p in (A, B, C, D))
+        self.L = math.dist(A, B)
+        self.W = (math.dist(A, D) + math.dist(B, C)) / 2.0
+        self.rect = poly.minimum_rotated_rectangle
+
+    @staticmethod
+    def _corners(poly):
+        """Четыре угла контура; для многоугольной границы — описанный прямоугольник."""
+        ring = list(poly.exterior.coords)[:-1]
+        if len(ring) != 4:
+            simple = poly.simplify(2.0)
+            ring = list(simple.exterior.coords)[:-1]
+        if len(ring) != 4:
+            ring = list(poly.minimum_rotated_rectangle.exterior.coords)[:-1]
+        return [tuple(p) for p in ring]
 
     def xy(self, u, v):
-        p = self.o + self.ex * (u * self.L) + self.ey * (v * self.W)
+        p = ((1 - u) * (1 - v) * self.A + u * (1 - v) * self.B +
+             u * v * self.C + (1 - u) * v * self.D)
         return float(p[0]), float(p[1])
+
+    def angle(self, u, v):
+        """Направление оси u в точке — здания разворачиваются вдоль границы."""
+        d = ((1 - v) * (self.B - self.A) + v * (self.C - self.D))
+        return math.degrees(math.atan2(d[1], d[0]))
 
     @property
     def angle_deg(self):
-        return math.degrees(math.atan2(self.ex[1], self.ex[0]))
+        return self.angle(0.5, 0.0)
 
 
 def rect_at(frame, uv, size, rot=0.0):
@@ -95,7 +102,7 @@ def rect_at(frame, uv, size, rot=0.0):
     w, d = size
     x, y = frame.xy(*uv)
     p = Polygon([(-w / 2, -d / 2), (w / 2, -d / 2), (w / 2, d / 2), (-w / 2, d / 2)])
-    p = rotate(p, frame.angle_deg + rot, origin=(0, 0))
+    p = rotate(p, frame.angle(*uv) + rot, origin=(0, 0))
     return translate(p, x, y)
 
 
@@ -151,7 +158,7 @@ def parking_lot(frame, spec):
             s = Polygon([(-sw / 2 + 0.1, -sl / 2 + 0.1), (sw / 2 - 0.1, -sl / 2 + 0.1),
                          (sw / 2 - 0.1, sl / 2 - 0.1), (-sw / 2 + 0.1, sl / 2 - 0.1)])
             s = translate(s, dx, dy)
-            s = rotate(s, frame.angle_deg + spec.get('rot', 0.0), origin=(0, 0))
+            s = rotate(s, frame.angle(*spec['uv']) + spec.get('rot', 0.0), origin=(0, 0))
             stalls.append(translate(s, x, y))
     return lot, stalls, cols * rows
 
@@ -225,20 +232,25 @@ def relax(frame, items, inner, iters=400):
             host = next(i for i in items if i['n'] == it['anchor_to'])
             hc = host['poly'].centroid
             du, dv = it['anchor_off']
-            x = hc.x + frame.ex[0] * du + frame.ey[0] * dv
-            y = hc.y + frame.ex[1] * du + frame.ey[1] * dv
+            a = math.radians(frame.angle(*host['uv']))
+            ex = (math.cos(a), math.sin(a))
+            ey = (-math.sin(a), math.cos(a))
+            x = hc.x + ex[0] * du + ey[0] * dv
+            y = hc.y + ex[1] * du + ey[1] * dv
             it['poly'] = translate(
                 rotate(Polygon([(-it['size'][0] / 2, -it['size'][1] / 2),
                                 (it['size'][0] / 2, -it['size'][1] / 2),
                                 (it['size'][0] / 2, it['size'][1] / 2),
                                 (-it['size'][0] / 2, it['size'][1] / 2)]),
-                       frame.angle_deg, origin=(0, 0)), x, y)
+                       frame.angle(*host['uv']), origin=(0, 0)), x, y)
 
 
 def _shift(frame, it, dx, dy, inner):
-    if it.get('slide') == 'u':            # фасадный ряд — только вдоль участка
-        t = dx * frame.ex[0] + dy * frame.ex[1]
-        dx, dy = frame.ex[0] * t, frame.ex[1] * t
+    if it.get('slide') == 'u':            # ряд — только вдоль границы
+        a = math.radians(frame.angle(*it['uv']))
+        ex = (math.cos(a), math.sin(a))
+        t = dx * ex[0] + dy * ex[1]
+        dx, dy = ex[0] * t, ex[1] * t
     cand = translate(it['poly'], dx, dy)
     if not inner.buffer(0.05).contains(cand):
         return
@@ -339,8 +351,7 @@ def build(frame, variant='A'):
                 it['poly'] = rect_at(frame, it['uv'], it['size'], it['rot'])
 
     roads = [road_band(frame, C.ENTRY_DRIVE, C.ROAD_W),
-             road_band(frame, C.MAIN_ROAD, C.ROAD_W, closed=True),
-             road_band(frame, C.ROW_LANE, C.DRIVE_W)]
+             road_band(frame, C.ROW_LANE, C.ROAD_W)]
     roads += [road_band(frame, r, C.DRIVE_W) for r in C.SPUR_ROADS]
     if variant == 'B':
         roads.append(road_band(frame, [(0.28, 0.855), (0.40, 0.905), (0.52, 0.915),
@@ -368,6 +379,23 @@ def build(frame, variant='A'):
         lots.append(translate(lot, dx, dy))
         stalls += [translate(x, dx, dy) for x in st]
         nstall += n
+
+    pa = getattr(C, 'PAVED_AROUND', None)
+    if pa:            # въездная площадь замащивается по факту: проезд + КПП + парковки
+        kpp = [i['poly'] for i in items if i['n'] == 1]
+        blobs = [road_band(frame, C.ENTRY_DRIVE, C.ROAD_W).buffer(pa['drive'])]
+        blobs += [l.buffer(pa['parking']) for l in lots]
+        blobs += [g.buffer(pa['kpp']) for g in kpp]
+        entry = unary_union(blobs[:1] + [b for b in blobs[len(blobs) - len(kpp):]]
+                            + ([lots[0].buffer(pa['parking'])] if lots else []))
+        pieces = [entry.convex_hull]
+        pieces += [l.buffer(pa['parking']).convex_hull for l in lots[1:]]
+        for piece in pieces:
+            apron = piece.intersection(inner)
+            for g in kpp:
+                apron = apron.difference(g)
+            roads.append(apron)
+
     return dict(items=items, roads=roads, paths=paths, lots=lots,
                 stalls=stalls, nstall=nstall)
 
