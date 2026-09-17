@@ -38,6 +38,8 @@ def scene(frame, m, title):
         s['slabs'] += [dict(p=p, t='parking') for p in poly_json(g, 0.2)]
     for g in m['paths']:
         s['slabs'] += [dict(p=p, t='path') for p in poly_json(g, 0.3)]
+    for g in m.get('trails', []):
+        s['slabs'] += [dict(p=p, t='trail') for p in poly_json(g, 0.25)]
     for g in m['stalls']:
         for q in (g.geoms if g.geom_type.startswith('Multi') else [g]):
             if q.is_empty or not hasattr(q, 'exterior') or q.area < 3.0:

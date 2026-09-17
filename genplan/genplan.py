@@ -322,7 +322,8 @@ def path_network(frame, items, ctx):
         return (p.x, p.y)
 
     blocked = unary_union([unary_union([sp['poly'] for t, sp in i['parts']
-                                        if t in ('volume', 'barrel')])
+                                        if t in ('volume', 'barrel', 'platform',
+                                                 'court', 'water')])
                            for i in items]).buffer(0.2)
     out, axes = [], []
     for a, b, vias in C.PATH_LINKS:
@@ -337,6 +338,8 @@ def path_network(frame, items, ctx):
         if not strip.is_empty:
             out.append(strip)
             axes.append(LineString(smooth(line) if len(line) > 2 else line))
+    out = [unary_union(out).buffer(0.9, join_style=1).buffer(-0.9, join_style=1)] \
+        if out else out                       # скругление примыканий дорожек
     if ctx.get('loop') is not None:
         out.append(ctx['loop'].buffer(C.PATH_W / 2.0))
     for ring in ctx['rings']:
@@ -487,14 +490,12 @@ def build(frame, variant='A'):
             break
 
     lots, stalls, nstall = [], [], 0
-    obst = [i['poly'] for i in items if i['kind'] == 'building']
+    obst = [i['poly'] for i in items if i['kind'] == 'building'] + list(roads)
     for spec in C.PARKING:
         lot, st, n = parking_lot(west, spec)
-        d = _clear_of(lot, obst, site.buffer(-1.0))
-        lot = translate(lot, *d)
-        ways_now = unary_union(roads)
-        lots.append(lot.difference(ways_now))      # плоскости не накладываются
-        stalls += [translate(x, *d).difference(ways_now) for x in st]
+        d = _clear_of(lot, obst, site.buffer(-1.0))   # карман отодвигается от проезда
+        lots.append(translate(lot, *d))
+        stalls += [translate(x, *d) for x in st]
         nstall += n
 
     kppg = [i['poly'] for i in items if i['n'] == 1]
@@ -511,15 +512,29 @@ def build(frame, variant='A'):
                rings=[ring_line(west, uv, r) for uv, r in C.RINGS])
     paths, path_axes = path_network(west, items, ctx)
 
+    trails = []
+    for tr in getattr(C, 'FOREST_TRAILS', []):
+        f = west if tr[0] == 'w' else east
+        g = band([f.xy(u, v) for u, v in tr[1]], C.TRAIL_W)
+        g = g.difference(unary_union([i['whole'] for i in items]).buffer(0.5))
+        if not g.is_empty:
+            trails.append(g)
+
     occupied = unary_union([i['whole'] for i in items] + lots).buffer(1.0)
     furn = furniture(road_axes, path_axes, occupied, site.buffer(-2.0))
-    hard = unary_union(roads + paths + lots + [i['whole'] for i in items])
+    for lot in lots:                          # освещение парковочных зон
+        b = lot.bounds
+        for px, py in [(b[0], b[1]), (b[2], b[1]), (b[0], b[3]), (b[2], b[3])]:
+            furn.append(('lamp', dict(pt=(px, py), h=6.5, kind='road')))
+
+    hard = unary_union(roads + paths + trails + lots + [i['whole'] for i in items])
     # деревья не подходят к зданиям ближе 6 м и к покрытиям ближе 2.5 м
     built = unary_union([i['whole'] for i in items]).buffer(6.0)
     green = site.buffer(-2.0).difference(
         unary_union(roads + paths + lots).buffer(2.5)).difference(built)
     return dict(items=items, roads=roads, paths=paths, lots=lots, stalls=stalls,
                 nstall=nstall, green=green, hard=hard, inner=inner, furn=furn,
+                trails=trails,
                 west=west, east=east, variant=variant)
 
 
@@ -543,8 +558,8 @@ def furniture(axes_roads, axes_paths, blocked, site):
             if site.contains(pt) and not blocked.contains(pt):
                 out.append(('lamp', dict(pt=(x, y), h=h, kind=kind)))
                 if bench_every and k % bench_every == 0:
-                    bx = p.x + dy / n * off * side * 0.4
-                    by = p.y - dx / n * off * side * 0.4
+                    bx = p.x + dy / n * (C.PATH_W / 2.0 + 1.0) * side
+                    by = p.y - dx / n * (C.PATH_W / 2.0 + 1.0) * side
                     if site.contains(Point(bx, by)) and not blocked.contains(Point(bx, by)):
                         out.append(('bench', dict(pt=(bx, by),
                                                   ang=math.degrees(math.atan2(dy, dx)))))
@@ -558,28 +573,37 @@ def furniture(axes_roads, axes_paths, blocked, site):
     return out
 
 
-def _clear_of(lot, obstacles, bounds, step=1.0, iters=80):
-    dx = dy = 0.0
-    cur = lot
-    for _ in range(iters):
-        hit = [o for o in obstacles if cur.intersects(o.buffer(1.0))]
-        if not hit:
-            break
-        c = cur.centroid
-        vx = vy = 0.0
-        for o in hit:
-            oc = o.centroid
-            ax, ay = c.x - oc.x, c.y - oc.y
-            n = math.hypot(ax, ay) or 1.0
-            vx += ax / n
-            vy += ay / n
-        n = math.hypot(vx, vy) or 1.0
-        nx, ny = step * vx / n, step * vy / n
-        cand = translate(cur, nx, ny)
+def _clear_of(lot, obstacles, bounds, clearance=1.2):
+    """Ищет ближайшее свободное положение кармана: спиральный перебор смещений
+    до первого, где нет пересечений с зданиями и проездами."""
+    obs = unary_union([o.buffer(clearance) for o in obstacles]) if obstacles else None
+
+    def ok(dx, dy):
+        cand = translate(lot, dx, dy)
         if not bounds.contains(cand):
-            break
-        cur, dx, dy = cand, dx + nx, dy + ny
-    return dx, dy
+            return False
+        return obs is None or not cand.intersects(obs)
+
+    def overlap(dx, dy):
+        cand = translate(lot, dx, dy)
+        pen = 0.0 if bounds.contains(cand) else 1e6
+        if obs is not None:
+            pen += cand.intersection(obs).area
+        return pen
+
+    if ok(0.0, 0.0):
+        return 0.0, 0.0
+    best, best_pen = (0.0, 0.0), overlap(0.0, 0.0)
+    for r in [2, 4, 6, 8, 11, 14, 18, 22, 26, 30, 35, 42, 50, 60]:
+        for k in range(24):
+            a = 2 * math.pi * k / 24
+            dx, dy = r * math.cos(a), r * math.sin(a)
+            if ok(dx, dy):
+                return dx, dy
+            pen = overlap(dx, dy) + r * 0.01
+            if pen < best_pen:
+                best, best_pen = (dx, dy), pen
+    return best
 
 
 # -------------------------------------------------------------- проверки ----
@@ -703,6 +727,7 @@ def draw_part(md, t, sp, it):
         return
     elif t == 'glass':
         md.prism(sp['poly'], '19 Остекление', sp['z0'], sp['h'])
+        md.tris(model3d.frame_tris(sp['poly'], sp['z0'], sp['h']), '23 Переплёты')
     elif t == 'rail':
         md.tris(model3d.rail_tris(sp['line'], sp.get('h', 1.05)), '20 Ограждения')
     elif t == 'lamp':
@@ -732,6 +757,8 @@ def to_3dm(frame, m, path):
         md.prism(g, '04 Проезды', -0.12, 0.14)
     for g in m['paths']:
         md.prism(g, '06 Дорожки', -0.06, 0.1)
+    for g in m.get('trails', []):
+        md.prism(g, '24 Лесные тропы', -0.04, 0.08)
     for g in m['lots']:
         md.prism(g, '05 Парковка', -0.12, 0.14)
     for g in m['stalls']:
@@ -791,6 +818,8 @@ def to_png(frame, m, path, title):
         draw(g, facecolor=K['road'], edgecolor='none', zorder=3)
     for g in m['paths']:
         draw(g, facecolor=K['path'], edgecolor='none', zorder=3)
+    for g in m.get('trails', []):
+        draw(g, facecolor='#b3a184', edgecolor='none', zorder=3)
     for g in m['lots']:
         draw(g, facecolor=K['park'], edgecolor='#7a7a82', lw=0.6, zorder=4)
     for g in m['stalls']:
@@ -884,6 +913,7 @@ def to_png(frame, m, path, title):
             ('Проезды', K['road'], 'none', 0),
             ('Парковка (%d м/м)' % m['nstall'], K['park'], '#7a7a82', 0.6),
             ('Пешеходные дорожки', K['path'], 'none', 0),
+            ('Лесные тропы', '#b3a184', 'none', 0),
             ('Озеленение / лес', K['site'], '#b8c3a5', 0.6)]
     for name, fc, ec, lw in keys:
         panel.add_patch(Rectangle((0, y - 0.016), 0.09, 0.016, facecolor=fc,

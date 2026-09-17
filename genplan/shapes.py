@@ -75,12 +75,12 @@ def RAIL(line, h=1.05):
     return ('rail', dict(line=list(line), h=h))
 
 
-def win_band(x0, x1, y, t=0.22, z0=1.0, h=1.7):
+def win_band(x0, x1, y, t=0.42, z0=1.0, h=1.7):
     """Ленточное остекление вдоль фасада."""
     return GLASS(box(min(x0, x1), y - t / 2.0, max(x0, x1), y + t / 2.0), z0, h)
 
 
-def win_row(x0, x1, y, n, w=1.5, t=0.22, z0=1.0, h=1.6):
+def win_row(x0, x1, y, n, w=1.5, t=0.42, z0=1.0, h=1.6):
     """Ряд отдельных окон по фасаду."""
     out = []
     for i in range(n):
@@ -89,7 +89,7 @@ def win_row(x0, x1, y, n, w=1.5, t=0.22, z0=1.0, h=1.6):
     return out
 
 
-def door(cx, y, w=1.6, t=0.24, h=2.3):
+def door(cx, y, w=1.6, t=0.44, h=2.3):
     return GLASS(box(cx - w / 2, y - t / 2, cx + w / 2, y + t / 2), 0.1, h)
 
 
@@ -158,7 +158,7 @@ def restaurant(w, d):
         ('column', dict(pts=pil, h=6.6)),
         win_band(w * 0.15 - w * 0.30, w * 0.15 + w * 0.30, fy + 0.15, t=0.26,
                  z0=0.6, h=5.2),
-        win_band(-w * 0.37, -w * 0.19, -d * 0.12, t=0.24, z0=0.6, h=3.6),
+        win_band(-w * 0.37, -w * 0.19, -d * 0.12, t=0.44, z0=0.6, h=3.6),
         door(-w * 0.28, -d * 0.13, 2.4),
         CAN(_oval(w * 0.30, d * 0.22, -w * 0.28, -d * 0.22), 5.0, 5.4, 'flat',
             cols_line(-w * 0.39, -d * 0.27, -w * 0.17, -d * 0.27, 3, 0.34), over=0.5),
@@ -184,9 +184,9 @@ def hotel(w, d):
         V(wing, 7.4, 10.2, 'arch', over=1.6),
         CAN(gal, 3.9, 4.15, 'flat', cols, over=0.35),          # галерея-балкон
         RAIL([(-w * 0.44, fy - 3.3), (w * 0.24, fy - 3.3)], 1.05),
-        win_band(-w * 0.44, w * 0.24, fy + 0.12, t=0.26, z0=0.7, h=2.9),
-        win_band(-w * 0.44, w * 0.24, fy + 0.12, t=0.26, z0=4.4, h=2.6),
-        win_band(w * 0.16, w * 0.40, -d * 0.32, t=0.24, z0=0.7, h=2.9),
+        win_band(-w * 0.44, w * 0.24, fy + 0.12, t=0.46, z0=0.7, h=2.9),
+        win_band(-w * 0.44, w * 0.24, fy + 0.12, t=0.46, z0=4.4, h=2.6),
+        win_band(w * 0.16, w * 0.40, -d * 0.32, t=0.44, z0=0.7, h=2.9),
         door(w * 0.28, -d * 0.33, 2.6),
         CAN(_box(w * 0.20, 4.2, w * 0.28, -d * 0.42), 4.4, 4.6, 'flat',
             cols_line(w * 0.19, -d * 0.50, w * 0.37, -d * 0.50, 3, 0.26), over=0.4),
@@ -210,9 +210,9 @@ def bath_petrovskaya(w, d):
         plinth(core.union(ver), 1.0),
         V(main, 3.7, 8.2, 'hip', over=1.4),
         V(wing, 3.7, 7.6, 'gable', over=1.5),
-        CAN(ver, 3.5, 4.8, 'shed',
+        CAN(ver, 3.9, 5.2, 'shed',
             cols_line(-w * 0.33, fy - d * 0.16, w * 0.11, fy - d * 0.16, 6, 0.34),
-            over=0.7),
+            z0=1.0, over=0.7),
         RAIL([(-w * 0.34, fy - d * 0.17), (w * 0.12, fy - d * 0.17)], 1.0),
         *win_row(-w * 0.40, w * 0.02, fy + 0.15, 4, 1.4, z0=1.1, h=1.5),
         *win_row(w * 0.12, w * 0.38, -d * 0.22, 2, 1.4, z0=1.1, h=1.5),
@@ -221,8 +221,9 @@ def bath_petrovskaya(w, d):
         steps(4.4, fy - d * 0.18),
         ('chimney', dict(poly=_box(1.4, 1.4, -w * 0.28, d * 0.26), h=9.4)),
         ('chimney', dict(poly=_box(1.1, 1.1, w * 0.25, d * 0.12), h=8.6)),
-        ('water', dict(poly=Point(w * 0.12, -d * 0.54).buffer(4.2, 32), rim=0.8)),
-        ('tub', dict(poly=Point(-w * 0.36, -d * 0.46).buffer(1.15, 16), h=1.2)),
+        ('water', dict(poly=Point(w * 0.10, d * 0.52).buffer(4.2, 32), rim=0.8)),
+        ('tub', dict(poly=Point(-w * 0.30, d * 0.44).buffer(1.15, 16), h=1.2)),
+        ('deck', dict(poly=_box(w * 0.52, d * 0.20, 0.0, d * 0.46))),
         ENT(-w * 0.11, fy),
     ]
 
@@ -239,20 +240,21 @@ def bath_log(w, d):
         plinth(core.union(entry).union(ver), 0.65),
         V(core, 3.3, 6.9, 'gable', over=1.5),
         V(entry, 3.1, 5.9, 'gable', over=1.3),
-        CAN(ver, 3.2, 4.4, 'shed',
+        CAN(ver, 3.6, 4.8, 'shed',
             cols_line(w * 0.09 - w * 0.27, fy - d * 0.16,
-                      w * 0.09 + w * 0.27, fy - d * 0.16, 6, 0.28), over=0.6),
+                      w * 0.09 + w * 0.27, fy - d * 0.16, 6, 0.28), z0=0.65, over=0.6),
         RAIL([(w * 0.09 - w * 0.28, fy - d * 0.17),
               (w * 0.09 + w * 0.28, fy - d * 0.17)], 1.0),
         *win_row(w * 0.09 - w * 0.26, w * 0.09 + w * 0.26, fy + 0.12, 4, 1.8,
                  z0=0.9, h=1.8),
-        win_band(-w * 0.41, -w * 0.23, -d * 0.18, t=0.22, z0=0.9, h=2.0),
+        win_band(-w * 0.41, -w * 0.23, -d * 0.18, t=0.42, z0=0.9, h=2.0),
         door(-w * 0.32, -d * 0.19, 1.8),
         ('deck', dict(poly=ver.buffer(0.4))),
         steps(3.6, fy - d * 0.18),
         ('chimney', dict(poly=_box(0.9, 0.9, -w * 0.04, d * 0.26), h=7.9)),
         ('chimney', dict(poly=_box(0.9, 0.9, w * 0.26, d * 0.26), h=7.7)),
-        ('tub', dict(poly=Point(w * 0.36, -d * 0.40).buffer(1.2, 16), h=1.2)),
+        ('tub', dict(poly=Point(w * 0.26, d * 0.42).buffer(1.2, 16), h=1.2)),
+        ('deck', dict(poly=_box(w * 0.46, d * 0.18, w * 0.10, d * 0.42))),
         ENT(-w * 0.32, -d * 0.19),
     ]
 
@@ -266,44 +268,47 @@ def bath_belaya(w, d):
     return [
         plinth(core.union(por), 0.75),
         V(core, 3.2, 6.8, 'gable', over=2.0),
-        CAN(por, 3.1, 3.5, 'shed',
-            cols_line(-w * 0.31, fy - 2.6, w * 0.31, fy - 2.6, 4, 0.26), over=0.4),
+        CAN(por, 3.5, 3.9, 'shed',
+            cols_line(-w * 0.31, fy - 2.6, w * 0.31, fy - 2.6, 4, 0.26), z0=0.75, over=0.4),
         RAIL([(-w * 0.32, fy - 2.7), (w * 0.32, fy - 2.7)], 1.0),
         *win_row(-w * 0.32, w * 0.32, fy + 0.12, 3, 1.5, z0=1.0, h=1.5),
         door(-w * 0.16, fy + 0.12, 1.7),
         ('deck', dict(poly=por.buffer(0.3))),
         steps(3.0, fy - 2.8),
         ('chimney', dict(poly=_box(1.0, 1.0, w * 0.22, d * 0.24), h=7.6)),
-        ('tub', dict(poly=Point(-w * 0.36, -d * 0.46).buffer(1.15, 16), h=1.2)),
+        ('tub', dict(poly=Point(-w * 0.24, d * 0.44).buffer(1.15, 16), h=1.2)),
+        ('deck', dict(poly=_box(w * 0.44, d * 0.18, 0.0, d * 0.44))),
         ENT(-w * 0.16, fy),
     ]
 
 
 def bath_bochka(w, d):
-    """Объём под вальмовой кровлей, две лежачие бочки по торцам осью вдоль
-    фасада, крытая терраса на колоннах, крыльцо и купель (референс «Бочка»)."""
-    core = _box(w * 0.54, d * 0.54)
-    r = d * 0.17
-    blen = w * 0.28
-    fy = -d * 0.27
+    """Объём под вальмовой кровлей, две ВЕРТИКАЛЬНЫЕ бочки-парные по торцам,
+    крытая терраса на колоннах с ограждением, крыльцо; купель вынесена на
+    приватную сторону, к лесу (референс «Бочка»)."""
+    core = _box(w * 0.54, d * 0.52)
+    r = min(d * 0.20, w * 0.16)
+    fy = -d * 0.26
     ver = _box(w * 0.54, d * 0.16, 0.0, fy - d * 0.09)
+    b1 = Point(-w * 0.36, d * 0.04).buffer(r, 28)
+    b2 = Point(w * 0.36, d * 0.04).buffer(r * 0.92, 28)
     return [
-        plinth(core, 0.55),
+        plinth(core.union(b1).union(b2), 0.55),
         V(core, 3.5, 6.0, 'hip', over=1.3),
-        ('barrel', dict(cx=-w * 0.38, cy=0.0, r=r, length=blen, ang=0.0, z0=0.0)),
-        ('barrel', dict(cx=w * 0.38, cy=0.0, r=r, length=blen, ang=0.0, z0=0.0)),
-        CAN(ver, 3.3, 3.7, 'shed',
+        V(b1, 6.2, 7.8, 'dome', over=0.25),
+        V(b2, 5.6, 7.0, 'dome', over=0.25),
+        CAN(ver, 3.7, 4.1, 'shed',
             cols_line(-w * 0.24, fy - d * 0.16, w * 0.24, fy - d * 0.16, 5, 0.28),
-            over=0.5),
+            z0=0.55, over=0.5),
         RAIL([(-w * 0.25, fy - d * 0.17), (w * 0.25, fy - d * 0.17)], 1.0),
-        *win_row(-w * 0.22, w * 0.22, fy + 0.12, 2, 1.6, z0=1.0, h=1.7),
-        door(0.0, fy + 0.12, 2.0),
+        *win_row(-w * 0.20, w * 0.20, fy + 0.10, 2, 1.6, z0=1.0, h=1.7),
+        door(0.0, fy + 0.10, 2.0),
         ('deck', dict(poly=ver.buffer(0.35))),
         steps(3.4, fy - d * 0.18),
-        ('tub', dict(poly=Point(0.0, fy - d * 0.30).buffer(1.6, 20), h=1.3)),
+        ('tub', dict(poly=Point(0.0, d * 0.40).buffer(1.7, 20), h=1.3)),
+        ('deck', dict(poly=_box(w * 0.40, d * 0.16, 0.0, d * 0.38))),
         ENT(0.0, fy),
     ]
-
 
 def padel(w, d):
     """Крытый падл-центр: корт 20x10 с обходами, изогнутая кровля,
@@ -313,7 +318,7 @@ def padel(w, d):
     return [
         V(hall, 7.0, 9.4, 'arch', over=1.8),
         ('court', dict(poly=_box(20.0, 10.0))),
-        win_band(-w * 0.33, w * 0.33, fy + 1.4, t=0.26, z0=0.8, h=5.0),
+        win_band(-w * 0.33, w * 0.33, fy + 1.4, t=0.46, z0=0.8, h=5.0),
         door(0.0, fy + 1.3, 2.6),
         ('deck', dict(poly=_box(w * 0.34, 4.0, 0.0, fy - 1.6))),
         steps(4.0, fy - 3.6),
@@ -393,17 +398,18 @@ def cottage(w, d):
         plinth(core.union(entry).union(ver), 0.65),
         V(core, 3.2, 7.2, 'gable', over=1.6),
         V(entry, 3.0, 5.8, 'gable', over=1.2),
-        CAN(ver, 3.1, 4.2, 'shed',
+        CAN(ver, 3.5, 4.6, 'shed',
             cols_line(-w * 0.30, fy - d * 0.18, w * 0.16, fy - d * 0.18, 5, 0.26),
-            over=0.5),
+            z0=0.65, over=0.5),
         RAIL([(-w * 0.31, fy - d * 0.19), (w * 0.17, fy - d * 0.19)], 1.0),
         *win_row(-w * 0.30, w * 0.14, fy + 0.12, 3, 1.8, z0=0.9, h=1.8),
-        win_band(w * 0.24, w * 0.42, -d * 0.19, t=0.22, z0=0.9, h=2.0),
+        win_band(w * 0.24, w * 0.42, -d * 0.19, t=0.42, z0=0.9, h=2.0),
         door(w * 0.33, -d * 0.20, 1.8),
         ('deck', dict(poly=ver.buffer(0.35))),
         steps(3.2, fy - d * 0.19),
         ('chimney', dict(poly=_box(0.9, 0.9, -w * 0.18, d * 0.26), h=8.4)),
-        ('tub', dict(poly=Point(w * 0.40, -d * 0.40).buffer(1.1, 16), h=1.1)),
+        ('tub', dict(poly=Point(-w * 0.28, d * 0.42).buffer(1.1, 16), h=1.1)),
+        ('deck', dict(poly=_box(w * 0.40, d * 0.16, -w * 0.20, d * 0.42))),
         ENT(w * 0.33, -d * 0.19),
     ]
 

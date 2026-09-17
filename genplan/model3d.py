@@ -34,6 +34,8 @@ LAYERS = [
     ('20 Ограждения',         (120, 96, 66)),
     ('21 Освещение',          (70, 70, 75)),
     ('22 МАФ',                (150, 120, 85)),
+    ('23 Переплёты',          (60, 58, 55)),
+    ('24 Лесные тропы',       (150, 132, 104)),
 ]
 
 SLAB_LAYER = {'road': '04 Проезды', 'parking': '05 Парковка', 'path': '06 Дорожки',
@@ -441,6 +443,30 @@ def _beam(a, b, z, t, hh):
     for i in range(4):
         j = (i + 1) % 4
         tris += quad(lo[i], lo[j], up[j], up[i])
+    return tris
+
+
+def frame_tris(poly, z0, h, mullion=2.2, t=0.12):
+    """Рамы и импосты окна: обвязка по контуру и вертикальные членения."""
+    minx, miny, maxx, maxy = poly.bounds
+    cy = (miny + maxy) / 2.0
+    horiz = (maxx - minx) >= (maxy - miny)
+    a0, a1 = (minx, maxx) if horiz else (miny, maxy)
+    tris = []
+
+    def bar(p0, p1, z, hh):
+        return _beam(p0, p1, z, t / 2.0, hh)
+
+    p0 = (minx, cy) if horiz else (cy, miny)
+    p1 = (maxx, cy) if horiz else (cy, maxy)
+    tris += bar(p0, p1, z0, 0.12)                  # нижняя обвязка
+    tris += bar(p0, p1, z0 + h - 0.12, 0.12)       # верхняя обвязка
+    n = max(1, int((a1 - a0) / mullion))
+    for i in range(n + 1):
+        u = a0 + (a1 - a0) * i / float(n)
+        q0 = (u, cy - t) if horiz else (cy - t, u)
+        q1 = (u, cy + t) if horiz else (cy + t, u)
+        tris += _beam(q0, q1, z0, 0.06, h)
     return tris
 
 
