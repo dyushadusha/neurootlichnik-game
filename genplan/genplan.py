@@ -178,10 +178,12 @@ BUILT = ('volume', 'canopy', 'barrel')   # застройка и противо�
 
 
 def fit_size(it):
-    """Подгоняет габарит объекта под заданную заказчиком площадь застройки."""
+    """Подгоняет габарит под заданную площадь. Площадь считается по сумме
+    этажей: пятно застройки = площадь / этажность."""
     target = it.get('area')
     if not target:
         return
+    target = float(target) / max(1, it.get('floors', 1))
     w, d = it['size']
     for _ in range(6):
         parts = shapes.make(it['shape'], w, d, 0.0, 0.0, 0.0)
@@ -200,6 +202,8 @@ def materialize(frame, it):
     cx, cy = it['center']
     it['parts'] = shapes.make(it['shape'], it['size'][0], it['size'][1],
                               it['angle'], cx, cy)
+    ent = [sp['pt'] for t, sp in it['parts'] if t == 'entrance']
+    it['entrance'] = ent[0] if ent else (cx, cy)
     vol = [s['poly'] for t, s in it['parts'] if t in BUILT]
     allp = [s['poly'] for t, s in it['parts'] if 'poly' in s]
     it['poly'] = unary_union(vol) if vol else unary_union(allp)
@@ -303,15 +307,18 @@ def path_network(frame, items, ctx):
         it = by_n.get(node)
         if it is None:
             return None
-        deck = [sp['poly'] for t, sp in it['parts']
-                if t in ('deck', 'platform') and 'poly' in sp]
-        return unary_union(deck + [it['poly']])
+        return Point(it['entrance'])
 
     def snap(geom, toward):
+        if geom.geom_type == 'Point':         # вход здания — точка назначения
+            return (geom.x, geom.y)
         g = geom.boundary if hasattr(geom, 'exterior') else geom
         p, _ = nearest_points(g, Point(toward))
         return (p.x, p.y)
 
+    blocked = unary_union([unary_union([sp['poly'] for t, sp in i['parts']
+                                        if t in ('volume', 'barrel')])
+                           for i in items]).buffer(0.2)
     out = []
     for a, b, vias in C.PATH_LINKS:
         ga, gb = resolve(a), resolve(b)
@@ -321,11 +328,15 @@ def path_network(frame, items, ctx):
         first = pts[0] if pts else gb.centroid.coords[0]
         last = pts[-1] if pts else ga.centroid.coords[0]
         line = [snap(ga, first)] + pts + [snap(gb, last)]
-        out.append(band(line, C.PATH_W))
+        strip = band(line, C.PATH_W).difference(blocked)   # не под зданиями
+        if not strip.is_empty:
+            out.append(strip)
     if ctx.get('loop') is not None:
         out.append(ctx['loop'].buffer(C.PATH_W / 2.0))
     for ring in ctx['rings']:
-        out.append(ring.buffer(C.PATH_W / 2.0))
+        r = ring.buffer(C.PATH_W / 2.0).difference(blocked)
+        if not r.is_empty:
+            out.append(r)
     return out
 
 
@@ -342,7 +353,8 @@ def place_column(frame, items, spec):
     depths = []
     for it in order:
         f = it['frame']
-        parts = shapes.make(it['shape'], it['size'][0], it['size'][1], 0.0, 0.0, 0.0)
+        parts = shapes.make(it['shape'], it['size'][0], it['size'][1],
+                            it.get('rot', 0.0), 0.0, 0.0)
         g = unary_union([sp['poly'] for t, sp in parts if t in BUILT])
         depths.append(g.bounds[3] - g.bounds[1])
     gaps = [fire_gap(order[k]['fire'], order[k + 1]['fire']) * 1.10
@@ -371,7 +383,7 @@ def _fit_u(frame, it, v, site, u_start, half=None):
     for _ in range(60):
         cx, cy = frame.xy(u, v)
         parts = shapes.make(it['shape'], it['size'][0], it['size'][1],
-                            frame.angle(u, v), cx, cy)
+                            frame.angle(u, v) + it.get('rot', 0.0), cx, cy)
         g = unary_union([sp['poly'] for t, sp in parts if t in BUILT])
         if bound.contains(g):
             return u
@@ -440,6 +452,24 @@ def build(frame, variant='A'):
     for it in items:
         materialize(it['frame'], it)
 
+    for _ in range(12):                   # развести площадки и корты между собой
+        moved = False
+        for it in items:
+            if it['kind'] == 'building' or it.get('fixed'):
+                continue
+            others = unary_union([o['whole'] for o in items if o is not it])
+            if it['whole'].distance(others) >= 3.0:
+                continue
+            d0 = it['center']
+            probe = dict(it, poly=it['whole'])
+            push_off(probe, others, it['bound'], clearance=3.5, iters=25)
+            if probe['center'] != d0:
+                move(it, probe['center'][0] - d0[0], probe['center'][1] - d0[1])
+                materialize(it['frame'], it)
+                moved = True
+        if not moved:
+            break
+
     lots, stalls, nstall = [], [], 0
     obst = [i['poly'] for i in items if i['kind'] == 'building']
     for spec in C.PARKING:
@@ -464,7 +494,10 @@ def build(frame, variant='A'):
     paths = path_network(west, items, ctx)
 
     hard = unary_union(roads + paths + lots + [i['whole'] for i in items])
-    green = site.buffer(-2.0).difference(hard.buffer(2.5))
+    # деревья не подходят к зданиям ближе 6 м и к покрытиям ближе 2.5 м
+    built = unary_union([i['whole'] for i in items]).buffer(6.0)
+    green = site.buffer(-2.0).difference(
+        unary_union(roads + paths + lots).buffer(2.5)).difference(built)
     return dict(items=items, roads=roads, paths=paths, lots=lots, stalls=stalls,
                 nstall=nstall, green=green, hard=hard, inner=inner,
                 west=west, east=east, variant=variant)
@@ -521,6 +554,14 @@ def checks(frame, m):
     if comps > 1:
         msgs.append('Сеть движения распадается на %d несвязанных кусков' % comps)
     m['net_components'] = comps
+
+    for a in range(len(m['items'])):
+        for b in range(a + 1, len(m['items'])):
+            A, B = m['items'][a], m['items'][b]
+            ov = A['whole'].intersection(B['whole']).area
+            if ov > 1.0:
+                msgs.append('Объекты накладываются (%.0f м²): %s / %s'
+                            % (ov, A['name'], B['name']))
 
     bl = [i for i in m['items'] if i['kind'] == 'building']
     for a in range(len(bl)):
@@ -601,6 +642,8 @@ def draw_part(md, t, sp, it):
         md.prism(sp['poly'], '10 Вода', sp['h'] - 0.25, 0.2)
     elif t == 'equip':
         md.prism(sp['poly'], '16 Оборудование', 0.0, sp.get('h', 1.0))
+    elif t == 'entrance':
+        return
     elif t in ('deck', 'platform', 'court'):
         h = {'deck': 0.5, 'platform': 0.2, 'court': 0.12}[t]
         md.prism(sp['poly'], model3d.SLAB_LAYER[t], 0.0, sp.get('h', h))
@@ -695,6 +738,10 @@ def to_png(frame, m, path, title):
              'column': ('#a98a63', '#6b563a'), 'equip': ('#9aa0a6', '#5d6166')}
     for it in m['items']:
         for t, sp in it['parts']:
+            if t == 'entrance':
+                ax.plot([sp['pt'][0]], [sp['pt'][1]], marker='^', ms=4,
+                        color='#cc2222', zorder=13)
+                continue
             fc, ec = style.get(t, (K['plat'], '#777777'))
             if t == 'column':
                 for x, y, r in sp['pts']:

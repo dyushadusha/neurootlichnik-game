@@ -60,51 +60,82 @@ def quad(a, b, c, d):
     return [(a, b, c), (a, c, d)]
 
 
-def roof_tris(foot, kind, z_eave, ridge, over=0.9):
-    """Треугольники кровли. gable/hip/shed строятся по ориентированному
-    габариту (настоящий конёк), pagoda/dome/cone — по контуру пятна."""
+def roof_tris(foot, kind, z_eave, ridge, over=0.9, fascia=0.45):
+    """Кровля как ЗАМКНУТОЕ тело: скаты, подшивка снизу и фриз по периметру.
+
+    gable / hip / shed строятся по ориентированному габариту (настоящий конёк),
+    arch — изогнутая кровля-«крыло», pagoda / dome / cone — кольцами по контуру.
+    """
     if kind == 'arch':
-        return arch_tris(foot, z_eave, ridge, max(over, 1.4))
+        return arch_tris(foot, z_eave, ridge, max(over, 1.4), fascia)
     if kind in ('dome', 'cone', 'pagoda'):
         return _ring_roof(foot, kind, z_eave, ridge, over)
 
     cen, ang, hl, hw = obb(foot)
     hl += over
     hw += over
-    tris = []
+
     if kind == 'shed':
-        p = _to_world(cen, ang, [(-hl, -hw, z_eave), (hl, -hw, z_eave),
-                                 (hl, hw, ridge), (-hl, hw, ridge)])
-        tris += quad(*p)
-        lo = _to_world(cen, ang, [(-hl, -hw, z_eave - 0.35), (hl, -hw, z_eave - 0.35),
-                                  (hl, hw, ridge - 0.35), (-hl, hw, ridge - 0.35)])
-        tris += quad(lo[3], lo[2], lo[1], lo[0])
+        top = [(-hl, -hw, z_eave), (hl, -hw, z_eave), (hl, hw, ridge), (-hl, hw, ridge)]
+        tris = _solid_from_top(cen, ang, [top], fascia, rim=[], z_rim=z_eave)
+        for i in range(4):                  # фриз по всем четырём сторонам
+            a, b = top[i], top[(i + 1) % 4]
+            p = _to_world(cen, ang, [(a[0], a[1], a[2]), (b[0], b[1], b[2]),
+                                     (b[0], b[1], b[2] - fascia),
+                                     (a[0], a[1], a[2] - fascia)])
+            tris += quad(*p)
         return tris
 
     if kind == 'gable':
         r0, r1 = -hl, hl
-    else:                                   # hip: конёк короче свеса на полуширину
+    else:
         r0, r1 = -hl + hw, hl - hw
         if r1 <= r0:
             r0 = r1 = 0.0
-
-    p = _to_world(cen, ang, [(-hl, -hw, z_eave), (hl, -hw, z_eave),
-                             (hl, hw, z_eave), (-hl, hw, z_eave),
-                             (r0, 0.0, ridge), (r1, 0.0, ridge)])
-    e0, e1, e2, e3, k0, k1 = p
-    tris += quad(e0, e1, k1, k0)            # южный скат
-    tris += quad(e2, e3, k0, k1)            # северный скат
+    south = [(-hl, -hw, z_eave), (hl, -hw, z_eave), (r1, 0.0, ridge), (r0, 0.0, ridge)]
+    north = [(hl, hw, z_eave), (-hl, hw, z_eave), (r0, 0.0, ridge), (r1, 0.0, ridge)]
+    faces = [south, north]
     if kind == 'hip':
-        tris += [(e1, e2, k1), (e3, e0, k0)]
-    else:                                   # фронтоны
-        tris += [(e1, e2, k1), (e3, e0, k0)]
-    lo = [(x, y, z - 0.3) for x, y, z in p]
-    tris += quad(lo[1], lo[0], lo[3], lo[2])
+        faces.append([(hl, -hw, z_eave), (hl, hw, z_eave), (r1, 0.0, ridge)])
+        faces.append([(-hl, hw, z_eave), (-hl, -hw, z_eave), (r0, 0.0, ridge)])
+    else:                                   # фронтоны зашиты
+        faces.append([(hl, -hw, z_eave), (hl, hw, z_eave), (r1, 0.0, ridge)])
+        faces.append([(-hl, hw, z_eave), (-hl, -hw, z_eave), (r0, 0.0, ridge)])
+    return _solid_from_top(cen, ang, faces, fascia,
+                           rim=[(-hl, -hw), (hl, -hw), (hl, hw), (-hl, hw)],
+                           z_rim=z_eave)
+
+
+def _solid_from_top(cen, ang, faces, fascia, rim=None, z_rim=None):
+    """Замыкает кровлю: верхние грани, подшивка и вертикальный фриз."""
+    tris = []
+    for f in faces:
+        p = _to_world(cen, ang, f)
+        if len(p) == 4:
+            tris += quad(*p)
+        else:
+            tris.append(tuple(p))
+        lo = _to_world(cen, ang, [(x, y, z - fascia) for x, y, z in f])
+        if len(lo) == 4:
+            tris += quad(lo[3], lo[2], lo[1], lo[0])
+        else:
+            tris.append((lo[2], lo[1], lo[0]))
+    if rim is None:
+        rim = [(f[0][0], f[0][1]) for f in faces]
+    if z_rim is None:
+        z_rim = min(z for f in faces for _, _, z in f)
+    n = len(rim)
+    for i in range(n):
+        a = rim[i]
+        b = rim[(i + 1) % n]
+        p = _to_world(cen, ang, [(a[0], a[1], z_rim), (b[0], b[1], z_rim),
+                                 (b[0], b[1], z_rim - fascia), (a[0], a[1], z_rim - fascia)])
+        tris += quad(*p)
     return tris
 
 
-def arch_tris(foot, z_eave, ridge, over=1.6, seg=14):
-    """Изогнутая кровля-«крыло»: дуга поперёк длинной оси (ресторан, отель)."""
+def arch_tris(foot, z_eave, ridge, over=1.6, fascia=0.45, seg=14):
+    """Изогнутая кровля-«крыло»: дуга поперёк длинной оси, замкнутое тело."""
     cen, ang, hl, hw = obb(foot)
     hl += over
     hw += over
@@ -118,38 +149,44 @@ def arch_tris(foot, z_eave, ridge, over=1.6, seg=14):
     for (w0, z0), (w1, z1) in zip(prof, prof[1:]):
         p = _to_world(cen, ang, [(-hl, w0, z0), (hl, w0, z0), (hl, w1, z1), (-hl, w1, z1)])
         tris += quad(*p)
-        lo = _to_world(cen, ang, [(-hl, w0, z0 - 0.45), (hl, w0, z0 - 0.45),
-                                  (hl, w1, z1 - 0.45), (-hl, w1, z1 - 0.45)])
+        lo = _to_world(cen, ang, [(-hl, w0, z0 - fascia), (hl, w0, z0 - fascia),
+                                  (hl, w1, z1 - fascia), (-hl, w1, z1 - fascia)])
         tris += quad(lo[3], lo[2], lo[1], lo[0])
     for sgn in (-1, 1):                       # торцы
         pts = _to_world(cen, ang, [(sgn * hl, w, z) for w, z in prof])
-        base = _to_world(cen, ang, [(sgn * hl, w, z - 0.45) for w, z in prof])
+        base = _to_world(cen, ang, [(sgn * hl, w, z - fascia) for w, z in prof])
         for i in range(len(pts) - 1):
             tris += quad(pts[i], pts[i + 1], base[i + 1], base[i])
+    for (w, z), sgn in ((prof[0], -1), (prof[-1], 1)):    # карнизные фризы
+        p = _to_world(cen, ang, [(-hl, w, z), (hl, w, z),
+                                 (hl, w, z - fascia), (-hl, w, z - fascia)])
+        tris += quad(*p) if sgn < 0 else quad(p[3], p[2], p[1], p[0])
     return tris
 
 
-def barrel_tris(cx, cy, z0, r, length, ang_deg, seg=20):
-    """Лежачая бочка: цилиндр вдоль оси ang_deg (Баня Бочка)."""
+def barrel_tris(cx, cy, z0, r, length, ang_deg, seg=22):
+    """Лежачая бочка: цилиндр с донцами, ось по направлению ang_deg,
+    низ ровно на отметке z0."""
     a = math.radians(ang_deg)
     ex = (math.cos(a), math.sin(a))
     zc = z0 + r
-    tris = []
-    ring = []
-    for i in range(seg + 1):
-        t = 2 * math.pi * i / seg
-        ring.append((r * math.cos(t), r * math.sin(t)))
+    ring = [(r * math.cos(2 * math.pi * i / seg), r * math.sin(2 * math.pi * i / seg))
+            for i in range(seg + 1)]
+
     def pt(sign, w, z):
         return (cx + ex[0] * sign * length / 2.0 - ex[1] * w,
                 cy + ex[1] * sign * length / 2.0 + ex[0] * w, zc + z)
+
+    tris = []
     for i in range(seg):
-        w0, z0_ = ring[i]
-        w1, z1_ = ring[i + 1]
-        tris += quad(pt(-1, w0, z0_), pt(1, w0, z0_), pt(1, w1, z1_), pt(-1, w1, z1_))
-    for sign in (-1, 1):                      # донья
+        w0, h0 = ring[i]
+        w1, h1 = ring[i + 1]
+        tris += quad(pt(-1, w0, h0), pt(1, w0, h0), pt(1, w1, h1), pt(-1, w1, h1))
+    for sign in (-1, 1):
         c = pt(sign, 0, 0)
         for i in range(seg):
-            tris.append((c, pt(sign, *ring[i]), pt(sign, *ring[i + 1])))
+            t = (c, pt(sign, *ring[i]), pt(sign, *ring[i + 1]))
+            tris.append(t if sign > 0 else (t[0], t[2], t[1]))
     return tris
 
 
@@ -294,26 +331,28 @@ class Model(object):
 
 
 # --------------------------------------------------------------- деревья ----
-def tree_tris(x, y, h, r, seg=10):
-    """Хвойное дерево: ствол и две яруса кроны."""
+def tree_tris(x, y, h, r, seg=12):
+    """Хвойное дерево цельным телом: ствол-цилиндр и два яруса кроны с донцами.
+    Ярусы заходят на ствол, поэтому висящих в воздухе крон не бывает."""
     tris = []
-    base = h * 0.32
-    for lvl, (z0, z1, rr) in enumerate([(base, h * 0.72, r),
-                                        (h * 0.62, h, r * 0.62)]):
-        for i in range(seg):
-            a0 = 2 * math.pi * i / seg
-            a1 = 2 * math.pi * (i + 1) / seg
-            tris.append(((x + rr * math.cos(a0), y + rr * math.sin(a0), z0),
-                         (x + rr * math.cos(a1), y + rr * math.sin(a1), z0),
-                         (x, y, z1)))
-    tr = 0.22
-    for i in range(seg):
+    trunk_h = h * 0.30
+    tr = max(0.22, r * 0.11)
+    for i in range(seg):                     # ствол
         a0 = 2 * math.pi * i / seg
         a1 = 2 * math.pi * (i + 1) / seg
         p0 = (x + tr * math.cos(a0), y + tr * math.sin(a0))
         p1 = (x + tr * math.cos(a1), y + tr * math.sin(a1))
-        tris += quad((p0[0], p0[1], 0), (p1[0], p1[1], 0),
-                     (p1[0], p1[1], base), (p0[0], p0[1], base))
+        tris += quad((p0[0], p0[1], 0.0), (p1[0], p1[1], 0.0),
+                     (p1[0], p1[1], trunk_h + 0.4), (p0[0], p0[1], trunk_h + 0.4))
+        tris.append(((x, y, 0.0), (p1[0], p1[1], 0.0), (p0[0], p0[1], 0.0)))
+    for z0, z1, rr in ((trunk_h, h * 0.70, r), (h * 0.55, h, r * 0.66)):
+        for i in range(seg):                 # конус кроны с донцем
+            a0 = 2 * math.pi * i / seg
+            a1 = 2 * math.pi * (i + 1) / seg
+            p0 = (x + rr * math.cos(a0), y + rr * math.sin(a0), z0)
+            p1 = (x + rr * math.cos(a1), y + rr * math.sin(a1), z0)
+            tris.append((p0, p1, (x, y, z1)))
+            tris.append(((x, y, z0), p1, p0))
     return tris
 
 

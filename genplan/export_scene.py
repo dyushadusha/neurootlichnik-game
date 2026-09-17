@@ -59,6 +59,8 @@ def scene(frame, m, title):
                 for x, y, r in sp['pts']:
                     s['cyls'].append([round(x, 2), round(y, 2), round(r, 2), 0,
                                       round(sp['h'], 2), 0])
+            elif t == 'entrance':
+                continue
             elif t == 'barrel':
                 s['barrels'].append([round(sp['cx'], 2), round(sp['cy'], 2),
                                      round(sp['r'], 2), round(sp['length'], 2),

@@ -221,20 +221,23 @@
     return g;
   }
   function treeMesh(trees){
-    var crown = [], trunk = [], SEG = 10;
+    var crown = [], trunk = [], SEG = 12;
     trees.forEach(function(t){
-      var x=t[0], z=-t[1], h=t[2], r=t[3], base=h*0.42;
+      var x=t[0], z=-t[1], h=t[2], r=t[3], tb=h*0.30, tr=Math.max(0.22, r*0.11);
       for (var i=0;i<SEG;i++){
         var a0=i/SEG*Math.PI*2, a1=(i+1)/SEG*Math.PI*2;
-        crown.push(x+r*Math.cos(a0), base, z+r*Math.sin(a0),
-                   x+r*Math.cos(a1), base, z+r*Math.sin(a1), x, h, z);
-        var tr=0.22;
-        trunk.push(x+tr*Math.cos(a0),0,z+tr*Math.sin(a0),
-                   x+tr*Math.cos(a1),0,z+tr*Math.sin(a1),
-                   x+tr*Math.cos(a1),base,z+tr*Math.sin(a1));
-        trunk.push(x+tr*Math.cos(a0),0,z+tr*Math.sin(a0),
-                   x+tr*Math.cos(a1),base,z+tr*Math.sin(a1),
-                   x+tr*Math.cos(a0),base,z+tr*Math.sin(a0));
+        var c0=[x+tr*Math.cos(a0), z+tr*Math.sin(a0)];
+        var c1=[x+tr*Math.cos(a1), z+tr*Math.sin(a1)];
+        trunk.push(c0[0],0,c0[1], c1[0],0,c1[1], c1[0],tb+0.4,c1[1]);
+        trunk.push(c0[0],0,c0[1], c1[0],tb+0.4,c1[1], c0[0],tb+0.4,c0[1]);
+        trunk.push(x,0,z, c1[0],0,c1[1], c0[0],0,c0[1]);
+        [[tb, h*0.70, r],[h*0.55, h, r*0.66]].forEach(function(lv){
+          var z0=lv[0], z1=lv[1], rr=lv[2];
+          var p0=[x+rr*Math.cos(a0), z+rr*Math.sin(a0)];
+          var p1=[x+rr*Math.cos(a1), z+rr*Math.sin(a1)];
+          crown.push(p0[0],z0,p0[1], p1[0],z0,p1[1], x,z1,z);
+          crown.push(x,z0,z, p1[0],z0,p1[1], p0[0],z0,p0[1]);
+        });
       }
     });
     function mk(arr, mat){
@@ -284,7 +287,7 @@
       for (var si=0; si<d.stalls.length; si+=4){
         var ring = d.stalls.slice(si, si+4);
         if (ring.length < 4) break;
-        parts.paving.add(slab({e:ring.concat([ring[0]]), h:[]}, 0.06, 0.01, sm));
+        parts.paving.add(slab({e:ring.concat([ring[0]]), h:[]}, 0.05, 0.10, sm));
       }
     }
 
@@ -306,12 +309,13 @@
     }
 
     (d.barrels||[]).forEach(function(b){
-      var geo = new THREE.CylinderGeometry(b[2], b[2], b[3], 20);
+      var geo = new THREE.CylinderGeometry(b[2], b[2], b[3], 22);
+      geo.rotateZ(Math.PI/2);                       // ось цилиндра вдоль X
+      geo.rotateY(-b[4]*Math.PI/180);               // разворот по плану
       var m = new THREE.Mesh(geo, M.tub);
-      m.rotation.z = Math.PI/2;
-      m.rotation.y = -b[4]*Math.PI/180;
-      m.position.set(b[0], b[5]+b[2], -b[1]);
-      m.castShadow = true; parts.build.add(m);
+      m.position.set(b[0], b[5]+b[2], -b[1]);       // низ ровно на земле
+      m.castShadow = true; m.receiveShadow = true;
+      parts.build.add(m);
     });
 
     d.cyls.forEach(function(c){
