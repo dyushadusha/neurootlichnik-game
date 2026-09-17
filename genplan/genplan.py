@@ -282,6 +282,78 @@ def push_off(it, obstacle, bounds, clearance=1.0, iters=40, step=1.0):
         move(it, step * vx / n, step * vy / n)
 
 
+def settle(frame, items, iters=600):
+    """Автоматическая расстановка: объекты расталкиваются до нормативных
+    разрывов, не выходят из своей области и одновременно притягиваются к
+    заданной композицией точке. Так замысел сохраняется, а коллизии уходят."""
+    movable = [i for i in items if not i.get('fixed')]
+    for it in movable:
+        it['anchor'] = it['frame'].xy(*it['uv'])
+    for step_i in range(iters):
+        k = 1.0 - step_i / float(iters)
+        moved = 0.0
+        for a in range(len(items)):
+            for b in range(a + 1, len(items)):
+                A, B = items[a], items[b]
+                if A['kind'] == 'building' and B['kind'] == 'building':
+                    need = fire_gap(A['fire'], B['fire'])
+                    got = A['poly'].distance(B['poly'])
+                else:
+                    need, got = 3.0, A['whole'].distance(B['whole'])
+                if got >= need - 0.02:
+                    continue
+                ca, cb = A['poly'].centroid, B['poly'].centroid
+                vx, vy = cb.x - ca.x, cb.y - ca.y
+                n = math.hypot(vx, vy) or 1.0
+                push = min(need - got, 2.5) * 0.5
+                for it, sgn in ((A, -1), (B, 1)):
+                    if it.get('fixed'):
+                        continue
+                    moved += _try_move(it, sgn * push * vx / n, sgn * push * vy / n)
+        for it in movable:                # притяжение к точке композиции
+            c = it['poly'].centroid
+            ax, ay = it['anchor']
+            dx, dy = ax - c.x, ay - c.y
+            n = math.hypot(dx, dy)
+            if n < 0.6:
+                continue
+            pull = min(n, 1.2) * 0.35 * k
+            _try_move(it, pull * dx / n, pull * dy / n, keep_gaps=items)
+        if moved < 0.02 and step_i > 60:
+            break
+
+
+LEASH = 20.0        # насколько объект может отойти от заданной точки, м
+
+
+def _try_move(it, dx, dy, keep_gaps=None):
+    """Двигает объект, если он остаётся в своей области и (для притяжения)
+    не создаёт новых нарушений разрывов."""
+    bnd = it.get('bound')
+    cand = translate(it['poly'], dx, dy)
+    a = it.get('anchor')
+    if a is not None:                     # поводок: далеко от замысла не уходим
+        c = cand.centroid
+        if math.hypot(c.x - a[0], c.y - a[1]) > LEASH:
+            cur = it['poly'].centroid
+            if math.hypot(c.x - a[0], c.y - a[1]) > math.hypot(cur.x - a[0], cur.y - a[1]):
+                return 0.0
+    if bnd is not None:
+        if not (bnd.contains(cand) or
+                cand.difference(bnd).area < it['poly'].difference(bnd).area - 1e-9):
+            return 0.0
+    if keep_gaps is not None:
+        for o in keep_gaps:
+            if o is it:
+                continue
+            need = (fire_gap(it['fire'], o['fire'])
+                    if it['kind'] == 'building' and o['kind'] == 'building' else 3.0)
+            if cand.distance(o['poly']) < need - 0.02:
+                return 0.0
+    move(it, dx, dy)
+    return abs(dx) + abs(dy)
+
+
 def relax(frame, items, inner, iters=300):
     bounds = {id(i): i.get('bound', frame.poly.buffer(-setback_of(i) + 0.2))
               for i in items}
@@ -309,7 +381,12 @@ def relax(frame, items, inner, iters=300):
                             t += math.pi / 2.0
                         pr = dx * math.cos(t) + dy * math.sin(t)
                         dx, dy = pr * math.cos(t), pr * math.sin(t)
-                    if bounds[id(it)].contains(translate(it['poly'], dx, dy)):
+                    bnd = bounds[id(it)]
+                    cand = translate(it['poly'], dx, dy)
+                    # вне своей области двигаемся только в сторону её границы
+                    free = (bnd.contains(cand) or
+                            cand.difference(bnd).area < it['poly'].difference(bnd).area)
+                    if free:
                         move(it, dx, dy)
                         moved += step
         if moved < 0.01:
@@ -460,7 +537,9 @@ def build(frame, variant='A'):
         half = (west if it['frame'] is west else east).poly.buffer(1.5)
         it['bound'] = half.intersection(site.buffer(-setback_of(it)))
         pull_inside(it, it['bound'])
-    relax(frame, items, inner)
+    settle(frame, items)
+    for it in items:
+        materialize(it['frame'], it)
     ways = unary_union(roads)
     for it in items:
         if it.get('fixed'):
@@ -471,7 +550,7 @@ def build(frame, variant='A'):
             push_off(probe, ways, it['bound'], clearance=1.2)
             move(it, probe['center'][0] - d0[0], probe['center'][1] - d0[1])
             materialize(it['frame'], it)
-    relax(frame, items, inner, iters=120)
+    settle(frame, items, iters=300)
     for it in items:
         materialize(it['frame'], it)
 
@@ -573,7 +652,9 @@ def furniture(axes_roads, axes_paths, blocked, site):
     for ln in axes_roads:
         put(ln, 26.0, 4.6, 'road', 6.5)
     for ln in axes_paths:
-        put(ln, 15.0, 2.0, 'path', 1.05, bench_every=3)
+        if ln.length < 25.0:              # короткие отводы не обставляем
+            continue
+        put(ln, 20.0, 2.0, 'path', 1.05, bench_every=4 if ln.length > 60 else None)
     return out
 
 

@@ -149,10 +149,10 @@ def restaurant(w, d):
     с тонким скруглённым выносом на пилонах, сплошное остекление, тёмный
     верхний объём-вставка, входной блок с отдельным круглым навесом и
     вывеской, терраса и пруд перед фасадом."""
-    hall = _stadium(w * 0.64, d * 0.46, r=d * 0.16)
-    hall = translate(hall, w * 0.15, d * 0.06)
-    entry = _stadium(w * 0.24, d * 0.30, r=d * 0.10)
-    entry = translate(entry, -w * 0.28, d * 0.04)
+    hall = _stadium(w * 0.74, d * 0.56, r=d * 0.16)
+    hall = translate(hall, w * 0.12, d * 0.10)
+    entry = _stadium(w * 0.28, d * 0.36, r=d * 0.10)
+    entry = translate(entry, -w * 0.30, d * 0.06)
     upper = _box(w * 0.16, d * 0.20, -w * 0.06, d * 0.16)
     fy = d * 0.06 - d * 0.23
     pil = cols_line(w * 0.15 - w * 0.28, fy - 0.8, w * 0.15 + w * 0.28, fy - 0.8, 8, 0.40)
@@ -175,11 +175,11 @@ def hotel(w, d):
     """Двухэтажный корпус с ПЛОСКИМИ разноуровневыми кровлями и парапетами,
     сплошное остекление обоих этажей, галерея-балкон на колоннах, поперечное
     крыло ниже основного, входной блок со стеклянным козырьком (референс)."""
-    bar = _stadium(w * 0.72, d * 0.34, r=d * 0.10)
-    bar = translate(bar, -w * 0.10, d * 0.24)
-    wing = _stadium(w * 0.28, d * 0.40, r=d * 0.09)
-    wing = translate(wing, w * 0.28, -d * 0.14)
-    core = _box(w * 0.22, d * 0.22, w * 0.06, d * 0.10)      # верхний объём
+    bar = _stadium(w * 0.84, d * 0.42, r=d * 0.10)
+    bar = translate(bar, -w * 0.06, d * 0.26)
+    wing = _stadium(w * 0.34, d * 0.46, r=d * 0.09)
+    wing = translate(wing, w * 0.30, -d * 0.16)
+    core = _box(w * 0.26, d * 0.24, w * 0.02, d * 0.14)      # верхний объём
     fy = d * 0.24 - d * 0.17
     gal = _box(w * 0.72, 3.4, -w * 0.10, fy - 1.7)
     cols = cols_line(-w * 0.44, fy - 3.2, w * 0.24, fy - 3.2, 9, 0.30)
@@ -321,7 +321,7 @@ def padel(w, d):
     """Крытый падел-центр по референсу: корт 20x10 под изогнутой кровлей с
     озеленённым карнизом, сплошное остекление в ритме деревянных колонн,
     глухая реечная стена с логотипом в торце, широкий настил со ступенями."""
-    hall = _stadium(w * 0.92, d * 0.86, r=d * 0.22)
+    hall = _stadium(w * 0.96, d * 0.92, r=d * 0.22)
     fy = -d * 0.43
     cols = cols_line(-w * 0.42, fy + 0.6, w * 0.42, fy + 0.6, 10, 0.34)
     return [
@@ -490,10 +490,16 @@ def make(kind, w, d, angle_deg, cx, cy):
             s['cols'] = [_place(p, a, cx, cy) for p in s['cols']]
         if s.get('pts'):
             s['pts'] = [_place(p, a, cx, cy) for p in s['pts']]
-        if t == 'entrance':
+        if 'line' in s:                      # ограждения тоже переносятся
+            s['line'] = [(cx + p[0] * math.cos(a) - p[1] * math.sin(a),
+                          cy + p[0] * math.sin(a) + p[1] * math.cos(a))
+                         for p in s['line']]
+        if t in ('entrance', 'bench', 'lamp'):
             p = s['pt']
             s['pt'] = (cx + p[0] * math.cos(a) - p[1] * math.sin(a),
                        cy + p[0] * math.sin(a) + p[1] * math.cos(a))
+            if 'ang' in s:
+                s['ang'] = s['ang'] + angle_deg
         if t == 'barrel':
             x, y = s['cx'], s['cy']
             s['cx'] = cx + x * math.cos(a) - y * math.sin(a)
