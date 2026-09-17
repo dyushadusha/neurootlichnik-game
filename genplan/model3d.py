@@ -30,11 +30,15 @@ LAYERS = [
     ('16 Оборудование',       (110, 110, 115)),
     ('17 Подписи',            (25, 25, 25)),
     ('18 Цоколь',             (138, 136, 130)),
+    ('19 Остекление',         (120, 175, 205)),
+    ('20 Ограждения',         (120, 96, 66)),
+    ('21 Освещение',          (70, 70, 75)),
+    ('22 МАФ',                (150, 120, 85)),
 ]
 
 SLAB_LAYER = {'road': '04 Проезды', 'parking': '05 Парковка', 'path': '06 Дорожки',
               'deck': '07 Террасы и настилы', 'platform': '08 Площадки',
-              'court': '09 Корты', 'plinth': '18 Цоколь'}
+              'court': '09 Корты', 'plinth': '18 Цоколь', 'glass': '19 Остекление'}
 
 
 # --------------------------------------------------------------- утилиты ----
@@ -188,6 +192,46 @@ def barrel_tris(cx, cy, z0, r, length, ang_deg, seg=22):
             t = (c, pt(sign, *ring[i]), pt(sign, *ring[i + 1]))
             tris.append(t if sign > 0 else (t[0], t[2], t[1]))
     return tris
+
+
+def wall_fill_tris(foot, kind, z_eave, ridge):
+    """Достройка стен до кровли: фронтоны у двускатной, клин у односкатной,
+    криволинейные торцы у изогнутой. Стена доходит до низа кровли вплотную."""
+    if kind in ('hip', 'flat', 'cone', 'dome', 'pagoda'):
+        return []
+    cen, ang, hl, hw = obb(foot)
+    tris = []
+    if kind == 'gable':
+        for sgn in (-1, 1):
+            p = _to_world(cen, ang, [(sgn * hl, -hw, z_eave), (sgn * hl, hw, z_eave),
+                                     (sgn * hl, 0.0, ridge)])
+            tris.append(tuple(p if sgn > 0 else p[::-1]))
+        return tris
+    if kind == 'shed':
+        top = [(-hl, -hw, z_eave), (hl, -hw, z_eave), (hl, hw, ridge), (-hl, hw, ridge)]
+        p = _to_world(cen, ang, top)
+        tris += quad(*p)
+        base = _to_world(cen, ang, [(x, y, z_eave) for x, y, _ in top])
+        for i in range(4):
+            j = (i + 1) % 4
+            tris += quad(base[i], base[j], p[j], p[i])
+        return tris
+    if kind == 'arch':
+        seg = 14
+        prof = []
+        for i in range(seg + 1):
+            t = i / float(seg)
+            w = -hw + 2 * hw * t
+            z = z_eave + (ridge - z_eave) * math.sin(math.pi * t) ** 0.85
+            prof.append((w, z))
+        for sgn in (-1, 1):
+            pts = _to_world(cen, ang, [(sgn * hl, w, z) for w, z in prof])
+            base = _to_world(cen, ang, [(sgn * hl, w, z_eave) for w, _ in prof])
+            for i in range(len(pts) - 1):
+                q = quad(base[i], base[i + 1], pts[i + 1], pts[i])
+                tris += q if sgn > 0 else [t[::-1] for t in q]
+        return tris
+    return []
 
 
 def _ring_roof(foot, kind, z_eave, ridge, over):
@@ -353,6 +397,90 @@ def tree_tris(x, y, h, r, seg=12):
             p1 = (x + rr * math.cos(a1), y + rr * math.sin(a1), z0)
             tris.append((p0, p1, (x, y, z1)))
             tris.append(((x, y, z0), p1, p0))
+    return tris
+
+
+def rail_tris(line, h=1.05, post_every=2.2):
+    """Ограждение: стойки и два горизонтальных прогона (терраса, крыльцо)."""
+    tris = []
+    pts = list(line)
+    for a, b in zip(pts, pts[1:]):
+        seg = math.dist(a, b)
+        n = max(2, int(seg / post_every) + 1)
+        for i in range(n):
+            t = i / float(n - 1)
+            x = a[0] + (b[0] - a[0]) * t
+            y = a[1] + (b[1] - a[1]) * t
+            tris += _post(x, y, 0.06, h)
+        for z in (h - 0.06, h * 0.55):       # прогоны
+            tris += _beam(a, b, z, 0.05, 0.07)
+    return tris
+
+
+def _post(x, y, r, h, seg=6):
+    tris = []
+    for i in range(seg):
+        a0 = 2 * math.pi * i / seg
+        a1 = 2 * math.pi * (i + 1) / seg
+        p0 = (x + r * math.cos(a0), y + r * math.sin(a0))
+        p1 = (x + r * math.cos(a1), y + r * math.sin(a1))
+        tris += quad((p0[0], p0[1], 0), (p1[0], p1[1], 0),
+                     (p1[0], p1[1], h), (p0[0], p0[1], h))
+        tris.append(((x, y, h), (p0[0], p0[1], h), (p1[0], p1[1], h)))
+    return tris
+
+
+def _beam(a, b, z, t, hh):
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    n = math.hypot(dx, dy) or 1.0
+    nx, ny = -dy / n * t, dx / n * t
+    lo = [(a[0] + nx, a[1] + ny, z), (b[0] + nx, b[1] + ny, z),
+          (b[0] - nx, b[1] - ny, z), (a[0] - nx, a[1] - ny, z)]
+    up = [(p[0], p[1], z + hh) for p in lo]
+    tris = quad(*up) + quad(lo[3], lo[2], lo[1], lo[0])
+    for i in range(4):
+        j = (i + 1) % 4
+        tris += quad(lo[i], lo[j], up[j], up[i])
+    return tris
+
+
+def lamp_tris(x, y, h=6.0, kind='road'):
+    """Опора освещения: стойка и светильник. kind='road' — высокая вдоль
+    проезда, 'path' — низкий столбик на дорожке."""
+    r = 0.11 if kind == 'road' else 0.08
+    tris = _post(x, y, r, h)
+    if kind == 'road':
+        tris += _beam((x, y), (x + 0.9, y), h - 0.15, 0.06, 0.12)
+        tris += _plate(x + 0.9, y, 0.45, h - 0.35, 0.18)
+    else:
+        tris += _plate(x, y, 0.22, h, 0.14)
+    return tris
+
+
+def _plate(x, y, r, z, t, seg=8):
+    tris = []
+    for i in range(seg):
+        a0 = 2 * math.pi * i / seg
+        a1 = 2 * math.pi * (i + 1) / seg
+        p0 = (x + r * math.cos(a0), y + r * math.sin(a0))
+        p1 = (x + r * math.cos(a1), y + r * math.sin(a1))
+        tris += quad((p0[0], p0[1], z), (p1[0], p1[1], z),
+                     (p1[0], p1[1], z + t), (p0[0], p0[1], z + t))
+        tris.append(((x, y, z + t), (p0[0], p0[1], z + t), (p1[0], p1[1], z + t)))
+        tris.append(((x, y, z), (p1[0], p1[1], z), (p0[0], p0[1], z)))
+    return tris
+
+
+def bench_tris(x, y, ang=0.0, L=1.8):
+    """Скамья: сиденье на двух опорах и спинка."""
+    a = math.radians(ang)
+    ex = (math.cos(a), math.sin(a))
+    p0 = (x - ex[0] * L / 2, y - ex[1] * L / 2)
+    p1 = (x + ex[0] * L / 2, y + ex[1] * L / 2)
+    tris = _beam(p0, p1, 0.45, 0.24, 0.08)
+    tris += _beam(p0, p1, 0.75, 0.06, 0.34)
+    for p in (p0, p1):
+        tris += _post(p[0], p[1], 0.07, 0.45)
     return tris
 
 

@@ -127,6 +127,11 @@ def band(pts_xy, width, closed=False, curve=True):
     return LineString(pts).buffer(width / 2.0, cap_style=2, join_style=1)
 
 
+def road_axis(frame, uv_pts, closed=False):
+    pts = [frame.xy(u, v) for u, v in uv_pts]
+    return LineString(smooth(pts, closed=closed) if len(pts) > 2 else pts)
+
+
 def road_band(frame, uv_pts, width, closed=False):
     return band([frame.xy(u, v) for u, v in uv_pts], width, closed)
 
@@ -319,7 +324,7 @@ def path_network(frame, items, ctx):
     blocked = unary_union([unary_union([sp['poly'] for t, sp in i['parts']
                                         if t in ('volume', 'barrel')])
                            for i in items]).buffer(0.2)
-    out = []
+    out, axes = [], []
     for a, b, vias in C.PATH_LINKS:
         ga, gb = resolve(a), resolve(b)
         if ga is None or gb is None:
@@ -331,13 +336,15 @@ def path_network(frame, items, ctx):
         strip = band(line, C.PATH_W).difference(blocked)   # не под зданиями
         if not strip.is_empty:
             out.append(strip)
+            axes.append(LineString(smooth(line) if len(line) > 2 else line))
     if ctx.get('loop') is not None:
         out.append(ctx['loop'].buffer(C.PATH_W / 2.0))
     for ring in ctx['rings']:
         r = ring.buffer(C.PATH_W / 2.0).difference(blocked)
         if not r.is_empty:
             out.append(r)
-    return out
+            axes.append(ring)
+    return out, axes
 
 
 # --------------------------------------------------------------- сборка -----
@@ -407,9 +414,11 @@ def build(frame, variant='A'):
         for row in g['rows']:
             for col in g['cols']:
                 k += 1
+                # все дома развёрнуты главным входом к аллее посередине
+                rot = 90.0 if col < 0.5 else 270.0
                 it = C.B(16, 'Гостевой дом', (col, row), C.COTTAGE_SIZE, C.COTTAGE_H,
                          'V', shape='cottage', wall=3.2, roof='gable',
-                         area=C.COTTAGE_AREA)
+                         area=C.COTTAGE_AREA, rot=rot)
                 it['group'] = 'Гостевые дома'
                 it['frame'] = east
                 items.append(it)
@@ -426,11 +435,18 @@ def build(frame, variant='A'):
 
     roads = [road_band(west, C.ENTRY_DRIVE, C.ROAD_W),
              road_band(west, C.ROW_LANE, C.ROAD_W)]
+    road_axes = [road_axis(west, C.ENTRY_DRIVE), road_axis(west, C.ROW_LANE)]
     lane = roads[1]
     roads += [road_band(west, r, C.DRIVE_W) for r in C.SPUR_ROADS]
+    road_axes += [road_axis(west, r) for r in C.SPUR_ROADS]
     if variant == 'B':
         roads.append(road_band(east, C.COTTAGE_LANE, C.DRIVE_W))
+        road_axes.append(road_axis(east, C.COTTAGE_LANE))
         roads += [road_band(east, r, C.DRIVE_W) for r in C.COTTAGE_SPURS]
+        road_axes += [road_axis(east, r) for r in C.COTTAGE_SPURS]
+        for r in getattr(C, 'COTTAGE_LINK', []):
+            roads.append(road_band(east, r, C.DRIVE_W))
+            road_axes.append(road_axis(east, r))
 
     inner = site.buffer(-C.SETBACK)
     for it in items:                      # объект не выходит за свою половину
@@ -475,8 +491,10 @@ def build(frame, variant='A'):
     for spec in C.PARKING:
         lot, st, n = parking_lot(west, spec)
         d = _clear_of(lot, obst, site.buffer(-1.0))
-        lots.append(translate(lot, *d))
-        stalls += [translate(x, *d) for x in st]
+        lot = translate(lot, *d)
+        ways_now = unary_union(roads)
+        lots.append(lot.difference(ways_now))      # плоскости не накладываются
+        stalls += [translate(x, *d).difference(ways_now) for x in st]
         nstall += n
 
     kppg = [i['poly'] for i in items if i['n'] == 1]
@@ -491,16 +509,53 @@ def build(frame, variant='A'):
 
     ctx = dict(lane=lane, apron=apron, loop=None,
                rings=[ring_line(west, uv, r) for uv, r in C.RINGS])
-    paths = path_network(west, items, ctx)
+    paths, path_axes = path_network(west, items, ctx)
 
+    occupied = unary_union([i['whole'] for i in items] + lots).buffer(1.0)
+    furn = furniture(road_axes, path_axes, occupied, site.buffer(-2.0))
     hard = unary_union(roads + paths + lots + [i['whole'] for i in items])
     # деревья не подходят к зданиям ближе 6 м и к покрытиям ближе 2.5 м
     built = unary_union([i['whole'] for i in items]).buffer(6.0)
     green = site.buffer(-2.0).difference(
         unary_union(roads + paths + lots).buffer(2.5)).difference(built)
     return dict(items=items, roads=roads, paths=paths, lots=lots, stalls=stalls,
-                nstall=nstall, green=green, hard=hard, inner=inner,
+                nstall=nstall, green=green, hard=hard, inner=inner, furn=furn,
                 west=west, east=east, variant=variant)
+
+
+def furniture(axes_roads, axes_paths, blocked, site):
+    """Освещение и МАФ: высокие опоры вдоль проездов, низкие столбики на
+    дорожках, скамьи на прогулочных маршрутах."""
+    out = []
+
+    def put(line, step, off, kind, h, bench_every=None):
+        d = step * 0.5
+        k = 0
+        while d < line.length:
+            p = line.interpolate(d)
+            q = line.interpolate(min(d + 1.0, line.length))
+            dx, dy = q.x - p.x, q.y - p.y
+            n = math.hypot(dx, dy) or 1.0
+            side = 1 if (k % 2 == 0 or kind == 'path') else -1
+            x = p.x - dy / n * off * side
+            y = p.y + dx / n * off * side
+            pt = Point(x, y)
+            if site.contains(pt) and not blocked.contains(pt):
+                out.append(('lamp', dict(pt=(x, y), h=h, kind=kind)))
+                if bench_every and k % bench_every == 0:
+                    bx = p.x + dy / n * off * side * 0.4
+                    by = p.y - dx / n * off * side * 0.4
+                    if site.contains(Point(bx, by)) and not blocked.contains(Point(bx, by)):
+                        out.append(('bench', dict(pt=(bx, by),
+                                                  ang=math.degrees(math.atan2(dy, dx)))))
+            d += step
+            k += 1
+
+    for ln in axes_roads:
+        put(ln, 26.0, 4.6, 'road', 6.5)
+    for ln in axes_paths:
+        put(ln, 15.0, 2.0, 'path', 1.05, bench_every=3)
+    return out
 
 
 def _clear_of(lot, obstacles, bounds, step=1.0, iters=80):
@@ -615,6 +670,8 @@ def draw_part(md, t, sp, it):
     """Одна часть объекта в 3D."""
     if t == 'volume':
         md.prism(sp['poly'], '11 Здания - стены', sp['z0'], sp['wall'] - sp['z0'])
+        md.tris(model3d.wall_fill_tris(sp['poly'], sp['roof'], sp['wall'], sp['ridge']),
+                '11 Здания - стены')
         md.tris(model3d.roof_tris(sp['poly'], sp['roof'], sp['wall'], sp['ridge'],
                                   sp.get('over', 0.9)), '12 Здания - кровли')
     elif t == 'canopy':
@@ -644,6 +701,16 @@ def draw_part(md, t, sp, it):
         md.prism(sp['poly'], '16 Оборудование', 0.0, sp.get('h', 1.0))
     elif t == 'entrance':
         return
+    elif t == 'glass':
+        md.prism(sp['poly'], '19 Остекление', sp['z0'], sp['h'])
+    elif t == 'rail':
+        md.tris(model3d.rail_tris(sp['line'], sp.get('h', 1.05)), '20 Ограждения')
+    elif t == 'lamp':
+        md.tris(model3d.lamp_tris(sp['pt'][0], sp['pt'][1], sp.get('h', 6.0),
+                                  sp.get('kind', 'road')), '21 Освещение')
+    elif t == 'bench':
+        md.tris(model3d.bench_tris(sp['pt'][0], sp['pt'][1], sp.get('ang', 0.0)),
+                '22 МАФ')
     elif t in ('deck', 'platform', 'court'):
         h = {'deck': 0.5, 'platform': 0.2, 'court': 0.12}[t]
         md.prism(sp['poly'], model3d.SLAB_LAYER[t], 0.0, sp.get('h', h))
@@ -676,6 +743,8 @@ def to_3dm(frame, m, path):
         c = it['poly'].centroid
         md.dot('%d. %s' % (it['n'], it['name']), c.x, c.y, it['h'] + 2.0)
 
+    for t, sp in m.get('furn', []):
+        draw_part(md, t, sp, None)
     for x, y in m['trees']:
         rnd = (abs(hash((round(x), round(y)))) % 1000) / 1000.0
         md.tris(model3d.tree_tris(x, y, 12.0 + rnd * 8.0, 1.9 + rnd * 1.5),
@@ -729,18 +798,31 @@ def to_png(frame, m, path, title):
 
     order = {'platform': 6, 'plinth': 7, 'deck': 8, 'court': 7, 'water': 8,
              'tub': 9, 'canopy': 9, 'volume': 11, 'barrel': 11, 'chimney': 12,
-             'column': 12, 'equip': 10}
+             'column': 12, 'equip': 10, 'glass': 13}
     style = {'platform': (K['plat'], '#8a9a72'), 'deck': (K['terr'], '#9a7748'),
              'court': (K['court'], '#25503a'), 'water': (K['water'], '#3f7fa5'),
              'tub': (K['water'], '#7a5a34'), 'canopy': (K['canopy'], '#a08d6d'),
              'volume': (K['bld'], K['bld_e']), 'barrel': ('#6b4e2e', '#3a2a17'),
              'plinth': ('#9b988f', '#6d6a63'), 'chimney': ('#8d8378', '#4b443c'),
-             'column': ('#a98a63', '#6b563a'), 'equip': ('#9aa0a6', '#5d6166')}
+             'column': ('#a98a63', '#6b563a'), 'equip': ('#9aa0a6', '#5d6166'),
+             'glass': ('#7fc0e0', '#3f7fa5')}
+    for t, sp in m.get('furn', []):
+        ax.plot([sp['pt'][0]], [sp['pt'][1]], marker='o', ms=1.8,
+                color='#4a4f55' if t == 'lamp' else '#8a6a3a', zorder=11)
     for it in m['items']:
         for t, sp in it['parts']:
             if t == 'entrance':
                 ax.plot([sp['pt'][0]], [sp['pt'][1]], marker='^', ms=4,
                         color='#cc2222', zorder=13)
+                continue
+            if t == 'rail':
+                xs = [p[0] for p in sp['line']]
+                ys = [p[1] for p in sp['line']]
+                ax.plot(xs, ys, color='#6b563a', lw=1.0, zorder=12)
+                continue
+            if t in ('lamp', 'bench'):
+                ax.plot([sp['pt'][0]], [sp['pt'][1]], marker='o', ms=2.2,
+                        color='#4a4f55' if t == 'lamp' else '#8a6a3a', zorder=12)
                 continue
             fc, ec = style.get(t, (K['plat'], '#777777'))
             if t == 'column':

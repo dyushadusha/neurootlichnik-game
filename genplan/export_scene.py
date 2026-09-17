@@ -25,6 +25,7 @@ def poly_json(g, tol=0.25, nd=2):
 def scene(frame, m, title):
     s = {'title': title, 'site': poly_json(frame.poly, 0.05),
          'slabs': [], 'water': [], 'vols': [], 'roofs': [], 'cyls': [], 'barrels': [],
+         'glass': [], 'rails': [], 'lamps': [], 'benches': [],
          'equip': [], 'trees': [], 'labels': [], 'stalls': [],
          'zones': [], 'stallCount': m['nstall'],
          'tep': [[n, round(a), round(p, 1)] for n, a, p in G.teп(frame, m)],
@@ -38,9 +39,14 @@ def scene(frame, m, title):
     for g in m['paths']:
         s['slabs'] += [dict(p=p, t='path') for p in poly_json(g, 0.3)]
     for g in m['stalls']:
-        s['stalls'] += [[round(x, 2), round(y, 2)] for x, y in g.exterior.coords[:-1]]
+        for q in (g.geoms if g.geom_type.startswith('Multi') else [g]):
+            if q.is_empty or not hasattr(q, 'exterior') or q.area < 3.0:
+                continue
+            ring = list(q.exterior.coords)[:-1]
+            if len(ring) == 4:
+                s['stalls'] += [[round(x, 2), round(y, 2)] for x, y in ring]
 
-    roof_tris = []
+    roof_tris, wall_tris = [], []
     for it in m['items']:
         for t, sp in it['parts']:
             if t == 'volume':
@@ -49,6 +55,8 @@ def scene(frame, m, title):
                                           h=round(sp['wall'] - sp['z0'], 2)))
                 roof_tris += model3d.roof_tris(sp['poly'], sp['roof'], sp['wall'],
                                                sp['ridge'], sp.get('over', 0.9))
+                wall_tris.extend(model3d.wall_fill_tris(sp['poly'], sp['roof'],
+                                                        sp['wall'], sp['ridge']))
             elif t == 'canopy':
                 roof_tris += model3d.roof_tris(sp['poly'], sp['roof'], sp['wall'],
                                                sp['ridge'], sp.get('over', 1.1))
@@ -61,6 +69,13 @@ def scene(frame, m, title):
                                       round(sp['h'], 2), 0])
             elif t == 'entrance':
                 continue
+            elif t == 'glass':
+                for p in poly_json(sp['poly'], 0.05):
+                    s['glass'].append(dict(p=p, z=round(sp['z0'], 2),
+                                           h=round(sp['h'], 2)))
+            elif t == 'rail':
+                s['rails'].append([[round(x, 2), round(y, 2)] for x, y in sp['line']]
+                                  + [round(sp.get('h', 1.05), 2)])
             elif t == 'barrel':
                 s['barrels'].append([round(sp['cx'], 2), round(sp['cy'], 2),
                                      round(sp['r'], 2), round(sp['length'], 2),
@@ -91,12 +106,21 @@ def scene(frame, m, title):
                             it['n'], it['name']])
 
     s['roofs'] = [round(v, 2) for tri in roof_tris for p in tri for v in p]
+    s['wallfill'] = [round(v, 2) for tri in wall_tris for p in tri for v in p]
 
     for name, color, uv in C.ZONES:
         pts = [[round(x, 1), round(y, 1)] for x, y in
                [frame.xy(u, v) for u, v in uv]]
         s['zones'].append([name, color, pts])
 
+    for t, sp in m.get('furn', []):
+        if t == 'lamp':
+            s['lamps'].append([round(sp['pt'][0], 1), round(sp['pt'][1], 1),
+                               round(sp.get('h', 6.0), 2),
+                               0 if sp.get('kind') == 'road' else 1])
+        elif t == 'bench':
+            s['benches'].append([round(sp['pt'][0], 1), round(sp['pt'][1], 1),
+                                 round(sp.get('ang', 0.0), 1)])
     for x, y in m['trees']:
         rnd = (abs(hash((round(x), round(y)))) % 1000) / 1000.0
         s['trees'].append([round(x, 1), round(y, 1),
