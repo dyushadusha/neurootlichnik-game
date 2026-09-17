@@ -86,6 +86,9 @@ def load_xy_text(path, swap=True):
     """
     pts = []
     for line in open(path, encoding='utf-8-sig'):
+        line = line.split('#')[0].split('//')[0].strip()
+        if not line:
+            continue
         nums = re.findall(r'-?\d+[.,]?\d*', line.replace(',', '.'))
         nums = [float(n) for n in nums if len(n.replace('.', '')) >= 3]
         if len(nums) < 2:

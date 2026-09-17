@@ -30,12 +30,12 @@ def placeholder_site(size=None):
     return p
 
 
-def load_site(path, size=None):
+def load_site(path, size=None, order='egrn'):
     if path is None:
         return placeholder_site(size), True
     ext = os.path.splitext(path)[1].lower()
     pts = (kpt.load_kpt_xml(path, C.CAD_NUMBER) if ext == '.xml'
-           else kpt.load_xy_text(path))
+           else kpt.load_xy_text(path, swap=(order == 'egrn')))
     poly = Polygon(pts)
     if not poly.is_valid:
         poly = poly.buffer(0)
@@ -99,8 +99,39 @@ def rect_at(frame, uv, size, rot=0.0):
     return translate(p, x, y)
 
 
-def road_band(frame, uv_pts, width):
+def smooth(pts, closed=False, iters=3):
+    """Сглаживает ломаную по Чайкину — из осевых линий получаются плавные кривые."""
+    p = list(pts)
+    if closed and p[0] == p[-1]:
+        p = p[:-1]
+    for _ in range(iters):
+        out = []
+        n = len(p)
+        rng = range(n) if closed else range(n - 1)
+        if not closed:
+            out.append(p[0])
+        for i in rng:
+            a, b = p[i], p[(i + 1) % n]
+            out.append((0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]))
+            out.append((0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]))
+        if not closed:
+            out.append(p[-1])
+        p = out
+    if closed:
+        p.append(p[0])
+    return p
+
+
+def ring_band(frame, uv, radius, width):
+    """Кольцевая дорожка вокруг площадки."""
+    x, y = frame.xy(*uv)
+    return Point(x, y).buffer(radius).exterior.buffer(width / 2.0)
+
+
+def road_band(frame, uv_pts, width, closed=False, curve=True):
     pts = [frame.xy(u, v) for u, v in uv_pts]
+    if curve and len(pts) > 2:
+        pts = smooth(pts, closed=closed)
     return LineString(pts).buffer(width / 2.0, cap_style=2, join_style=1)
 
 
@@ -239,6 +270,24 @@ def _clear_of(lot, obstacles, bounds, step=1.0, iters=80):
     return dx, dy
 
 
+def pull_inside(geom, inner, step=1.5, iters=200):
+    """Втягивает пятно внутрь линии отступа (участок — не прямоугольник)."""
+    cur = geom
+    for _ in range(iters):
+        if inner.contains(cur):
+            break
+        a, b = nearest_points(inner.exterior, cur.centroid)
+        c = cur.centroid
+        vx, vy = a.x - c.x, a.y - c.y
+        n = math.hypot(vx, vy) or 1.0
+        if inner.contains(c):             # центр внутри — тянем к центроиду участка
+            ic = inner.centroid
+            vx, vy = ic.x - c.x, ic.y - c.y
+            n = math.hypot(vx, vy) or 1.0
+        cur = translate(cur, step * vx / n, step * vy / n)
+    return cur
+
+
 def push_off(geom, obstacle, bounds, clearance=1.0, iters=40, step=1.0):
     """Отодвигает пятно от препятствия (проезда) на нужный просвет."""
     cur = geom
@@ -274,24 +323,35 @@ def build(frame, variant='A'):
             v = min(v, (frame.W - C.SETBACK - C.COTTAGE_SIZE[1] / 2.0) / frame.W)
             for i in range(n):
                 u = (x0 + i * pitch) / frame.L
-                it = C.B(k, 'Домик %d' % (k - 99), (u, v),
+                it = C.B(16, 'Гостевой домик', (u, v),
                          C.COTTAGE_SIZE, C.COTTAGE_H, C.COTTAGE_FIRE)
                 it['slide'] = 'u'
+                it['group'] = 'Гостевые домики'
                 items.append(it)
                 k += 1
     place_facade_row(frame, items)
     for it in items:
         if 'poly' not in it:
-            it['poly'] = rect_at(frame, it['uv'], it['size'], it['rot'])
+            if it['kind'] == 'stage':     # амфитеатр — круглый
+                x, y = frame.xy(*it['uv'])
+                it['poly'] = Point(x, y).buffer(it['size'][0] / 2.0)
+            else:
+                it['poly'] = rect_at(frame, it['uv'], it['size'], it['rot'])
 
-    roads = [road_band(frame, C.MAIN_ROAD, C.ROAD_W),
-             road_band(frame, C.SERVICE_ROAD, C.DRIVE_W)]
+    roads = [road_band(frame, C.ENTRY_DRIVE, C.ROAD_W),
+             road_band(frame, C.MAIN_ROAD, C.ROAD_W, closed=True),
+             road_band(frame, C.ROW_LANE, C.DRIVE_W)]
+    roads += [road_band(frame, r, C.DRIVE_W) for r in C.SPUR_ROADS]
     if variant == 'B':
-        roads.append(road_band(frame, [(0.13, 0.88), (0.43, 0.88), (0.47, 0.80),
-                                       (0.52, 0.88), (0.83, 0.88)], C.DRIVE_W))
+        roads.append(road_band(frame, [(0.28, 0.855), (0.40, 0.905), (0.52, 0.915),
+                                       (0.64, 0.895), (0.70, 0.855)], C.DRIVE_W))
     paths = [road_band(frame, p, C.PATH_W) for p in C.PATHS]
+    paths += [ring_band(frame, uv, r, C.PATH_W) for uv, r in C.RINGS]
 
     inner = frame.poly.buffer(-C.SETBACK)
+    for it in items:
+        if not inner.contains(it['poly']):
+            it['poly'] = pull_inside(it['poly'], inner)
     relax(frame, items, inner)
 
     ways = unary_union(roads)
@@ -429,19 +489,38 @@ def to_3dm(frame, m, inner, path):
     return ok
 
 
+def explication(m):
+    """Экспликация строится из того же перечня, что и чертёж, — 1:1 с планом."""
+    rows, seen = [], {}
+    for it in m['items']:
+        key = it.get('group') or it['name']
+        if key in seen:
+            r = seen[key]
+            r['count'] += 1
+            r['area'] += it['poly'].area
+            continue
+        r = dict(n=it['n'], name=key, size=it['size'], h=it['h'],
+                 count=1, area=it['poly'].area, kind=it['kind'])
+        seen[key] = r
+        rows.append(r)
+    rows.sort(key=lambda r: (r['n'] == 0, r['n']))
+    return rows
+
+
 def to_png(frame, m, inner, path, title):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    from matplotlib.patches import Polygon as MPoly
-
-    fig, ax = plt.subplots(figsize=(16, 11), dpi=150)
-    ax.set_facecolor('#eef1e8')
-
+    from matplotlib.patches import Rectangle
     from matplotlib.path import Path
     from matplotlib.patches import PathPatch
 
-    def draw(geom, **kw):
+    fig, (ax, panel) = plt.subplots(
+        1, 2, figsize=(19, 12), dpi=150, gridspec_kw={'width_ratios': [3.1, 1.25]})
+    ax.set_facecolor('#eef1e8')
+    panel.axis('off')
+
+    def draw(geom, target=ax, **kw):
         if geom.is_empty:
             return
         for g in (geom.geoms if geom.geom_type.startswith('Multi') else [geom]):
@@ -450,55 +529,98 @@ def to_png(frame, m, inner, path, title):
                 pts = list(ring.coords)
                 verts += pts
                 codes += [Path.MOVETO] + [Path.LINETO] * (len(pts) - 2) + [Path.CLOSEPOLY]
-            ax.add_patch(PathPatch(Path(verts, codes), **kw))
+            target.add_patch(PathPatch(Path(verts, codes), **kw))
 
-    draw(frame.poly, facecolor='#e3e9d8', edgecolor='#cc2222', lw=2.5, zorder=1)
-    draw(inner, facecolor='none', edgecolor='#ff9900', lw=0.9, ls='--', zorder=2)
+    C_SITE, C_SET = '#cc2222', '#ff9900'
+    C_ROAD, C_PARK, C_PATH = '#8c8c92', '#b9b9c2', '#cfc6b4'
+    C_BLD, C_BLD_E = '#b07a3c', '#5a3c1c'
+    C_COURT, C_PLAT, C_STAGE = '#3d7a53', '#9fbf7f', '#c9b07a'
+    C_GREEN = '#e3e9d8'
+
+    draw(frame.poly, facecolor=C_GREEN, edgecolor=C_SITE, lw=2.5, zorder=1)
+    draw(inner, facecolor='none', edgecolor=C_SET, lw=0.9, ls='--', zorder=2)
     for g in m['roads']:
-        draw(g, facecolor='#8c8c92', edgecolor='none', zorder=3)
+        draw(g, facecolor=C_ROAD, edgecolor='none', zorder=3)
     for g in m['paths']:
-        draw(g, facecolor='#cfc6b4', edgecolor='none', zorder=3)
+        draw(g, facecolor=C_PATH, edgecolor='none', zorder=3)
     for g in m['lots']:
-        draw(g, facecolor='#b9b9c2', edgecolor='#7a7a82', lw=0.6, zorder=4)
+        draw(g, facecolor=C_PARK, edgecolor='#7a7a82', lw=0.6, zorder=4)
     for g in m['stalls']:
         draw(g, facecolor='none', edgecolor='#ffffff', lw=0.6, zorder=5)
 
     for it in m['items']:
-        if it['kind'] == 'building':
-            fc, ec = ('#b07a3c', '#5a3c1c')
-        elif it['kind'] == 'court':
-            fc, ec = ('#3d7a53', '#25503a')
-        elif it['kind'] == 'stage':
-            fc, ec = ('#c9b07a', '#6a5a34')
-        else:
-            fc, ec = ('#9fbf7f', '#5f7a4a')
+        fc, ec = {'building': (C_BLD, C_BLD_E), 'court': (C_COURT, '#25503a'),
+                  'stage': (C_STAGE, '#6a5a34')}.get(it['kind'], (C_PLAT, '#5f7a4a'))
         draw(it['poly'], facecolor=fc, edgecolor=ec, lw=1.0, zorder=6)
         c = it['poly'].centroid
-        lab = str(it['n']) if it['n'] and it['n'] < 100 else ''
-        if lab:
-            ax.text(c.x, c.y, lab, ha='center', va='center', fontsize=9,
-                    color='white', zorder=7,
-                    bbox=dict(boxstyle='circle,pad=0.22', fc='#222222', ec='none'))
+        ax.text(c.x, c.y, str(it['n']), ha='center', va='center', fontsize=8.5,
+                color='white', zorder=7,
+                bbox=dict(boxstyle='circle,pad=0.22', fc='#222222', ec='none'))
 
     minx, miny, maxx, maxy = frame.poly.bounds
-    pad = 12
+    pad = 14
     ax.set_xlim(minx - pad, maxx + pad)
     ax.set_ylim(miny - pad, maxy + pad)
     ax.set_aspect('equal')
     ax.grid(True, color='#ffffff', lw=0.4, alpha=0.6)
-    ax.set_title(title, fontsize=15, pad=14)
+    ax.set_title(title, fontsize=15, pad=12)
     ax.set_xlabel('X, м (восток)')
     ax.set_ylabel('Y, м (север)')
 
-    # масштабная линейка 50 м
-    x0, y0 = minx - pad + 6, miny - pad + 6
+    x0, y0 = minx - pad + 8, miny - pad + 8
     ax.plot([x0, x0 + 50], [y0, y0], color='black', lw=3)
-    ax.text(x0 + 25, y0 + 2, '50 м', ha='center', fontsize=10)
-    # легенда
-    leg = [('%s%s' % (('%d. ' % it['n']) if it['n'] and it['n'] < 100 else '', it['name']))
-           for it in m['items'] if it['n'] and it['n'] < 100]
-    ax.text(1.01, 0.99, '\n'.join(leg), transform=ax.transAxes, va='top',
-            fontsize=9, family='DejaVu Sans')
+    ax.text(x0 + 25, y0 + 3, '50 м', ha='center', fontsize=10)
+    nx_, ny_ = minx - pad + 8, maxy - 6
+    ax.annotate('С', xy=(nx_, ny_), xytext=(nx_, ny_ - 24), ha='center', fontsize=12,
+                arrowprops=dict(arrowstyle='-|>', color='black', lw=1.4))
+
+    # ---- экспликация ----
+    rows = explication(m)
+    y = 0.985
+    panel.text(0.0, y, 'ЭКСПЛИКАЦИЯ', fontsize=12, weight='bold', va='top')
+    y -= 0.030
+    panel.text(0.0, y, '%-3s %-26s %9s' % ('№', 'наименование', 'S, м²'),
+               fontsize=7.6, family='monospace', va='top', color='#555555')
+    y -= 0.018
+    for r in rows:
+        nm = r['name'] + (' (%d шт.)' % r['count'] if r['count'] > 1 else '')
+        panel.text(0.0, y, '%-3s %-26s %9.0f' % (r['n'], nm[:26], r['area']),
+                   fontsize=7.6, family='monospace', va='top')
+        y -= 0.0185
+    panel.text(0.0, y - 0.004, '%-30s %9.0f' % ('ИТОГО пятен застройки',
+               sum(r['area'] for r in rows)), fontsize=7.6, family='monospace',
+               va='top', weight='bold')
+    y -= 0.048
+
+    panel.text(0.0, y, 'УСЛОВНЫЕ ОБОЗНАЧЕНИЯ', fontsize=12, weight='bold', va='top')
+    y -= 0.030
+    keys = [('Граница участка', 'none', C_SITE, 2.0),
+            ('Линия отступа 3 м', 'none', C_SET, 1.0),
+            ('Застройка', C_BLD, C_BLD_E, 1.0),
+            ('Концертная площадка', C_STAGE, '#6a5a34', 1.0),
+            ('Спортивный корт', C_COURT, '#25503a', 1.0),
+            ('Детская площадка', C_PLAT, '#5f7a4a', 1.0),
+            ('Проезды', C_ROAD, 'none', 0),
+            ('Парковка (%d м/м)' % m['nstall'], C_PARK, '#7a7a82', 0.6),
+            ('Пешеходные дорожки', C_PATH, 'none', 0),
+            ('Озеленение / лес', C_GREEN, '#b8c3a5', 0.6)]
+    for name, fc, ec, lw in keys:
+        panel.add_patch(Rectangle((0.0, y - 0.016), 0.09, 0.016, facecolor=fc,
+                                  edgecolor=ec, lw=lw, transform=panel.transAxes,
+                                  clip_on=False))
+        panel.text(0.115, y - 0.004, name, fontsize=8.2, va='top')
+        y -= 0.026
+    y -= 0.022
+
+    panel.text(0.0, y, 'ТЭП', fontsize=12, weight='bold', va='top')
+    y -= 0.030
+    for name, a, pct in teп(frame, m):
+        panel.text(0.0, y, '%-28s %7.0f м²  %4.1f%%' % (name[:28], a, pct),
+                   fontsize=7.4, family='monospace', va='top')
+        y -= 0.0185
+    panel.set_xlim(0, 1)
+    panel.set_ylim(0, 1)
+
     fig.savefig(path, bbox_inches='tight')
     plt.close(fig)
 
@@ -506,7 +628,7 @@ def to_png(frame, m, inner, path, title):
 def report(frame, m, msgs, path, title):
     lines = [title, '=' * len(title), '',
              'Кадастровый номер: %s' % C.CAD_NUMBER,
-             'Привязка МСК-50 (BASE_POINT): %s' % (C.BASE_POINT or 'НЕ ЗАДАНА'),
+             'Привязка (BASE_POINT): %s' % (str(C.BASE_POINT) if C.BASE_POINT else 'локальные координаты'),
              'Габариты участка (описанный прямоугольник): %.1f x %.1f м'
              % (frame.L, frame.W), '',
              'ТЕХНИКО-ЭКОНОМИЧЕСКИЕ ПОКАЗАТЕЛИ', '-' * 34]
@@ -519,8 +641,14 @@ def report(frame, m, msgs, path, title):
                   % (frame.row_avail,
                      '   ДЕФИЦИТ %.0f м' % (frame.row_need - frame.row_avail)
                      if frame.row_need > frame.row_avail else '   ок')]
+    lines += ['', 'ЭКСПЛИКАЦИЯ', '-' * 34]
+    for r in explication(m):
+        nm = r['name'] + (' (%d шт.)' % r['count'] if r['count'] > 1 else '')
+        lines.append('%-3s %-30s %6.0f x %-5.0f  %7.0f м2  h=%.1f м'
+                     % (r['n'], nm, r['size'][0], r['size'][1], r['area'], r['h']))
     lines += ['', 'Машиномест: %d' % m['nstall'],
-              'Объектов: %d' % len(m['items']), '',
+              'Объектов на плане: %d (позиций в экспликации: %d)'
+              % (len(m['items']), len(explication(m))), '',
               'ПРОВЕРКИ', '-' * 34]
     lines += (['  нарушений не найдено'] if not msgs else ['  ! ' + s for s in msgs])
     open(path, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
@@ -530,16 +658,25 @@ def report(frame, m, msgs, path, title):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--site', default=None)
+    ap.add_argument('--placeholder', action='store_true',
+                    help='считать на условном прямоугольнике вместо реального контура')
     ap.add_argument('--variant', default='both', choices=['A', 'B', 'both'])
     ap.add_argument('--site-size', default=None,
                     help='LxW, м — размер участка-заглушки, напр. 200x95')
     ap.add_argument('--suffix', default='')
+    ap.add_argument('--site-order', default='egrn', choices=['egrn', 'xy'],
+                    help="egrn: X=север,Y=восток (как в выписке); xy: X=восток,Y=север")
     a = ap.parse_args()
 
     size = None
     if a.site_size:
         size = tuple(float(t) for t in a.site_size.lower().split('x'))
-    site, is_placeholder = load_site(a.site, size)
+    order = a.site_order
+    site_path = a.site
+    if site_path is None and not a.placeholder and not a.site_size:
+        site_path = os.path.join(OUT, C.DEFAULT_SITE)
+        order = C.DEFAULT_SITE_ORDER
+    site, is_placeholder = load_site(site_path, size, order)
     frame = Frame(site, C.ENTRY_HINT)
     variants = ['A', 'B'] if a.variant == 'both' else [a.variant]
     titles = {'A': 'БОР 495 — генплан, вариант 1 (с гостиницей)',
