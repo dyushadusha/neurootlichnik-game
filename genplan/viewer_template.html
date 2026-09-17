@@ -94,8 +94,8 @@
   <div class="group card">
     <h2>Вариант</h2>
     <div class="row" id="variants">
-      <button data-v="A" aria-pressed="true">1 · гостиница</button>
-      <button data-v="B" aria-pressed="false">2 · домики</button>
+      <button data-v="A" aria-pressed="true">1 · лес</button>
+      <button data-v="B" aria-pressed="false">2 · дома</button>
     </div>
   </div>
   <div class="group card">
@@ -177,7 +177,8 @@
     tub:    new THREE.MeshLambertMaterial({color:0x8a6034}),
     equip:  new THREE.MeshLambertMaterial({color:0x8d9298}),
     deck:   new THREE.MeshLambertMaterial({color:0xb5834a}),
-    platform:new THREE.MeshLambertMaterial({color:0xb3bd8e})
+    platform:new THREE.MeshLambertMaterial({color:0xb3bd8e}),
+    plinth: new THREE.MeshLambertMaterial({color:0x8a8880})
   };
   var CYL = [M.column, M.stone, M.tub];
 
@@ -271,8 +272,9 @@
 
     d.slabs.forEach(function(s){
       var mat = M[s.t] || M.path;
-      var y = (s.t==='deck') ? 0.0 : (s.t==='road'||s.t==='parking' ? -0.02 : -0.01);
-      var h = (s.t==='deck') ? 0.45 : (s.z || 0.14);
+      var y = (s.t==='deck'||s.t==='plinth') ? 0.0 :
+              (s.t==='road'||s.t==='parking' ? -0.02 : -0.01);
+      var h = (s.t==='deck') ? 0.5 : (s.z || 0.14);
       parts.paving.add(slab(s.p, h, y, mat));
     });
     d.water.forEach(function(p){ parts.paving.add(slab(p, 0.35, -0.4, M.water)); });
@@ -302,6 +304,15 @@
       rm.castShadow = true; rm.receiveShadow = true;
       parts.build.add(rm);
     }
+
+    (d.barrels||[]).forEach(function(b){
+      var geo = new THREE.CylinderGeometry(b[2], b[2], b[3], 20);
+      var m = new THREE.Mesh(geo, M.tub);
+      m.rotation.z = Math.PI/2;
+      m.rotation.y = -b[4]*Math.PI/180;
+      m.position.set(b[0], b[5]+b[2], -b[1]);
+      m.castShadow = true; parts.build.add(m);
+    });
 
     d.cyls.forEach(function(c){
       var h = c[4]-c[3];

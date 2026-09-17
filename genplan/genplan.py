@@ -83,6 +83,19 @@ class Frame(object):
         d = (1 - v) * (self.B - self.A) + v * (self.C - self.D)
         return math.degrees(math.atan2(d[1], d[0]))
 
+    def sub(self, u0, u1):
+        """Половина участка как самостоятельная система координат."""
+        f = Frame.__new__(Frame)
+        f.A = np.array(self.xy(u0, 0.0))
+        f.B = np.array(self.xy(u1, 0.0))
+        f.C = np.array(self.xy(u1, 1.0))
+        f.D = np.array(self.xy(u0, 1.0))
+        f.poly = Polygon([f.A, f.B, f.C, f.D])
+        f.L = math.dist(f.A, f.B)
+        f.W = (math.dist(f.A, f.D) + math.dist(f.B, f.C)) / 2.0
+        f.site = self.poly
+        return f
+
 
 # ------------------------------------------------------------- геометрия ----
 def smooth(pts, closed=False, iters=3):
@@ -161,7 +174,25 @@ def fire_gap(a, b):
     return C.FIRE_GAP_V_III
 
 
-BUILT = ('volume', 'canopy')          # что считается застройкой и разрывами
+BUILT = ('volume', 'canopy', 'barrel')   # застройка и противопожарные разрывы
+
+
+def fit_size(it):
+    """Подгоняет габарит объекта под заданную заказчиком площадь застройки."""
+    target = it.get('area')
+    if not target:
+        return
+    w, d = it['size']
+    for _ in range(6):
+        parts = shapes.make(it['shape'], w, d, 0.0, 0.0, 0.0)
+        got = unary_union([sp['poly'] for t, sp in parts if t in BUILT]).area
+        if got < 1.0:
+            break
+        k = math.sqrt(target / got)
+        w, d = w * k, d * k
+        if abs(k - 1.0) < 0.002:
+            break
+    it['size'] = (round(w, 2), round(d, 2))
 
 
 def materialize(frame, it):
@@ -191,12 +222,12 @@ def pull_inside(it, inner, step=1.5, iters=200):
         if inner.contains(it['poly']):
             return
         c = it['poly'].centroid
-        tgt = inner.centroid if not inner.contains(c) else None
-        if tgt is None:
+        if inner.contains(c):             # центр внутри — отходим от ближней границы
             a, _b = nearest_points(inner.exterior, c)
-            vx, vy = a.x - c.x, a.y - c.y
-        else:
-            vx, vy = tgt.x - c.x, tgt.y - c.y
+            vx, vy = c.x - a.x, c.y - a.y
+        else:                             # центр снаружи — идём к середине области
+            t = inner.representative_point()
+            vx, vy = t.x - c.x, t.y - c.y
         n = math.hypot(vx, vy) or 1.0
         move(it, step * vx / n, step * vy / n)
 
@@ -220,7 +251,8 @@ def push_off(it, obstacle, bounds, clearance=1.0, iters=40, step=1.0):
 
 
 def relax(frame, items, inner, iters=300):
-    bounds = {id(i): frame.poly.buffer(-setback_of(i) + 0.2) for i in items}
+    bounds = {id(i): i.get('bound', frame.poly.buffer(-setback_of(i) + 0.2))
+              for i in items}
     movable = [i for i in items if i['kind'] == 'building' and not i.get('fixed')]
     for _ in range(iters):
         moved = 0.0
@@ -237,8 +269,12 @@ def relax(frame, items, inner, iters=300):
                 step = min(need - got, 2.0) * 0.5
                 for it, sgn in ((A, -1), (B, 1)):
                     dx, dy = sgn * step * vx / n, sgn * step * vy / n
-                    if it.get('slide') == 'u':
-                        t = math.radians(frame.angle(*it['uv']))
+                    sl = it.get('slide')
+                    if sl in ('u', 'v'):
+                        f = it.get('frame', frame)
+                        t = math.radians(f.angle(*it['uv']))
+                        if sl == 'v':
+                            t += math.pi / 2.0
                         pr = dx * math.cos(t) + dy * math.sin(t)
                         dx, dy = pr * math.cos(t), pr * math.sin(t)
                     if bounds[id(it)].contains(translate(it['poly'], dx, dy)):
@@ -263,7 +299,7 @@ def path_network(frame, items, ctx):
         if node == 'plaza':
             return ctx['apron']
         if node == 'loopS':
-            return ctx['loop']
+            return ctx.get('loop')
         it = by_n.get(node)
         if it is None:
             return None
@@ -286,7 +322,8 @@ def path_network(frame, items, ctx):
         last = pts[-1] if pts else ga.centroid.coords[0]
         line = [snap(ga, first)] + pts + [snap(gb, last)]
         out.append(band(line, C.PATH_W))
-    out.append(ctx['loop'].buffer(C.PATH_W / 2.0))
+    if ctx.get('loop') is not None:
+        out.append(ctx['loop'].buffer(C.PATH_W / 2.0))
     for ring in ctx['rings']:
         out.append(ring.buffer(C.PATH_W / 2.0))
     return out
@@ -296,62 +333,118 @@ def path_network(frame, items, ctx):
 FRAME_REF = [None]
 
 
+def place_column(frame, items, spec):
+    """Расставляет ряд объектов вдоль западной границы сверху вниз,
+    выдерживая противопожарные разрывы между ними."""
+    order = [i for n in spec['ids'] for i in items if i['n'] == n]
+    if not order:
+        return
+    depths = []
+    for it in order:
+        f = it['frame']
+        parts = shapes.make(it['shape'], it['size'][0], it['size'][1], 0.0, 0.0, 0.0)
+        g = unary_union([sp['poly'] for t, sp in parts if t in BUILT])
+        depths.append(g.bounds[3] - g.bounds[1])
+    gaps = [fire_gap(order[k]['fire'], order[k + 1]['fire']) * 1.10
+            for k in range(len(order) - 1)]
+    need = sum(depths) + sum(gaps)
+    v0, v1 = spec['v']
+    avail = (v1 - v0) * frame.W
+    y = v0 * frame.W + max((avail - need) / 2.0, 0.0)
+    frame.col_need, frame.col_avail = need, avail
+    site = getattr(frame, 'site', frame.poly)
+    half = frame.poly.buffer(1.5)   # объекты ряда остаются в своей половине
+    for k, it in enumerate(order):
+        v = (y + depths[k] / 2.0) / frame.W
+        it['uv'] = (_fit_u(frame, it, v, site, spec['u'], half), v)
+        it['slide'] = 'v'
+        y += depths[k] + (gaps[k] if k < len(gaps) else 0.0)
+
+
+def _fit_u(frame, it, v, site, u_start, half=None):
+    """Сдвигает объект от западной границы ровно настолько, чтобы выдержать
+    его собственный отступ: граница участка идёт наклонно."""
+    bound = site.buffer(-setback_of(it))
+    if half is not None:
+        bound = bound.intersection(half)
+    u = u_start
+    for _ in range(60):
+        cx, cy = frame.xy(u, v)
+        parts = shapes.make(it['shape'], it['size'][0], it['size'][1],
+                            frame.angle(u, v), cx, cy)
+        g = unary_union([sp['poly'] for t, sp in parts if t in BUILT])
+        if bound.contains(g):
+            return u
+        u += 0.012
+    return u
+
+
 def build(frame, variant='A'):
-    FRAME_REF[0] = frame
+    """Собирает вариант: запад — комплекс, восток — лес (A) или домики (B)."""
+    west = frame.sub(0.0, C.SPLIT_U)
+    east = frame.sub(C.SPLIT_U, 1.0)
+    FRAME_REF[0] = west
+    site = frame.poly
+
     items = [dict(o) for o in C.PROGRAM_BASE]
-    if variant in ('A', 'B'):
-        items.append(dict(C.HOTEL))
+    for it in items:
+        it['frame'] = west
     if variant == 'B':
-        pitch = C.COTTAGE_SIZE[0] + fire_gap(C.COTTAGE_FIRE, C.COTTAGE_FIRE)
-        for u0, u1, v, nmax in C.COTTAGE_ROWS:
-            span = (u1 - u0) * frame.L
-            n = max(1, min(nmax, int((span + pitch - C.COTTAGE_SIZE[0]) // pitch)))
-            x0 = u0 * frame.L + (span - (n - 1) * pitch) / 2.0
-            vv = min(v, (frame.W - C.SETBACK_WOOD - C.COTTAGE_SIZE[1]) / frame.W)
-            for i in range(n):
-                it = C.B(16, 'Гостевой домик', ((x0 + i * pitch) / frame.L, vv),
-                         C.COTTAGE_SIZE, C.COTTAGE_H, C.COTTAGE_FIRE,
-                         shape='cottage', wall=3.0, roof='gable')
-                it['slide'] = 'u'
-                it['group'] = 'Гостевые домики'
+        g = C.COTTAGE_GRID
+        k = 0
+        for row in g['rows']:
+            for col in g['cols']:
+                k += 1
+                it = C.B(16, 'Гостевой дом', (col, row), C.COTTAGE_SIZE, C.COTTAGE_H,
+                         'V', shape='cottage', wall=3.2, roof='gable',
+                         area=C.COTTAGE_AREA)
+                it['group'] = 'Гостевые дома'
+                it['frame'] = east
                 items.append(it)
 
     for it in items:
-        it['center'] = frame.xy(*it['uv'])
-        it['angle'] = frame.angle(*it['uv'])
-        materialize(frame, it)
-
-    roads = [road_band(frame, C.ENTRY_DRIVE, C.ROAD_W),
-             road_band(frame, C.ROW_LANE, C.ROAD_W)]
-    lane = roads[1]
-    roads += [road_band(frame, r, C.DRIVE_W) for r in C.SPUR_ROADS]
-    if variant == 'B':
-        roads.append(road_band(frame, C.COTTAGE_LANE, C.DRIVE_W))
-
-    inner = frame.poly.buffer(-C.SETBACK)
+        fit_size(it)
+    if getattr(C, 'BATH_COLUMN', None):
+        place_column(west, [i for i in items if i['frame'] is west], C.BATH_COLUMN)
     for it in items:
-        pull_inside(it, frame.poly.buffer(-setback_of(it)))
+        f = it['frame']
+        it['center'] = f.xy(*it['uv'])
+        it['angle'] = f.angle(*it['uv']) + it.get('rot', 0.0)
+        materialize(f, it)
+
+    roads = [road_band(west, C.ENTRY_DRIVE, C.ROAD_W),
+             road_band(west, C.ROW_LANE, C.ROAD_W)]
+    lane = roads[1]
+    roads += [road_band(west, r, C.DRIVE_W) for r in C.SPUR_ROADS]
+    if variant == 'B':
+        roads.append(road_band(east, C.COTTAGE_LANE, C.DRIVE_W))
+        roads += [road_band(east, r, C.DRIVE_W) for r in C.COTTAGE_SPURS]
+
+    inner = site.buffer(-C.SETBACK)
+    for it in items:                      # объект не выходит за свою половину
+        half = (west if it['frame'] is west else east).poly.buffer(1.5)
+        it['bound'] = half.intersection(site.buffer(-setback_of(it)))
+        pull_inside(it, it['bound'])
     relax(frame, items, inner)
     ways = unary_union(roads)
-    for it in items:                      # ни объём, ни терраса, ни бассейн не лезут на проезд
-        whole = it['whole']
-        if it.get('fixed'):               # КПП стоит на воротах: проезд идёт сквозь портал
+    for it in items:
+        if it.get('fixed'):
             continue
-        if it['kind'] == 'building' and whole.distance(ways) < 1.0:
+        if it['kind'] == 'building' and it['whole'].distance(ways) < 1.0:
             d0 = it['center']
-            probe = dict(it, poly=whole)
-            push_off(probe, ways, frame.poly.buffer(-setback_of(it)), clearance=1.2)
+            probe = dict(it, poly=it['whole'])
+            push_off(probe, ways, it['bound'], clearance=1.2)
             move(it, probe['center'][0] - d0[0], probe['center'][1] - d0[1])
-            materialize(FRAME_REF[0], it)
+            materialize(it['frame'], it)
     relax(frame, items, inner, iters=120)
     for it in items:
-        materialize(frame, it)
+        materialize(it['frame'], it)
 
     lots, stalls, nstall = [], [], 0
     obst = [i['poly'] for i in items if i['kind'] == 'building']
     for spec in C.PARKING:
-        lot, st, n = parking_lot(frame, spec)
-        d = _clear_of(lot, obst, frame.poly.buffer(-1.0))
+        lot, st, n = parking_lot(west, spec)
+        d = _clear_of(lot, obst, site.buffer(-1.0))
         lots.append(translate(lot, *d))
         stalls += [translate(x, *d) for x in st]
         nstall += n
@@ -361,20 +454,20 @@ def build(frame, variant='A'):
     blobs += [g.buffer(C.PAVED_AROUND['kpp']) for g in kppg]
     blobs += [l.buffer(C.PAVED_AROUND['parking']) for l in lots]
     apron = unary_union(blobs).buffer(1.2).buffer(-1.2).intersection(
-        frame.poly.buffer(-C.SETBACK + 3.0))
+        site.buffer(-C.SETBACK + 3.0))
     for g in kppg:
         apron = apron.difference(g)
     roads.append(apron)
 
-    ctx = dict(lane=lane, apron=apron,
-               loop=LineString([frame.xy(u, v) for u, v in smooth(C.LOOP_SOUTH, True)]),
-               rings=[ring_line(frame, uv, r) for uv, r in C.RINGS])
-    paths = path_network(frame, items, ctx)
+    ctx = dict(lane=lane, apron=apron, loop=None,
+               rings=[ring_line(west, uv, r) for uv, r in C.RINGS])
+    paths = path_network(west, items, ctx)
 
     hard = unary_union(roads + paths + lots + [i['whole'] for i in items])
-    green = frame.poly.buffer(-2.0).difference(hard.buffer(2.5))
+    green = site.buffer(-2.0).difference(hard.buffer(2.5))
     return dict(items=items, roads=roads, paths=paths, lots=lots, stalls=stalls,
-                nstall=nstall, green=green, hard=hard, inner=inner)
+                nstall=nstall, green=green, hard=hard, inner=inner,
+                west=west, east=east, variant=variant)
 
 
 def _clear_of(lot, obstacles, bounds, step=1.0, iters=80):
@@ -494,6 +587,11 @@ def draw_part(md, t, sp, it):
             md.prism(Point(x, y).buffer(r, 10), '14 Колонны, трубы', 0.0, sp['h'])
     elif t == 'chimney':
         md.prism(sp['poly'], '14 Колонны, трубы', 0.0, sp['h'])
+    elif t == 'barrel':
+        md.tris(model3d.barrel_tris(sp['cx'], sp['cy'], sp.get('z0', 0.0), sp['r'],
+                                    sp['length'], sp['ang']), '11 Здания - стены')
+    elif t == 'plinth':
+        md.prism(sp['poly'], '18 Цоколь', 0.0, sp['h'])
     elif t == 'water':
         rim = sp['poly'].buffer(sp.get('rim', 0.6)).difference(sp['poly'])
         md.prism(rim, '07 Террасы и настилы', 0.0, 0.4)
@@ -504,7 +602,7 @@ def draw_part(md, t, sp, it):
     elif t == 'equip':
         md.prism(sp['poly'], '16 Оборудование', 0.0, sp.get('h', 1.0))
     elif t in ('deck', 'platform', 'court'):
-        h = {'deck': 0.45, 'platform': 0.2, 'court': 0.12}[t]
+        h = {'deck': 0.5, 'platform': 0.2, 'court': 0.12}[t]
         md.prism(sp['poly'], model3d.SLAB_LAYER[t], 0.0, sp.get('h', h))
 
 
@@ -586,12 +684,14 @@ def to_png(frame, m, path, title):
     for g in m['stalls']:
         draw(g, facecolor='none', edgecolor='#ffffff', lw=0.6, zorder=5)
 
-    order = {'platform': 6, 'deck': 7, 'court': 7, 'water': 8, 'tub': 9,
-             'canopy': 9, 'volume': 11, 'chimney': 12, 'column': 12, 'equip': 10}
+    order = {'platform': 6, 'plinth': 7, 'deck': 8, 'court': 7, 'water': 8,
+             'tub': 9, 'canopy': 9, 'volume': 11, 'barrel': 11, 'chimney': 12,
+             'column': 12, 'equip': 10}
     style = {'platform': (K['plat'], '#8a9a72'), 'deck': (K['terr'], '#9a7748'),
              'court': (K['court'], '#25503a'), 'water': (K['water'], '#3f7fa5'),
              'tub': (K['water'], '#7a5a34'), 'canopy': (K['canopy'], '#a08d6d'),
-             'volume': (K['bld'], K['bld_e']), 'chimney': ('#8d8378', '#4b443c'),
+             'volume': (K['bld'], K['bld_e']), 'barrel': ('#6b4e2e', '#3a2a17'),
+             'plinth': ('#9b988f', '#6d6a63'), 'chimney': ('#8d8378', '#4b443c'),
              'column': ('#a98a63', '#6b563a'), 'equip': ('#9aa0a6', '#5d6166')}
     for it in m['items']:
         for t, sp in it['parts']:
@@ -789,8 +889,8 @@ def main():
     site, is_placeholder = load_site(site_path, size, order)
     frame = Frame(site)
 
-    titles = {'A': 'БОР 495 — генплан, вариант 1 (с гостиницей)',
-              'B': 'БОР 495 — генплан, вариант 2 (с гостевыми домиками)'}
+    titles = {'A': 'БОР 495 — генплан, вариант 1: комплекс и лес',
+              'B': 'БОР 495 — генплан, вариант 2: комплекс и гостевые дома'}
     for v in (['A', 'B'] if a.variant == 'both' else [a.variant]):
         m = build(frame, v)
         m['trees'] = scatter_trees(m['green'])

@@ -29,11 +29,12 @@ LAYERS = [
     ('15 Озеленение',         (60, 120, 60)),
     ('16 Оборудование',       (110, 110, 115)),
     ('17 Подписи',            (25, 25, 25)),
+    ('18 Цоколь',             (138, 136, 130)),
 ]
 
 SLAB_LAYER = {'road': '04 Проезды', 'parking': '05 Парковка', 'path': '06 Дорожки',
               'deck': '07 Террасы и настилы', 'platform': '08 Площадки',
-              'court': '09 Корты'}
+              'court': '09 Корты', 'plinth': '18 Цоколь'}
 
 
 # --------------------------------------------------------------- утилиты ----
@@ -62,6 +63,8 @@ def quad(a, b, c, d):
 def roof_tris(foot, kind, z_eave, ridge, over=0.9):
     """Треугольники кровли. gable/hip/shed строятся по ориентированному
     габариту (настоящий конёк), pagoda/dome/cone — по контуру пятна."""
+    if kind == 'arch':
+        return arch_tris(foot, z_eave, ridge, max(over, 1.4))
     if kind in ('dome', 'cone', 'pagoda'):
         return _ring_roof(foot, kind, z_eave, ridge, over)
 
@@ -97,6 +100,56 @@ def roof_tris(foot, kind, z_eave, ridge, over=0.9):
         tris += [(e1, e2, k1), (e3, e0, k0)]
     lo = [(x, y, z - 0.3) for x, y, z in p]
     tris += quad(lo[1], lo[0], lo[3], lo[2])
+    return tris
+
+
+def arch_tris(foot, z_eave, ridge, over=1.6, seg=14):
+    """Изогнутая кровля-«крыло»: дуга поперёк длинной оси (ресторан, отель)."""
+    cen, ang, hl, hw = obb(foot)
+    hl += over
+    hw += over
+    prof = []
+    for i in range(seg + 1):
+        t = i / float(seg)
+        w = -hw + 2 * hw * t
+        z = z_eave + (ridge - z_eave) * math.sin(math.pi * t) ** 0.85
+        prof.append((w, z))
+    tris = []
+    for (w0, z0), (w1, z1) in zip(prof, prof[1:]):
+        p = _to_world(cen, ang, [(-hl, w0, z0), (hl, w0, z0), (hl, w1, z1), (-hl, w1, z1)])
+        tris += quad(*p)
+        lo = _to_world(cen, ang, [(-hl, w0, z0 - 0.45), (hl, w0, z0 - 0.45),
+                                  (hl, w1, z1 - 0.45), (-hl, w1, z1 - 0.45)])
+        tris += quad(lo[3], lo[2], lo[1], lo[0])
+    for sgn in (-1, 1):                       # торцы
+        pts = _to_world(cen, ang, [(sgn * hl, w, z) for w, z in prof])
+        base = _to_world(cen, ang, [(sgn * hl, w, z - 0.45) for w, z in prof])
+        for i in range(len(pts) - 1):
+            tris += quad(pts[i], pts[i + 1], base[i + 1], base[i])
+    return tris
+
+
+def barrel_tris(cx, cy, z0, r, length, ang_deg, seg=20):
+    """Лежачая бочка: цилиндр вдоль оси ang_deg (Баня Бочка)."""
+    a = math.radians(ang_deg)
+    ex = (math.cos(a), math.sin(a))
+    zc = z0 + r
+    tris = []
+    ring = []
+    for i in range(seg + 1):
+        t = 2 * math.pi * i / seg
+        ring.append((r * math.cos(t), r * math.sin(t)))
+    def pt(sign, w, z):
+        return (cx + ex[0] * sign * length / 2.0 - ex[1] * w,
+                cy + ex[1] * sign * length / 2.0 + ex[0] * w, zc + z)
+    for i in range(seg):
+        w0, z0_ = ring[i]
+        w1, z1_ = ring[i + 1]
+        tris += quad(pt(-1, w0, z0_), pt(1, w0, z0_), pt(1, w1, z1_), pt(-1, w1, z1_))
+    for sign in (-1, 1):                      # донья
+        c = pt(sign, 0, 0)
+        for i in range(seg):
+            tris.append((c, pt(sign, *ring[i]), pt(sign, *ring[i + 1])))
     return tris
 
 

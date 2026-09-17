@@ -24,7 +24,7 @@ def poly_json(g, tol=0.25, nd=2):
 
 def scene(frame, m, title):
     s = {'title': title, 'site': poly_json(frame.poly, 0.05),
-         'slabs': [], 'water': [], 'vols': [], 'roofs': [], 'cyls': [],
+         'slabs': [], 'water': [], 'vols': [], 'roofs': [], 'cyls': [], 'barrels': [],
          'equip': [], 'trees': [], 'labels': [], 'stalls': [],
          'zones': [], 'stallCount': m['nstall'],
          'tep': [[n, round(a), round(p, 1)] for n, a, p in G.teп(frame, m)],
@@ -59,6 +59,13 @@ def scene(frame, m, title):
                 for x, y, r in sp['pts']:
                     s['cyls'].append([round(x, 2), round(y, 2), round(r, 2), 0,
                                       round(sp['h'], 2), 0])
+            elif t == 'barrel':
+                s['barrels'].append([round(sp['cx'], 2), round(sp['cy'], 2),
+                                     round(sp['r'], 2), round(sp['length'], 2),
+                                     round(sp['ang'], 2), round(sp.get('z0', 0.0), 2)])
+            elif t == 'plinth':
+                for p in poly_json(sp['poly'], 0.15):
+                    s['slabs'].append(dict(p=p, t='plinth', z=round(sp['h'], 2)))
             elif t == 'chimney':
                 c = sp['poly'].centroid
                 r = max(0.5, (sp['poly'].area / 3.14) ** 0.5)
@@ -98,7 +105,8 @@ def scene(frame, m, title):
 def main():
     site, _ = G.load_site(os.path.join(G.OUT, C.DEFAULT_SITE), None, C.DEFAULT_SITE_ORDER)
     frame = G.Frame(site)
-    titles = {'A': 'Вариант 1 — с гостиницей', 'B': 'Вариант 2 — с гостевыми домиками'}
+    titles = {'A': 'Вариант 1 — комплекс и лес',
+              'B': 'Вариант 2 — комплекс и 10 гостевых домов'}
     out = {}
     for v in ('A', 'B'):
         m = G.build(frame, v)
