@@ -24,6 +24,8 @@ def poly_json(g, tol=0.25, nd=2):
 
 def scene(frame, m, title):
     s = {'title': title, 'site': poly_json(frame.poly, 0.05),
+         'fence': [[round(x, 1), round(y, 1)]
+                   for x, y in frame.poly.buffer(-0.5).exterior.coords],
          'slabs': [], 'water': [], 'vols': [], 'roofs': [], 'cyls': [], 'barrels': [],
          'glass': [], 'rails': [], 'lamps': [], 'benches': [],
          'equip': [], 'trees': [], 'labels': [], 'stalls': [],
@@ -71,6 +73,13 @@ def scene(frame, m, title):
                                       round(sp['h'], 2), 0])
             elif t == 'entrance':
                 continue
+            elif t == 'bench':
+                s['benches'].append([round(sp['pt'][0], 1), round(sp['pt'][1], 1),
+                                     round(sp.get('ang', 0.0), 1)])
+            elif t == 'lamp':
+                s['lamps'].append([round(sp['pt'][0], 1), round(sp['pt'][1], 1),
+                                   round(sp.get('h', 6.0), 2),
+                                   0 if sp.get('kind') == 'road' else 1])
             elif t == 'glass':
                 for p in poly_json(sp['poly'], 0.05):
                     s['glass'].append(dict(p=p, z=round(sp['z0'], 2),

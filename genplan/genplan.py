@@ -162,11 +162,16 @@ def parking_lot(frame, spec):
         dy = (-d / 2 + sl / 2) if j == 0 else (d / 2 - sl / 2)
         for i in range(cols):
             dx = -w / 2 + sw * (i + 0.5)
-            st = Polygon([(dx - sw / 2 + .12, dy - sl / 2 + .12),
-                          (dx + sw / 2 - .12, dy - sl / 2 + .12),
-                          (dx + sw / 2 - .12, dy + sl / 2 - .12),
-                          (dx - sw / 2 + .12, dy + sl / 2 - .12)])
-            stalls.append(place(st))
+            edge = -1 if j == 0 else 1
+            y0, y1 = dy - sl / 2, dy + sl / 2
+            for lx in (dx - sw / 2, dx + sw / 2):     # боковые линии разметки
+                stalls.append(place(Polygon([(lx - 0.06, y0), (lx + 0.06, y0),
+                                             (lx + 0.06, y1), (lx - 0.06, y1)])))
+            ly = dy - sl / 2 if edge < 0 else dy + sl / 2
+            stalls.append(place(Polygon([(dx - sw / 2, ly - 0.06),
+                                         (dx + sw / 2, ly - 0.06),
+                                         (dx + sw / 2, ly + 0.06),
+                                         (dx - sw / 2, ly + 0.06)])))
     return lot, stalls, cols * rows
 
 
@@ -200,6 +205,24 @@ def fit_size(it):
         if abs(k - 1.0) < 0.002:
             break
     it['size'] = (round(w, 2), round(d, 2))
+
+
+def align_to_roads(items, axes):
+    """Разворачивает здания параллельно ближайшему проезду или дорожке:
+    длинная сторона вдоль дороги, главный вход — к ней."""
+    if not axes:
+        return
+    net = unary_union(axes)
+    for it in items:
+        if it.get('fixed') or it.get('no_align'):
+            continue
+        c = Point(it['center'])
+        p, _ = nearest_points(net, c)
+        vx, vy = p.x - c.x, p.y - c.y
+        n = math.hypot(vx, vy)
+        if n < 0.5:
+            continue
+        it['angle'] = math.degrees(math.atan2(vx / n, -vy / n))
 
 
 def materialize(frame, it):
@@ -295,63 +318,36 @@ def relax(frame, items, inner, iters=300):
 
 # ------------------------------------------------------------- дорожки ------
 def path_network(frame, items, ctx):
-    """Строит пешеходную сеть по узлам: у каждой дорожки реальные начало и конец."""
-    by_n = {i['n']: i for i in items}
-
-    def resolve(node):
-        if node == 'hub':
-            return ctx['rings'][0]
-        if node == 'ring11':
-            return ctx['rings'][1]
-        if node == 'lane':
-            return ctx['lane']
-        if node == 'plaza':
-            return ctx['apron']
-        if node == 'loopS':
-            return ctx.get('loop')
-        it = by_n.get(node)
-        if it is None:
-            return None
-        return Point(it['entrance'])
-
-    def snap(geom, toward):
-        if geom.geom_type == 'Point':         # вход здания — точка назначения
-            return (geom.x, geom.y)
-        g = geom.boundary if hasattr(geom, 'exterior') else geom
-        p, _ = nearest_points(g, Point(toward))
-        return (p.x, p.y)
-
+    """Сеть пешеходных связей: непрерывный прогулочный хребет по территории,
+    кольца вокруг узлов и кратчайшие отводы от него ко входу каждого объекта.
+    Все элементы объединяются в один контур, примыкания скругляются."""
     blocked = unary_union([unary_union([sp['poly'] for t, sp in i['parts']
                                         if t in ('volume', 'barrel', 'platform',
                                                  'court', 'water')])
                            for i in items]).buffer(0.2)
-    out, axes = [], []
-    for a, b, vias in C.PATH_LINKS:
-        ga, gb = resolve(a), resolve(b)
-        if ga is None or gb is None:
+
+    axes = [LineString(smooth([frame.xy(u, v) for u, v in C.SPINE]))]
+    for uv, r in C.RINGS:
+        axes.append(ring_line(frame, uv, r))
+    trunk = unary_union(axes + [ctx['lane'], ctx['apron']])
+
+    for it in items:                      # отвод от сети ко входу
+        e = Point(it['entrance'])
+        p, _ = nearest_points(trunk, e)
+        if e.distance(p) < 0.6:
             continue
-        pts = [frame.xy(u, v) for u, v in vias]
-        first = pts[0] if pts else gb.centroid.coords[0]
-        last = pts[-1] if pts else ga.centroid.coords[0]
-        line = [snap(ga, first)] + pts + [snap(gb, last)]
-        strip = band(line, C.PATH_W).difference(blocked)   # не под зданиями
-        if not strip.is_empty:
-            out.append(strip)
-            axes.append(LineString(smooth(line) if len(line) > 2 else line))
-    out = [unary_union(out).buffer(0.9, join_style=1).buffer(-0.9, join_style=1)] \
-        if out else out                       # скругление примыканий дорожек
-    if ctx.get('loop') is not None:
-        out.append(ctx['loop'].buffer(C.PATH_W / 2.0))
-    for ring in ctx['rings']:
-        r = ring.buffer(C.PATH_W / 2.0).difference(blocked)
-        if not r.is_empty:
-            out.append(r)
-            axes.append(ring)
-    return out, axes
+        axes.append(LineString([(p.x, p.y), (e.x, e.y)]))
 
-
-# --------------------------------------------------------------- сборка -----
-FRAME_REF = [None]
+    strips = []
+    for ln in axes:
+        g = ln.buffer(C.PATH_W / 2.0, cap_style=2, join_style=1).difference(blocked)
+        if not g.is_empty:
+            strips.append(g)
+    if not strips:
+        return [], axes
+    merged = unary_union(strips).buffer(1.1, join_style=1).buffer(-1.1, join_style=1)
+    merged = merged.difference(blocked)
+    return [merged], axes
 
 
 def place_column(frame, items, spec):
@@ -399,6 +395,9 @@ def _fit_u(frame, it, v, site, u_start, half=None):
             return u
         u += 0.012
     return u
+
+
+FRAME_REF = [None]
 
 
 def build(frame, variant='A'):
@@ -450,6 +449,11 @@ def build(frame, variant='A'):
         for r in getattr(C, 'COTTAGE_LINK', []):
             roads.append(road_band(east, r, C.DRIVE_W))
             road_axes.append(road_axis(east, r))
+
+    spine_axis = LineString(smooth([west.xy(u, v) for u, v in C.SPINE]))
+    align_to_roads(items, road_axes + [spine_axis])   # параллельно дорогам
+    for it in items:
+        materialize(it['frame'], it)
 
     inner = site.buffer(-C.SETBACK)
     for it in items:                      # объект не выходит за свою половину
@@ -746,12 +750,8 @@ def to_3dm(frame, m, path):
     md.curve(frame.poly, '01 Граница участка')
     md.curve(m['inner'], '02 Линия отступа')
 
-    fence = list(frame.poly.buffer(-0.3).exterior.coords)
-    for a, b in zip(fence, fence[1:]):
-        md.f.Objects.AddPolyline(
-            [r3.Point3d(a[0], a[1], 0), r3.Point3d(b[0], b[1], 0),
-             r3.Point3d(b[0], b[1], 2.2), r3.Point3d(a[0], a[1], 2.2),
-             r3.Point3d(a[0], a[1], 0)], md.att('03 Забор'))
+    fence = list(frame.poly.buffer(-0.5).exterior.coords)
+    md.tris(model3d.fence_tris(fence, 2.1), '03 Забор')
 
     for g in m['roads']:
         md.prism(g, '04 Проезды', -0.12, 0.14)

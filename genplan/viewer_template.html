@@ -278,6 +278,28 @@
 
     d.site.forEach(function(p){ root.add(slab(p, 0.3, -0.3, M.site)); });
 
+    (function(){                                   // забор по периметру участка
+      var f = d.fence || [], H = 2.1;
+      for (var i=0;i<f.length-1;i++){
+        var a=f[i], b=f[i+1];
+        var len = Math.hypot(b[0]-a[0], b[1]-a[1]);
+        if (len < 0.3) continue;
+        var ang = Math.atan2(-(b[1]-a[1]), b[0]-a[0]);
+        [H-0.18, H*0.45].forEach(function(z){
+          var m = new THREE.Mesh(new THREE.BoxGeometry(len,0.14,0.08), M.rail);
+          m.position.set((a[0]+b[0])/2, z, -(a[1]+b[1])/2);
+          m.rotation.y = ang; root.add(m);
+        });
+        var n = Math.max(2, Math.round(len/2.6)+1);
+        for (var k=0;k<n;k++){
+          var t=k/(n-1);
+          var pst = new THREE.Mesh(new THREE.BoxGeometry(0.16,H,0.16), M.rail);
+          pst.position.set(a[0]+(b[0]-a[0])*t, H/2, -(a[1]+(b[1]-a[1])*t));
+          pst.castShadow = true; root.add(pst);
+        }
+      }
+    })();
+
     d.slabs.forEach(function(s){
       var mat = M[s.t] || M.path;
       var y = (s.t==='deck'||s.t==='plinth') ? 0.0 :
