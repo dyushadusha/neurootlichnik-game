@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Генератор генплана «БОР 495»: .3dm для Rhino 7 + план PNG + ТЭП/проверки.
+"""Генплан «БОР 495»: 3D-модель для Rhino 7 + план PNG + ТЭП и проверки.
 
-Запуск:  python3 genplan.py [--site FILE] [--variant A|B|both]
-  --site  XML КПТ/выписки ЕГРН либо текстовый список координат.
-          Без него берётся PLACEHOLDER-участок из config.py.
+Запуск:
+    python3 genplan.py                    # реальный контур, оба варианта
+    python3 genplan.py --site kpt.xml     # по XML КПТ / выписки ЕГРН
+    python3 genplan.py --variant A
 """
 import argparse
 import math
 import os
+import random
 
 import numpy as np
 import rhino3dm as r3
@@ -17,17 +19,16 @@ from shapely.ops import nearest_points, unary_union
 
 import config as C
 import kpt
+import model3d
+import shapes
 
 OUT = os.path.dirname(os.path.abspath(__file__))
 
 
-# ---------------------------------------------------------------- геометрия --
+# ---------------------------------------------------------------- участок ---
 def placeholder_site(size=None):
-    """Прямоугольник-заглушка вместо кадастрового контура."""
-    L, W = size if size else (C.PLACEHOLDER_SITE['length'], C.PLACEHOLDER_SITE['width'])
-    p = Polygon([(0, 0), (L, 0), (L, W), (0, W)])
-    p = rotate(p, C.PLACEHOLDER_SITE['azimuth_deg'], origin=(0, 0))
-    return p
+    L, W = size if size else (126.5, 63.2)
+    return rotate(Polygon([(0, 0), (L, 0), (L, W), (0, W)]), 18.0, origin=(0, 0))
 
 
 def load_site(path, size=None, order='egrn'):
@@ -39,45 +40,36 @@ def load_site(path, size=None, order='egrn'):
     poly = Polygon(pts)
     if not poly.is_valid:
         poly = poly.buffer(0)
-    # переносим в локальные координаты, чтобы модель стояла у начала координат
     cx, cy = poly.exterior.coords[0]
     C.BASE_POINT = (cx, cy)
     return translate(poly, -cx, -cy), False
 
 
 class Frame(object):
-    """Локальная система координат участка: (u,v) -> (x,y), билинейно по 4 углам.
+    """Координаты участка (u,v) -> (x,y), билинейно по четырём углам.
 
-    Композиция снята с исходной схемы (косая перспектива) после проективного
-    выпрямления и хранится в нормированных координатах:
-      u: 0 — западный торец (въезд), 1 — восточный торец;
-      v: 0 — северная граница (вдоль неё стоит ряд бань), 1 — южная граница.
-    Билинейное отображение переносит её на любой четырёхугольный контур:
-    вдоль каждой стороны координата линейна, поэтому расстановка ряда
-    считается в метрах честно.
+    u: 0 — западный торец (въезд), 1 — восточный; v: 0 — северная граница
+    (вдоль неё ряд бань), 1 — южная. Вдоль каждой стороны координата линейна,
+    поэтому расстановка считается в метрах честно.
     """
 
     def __init__(self, poly, entry_hint=None):
         self.poly = poly
         c = self._corners(poly)
-        # A — западный конец северной стороны, дальше по часовой: B, C, D
         north = sorted(c, key=lambda p: -p[1])[:2]
         A, B = sorted(north, key=lambda p: p[0])
         rest = [p for p in c if p is not A and p is not B]
-        C = min(rest, key=lambda p: math.dist(p, B))
-        D = [p for p in rest if p is not C][0]
-        self.A, self.B, self.C, self.D = (np.array(p, float) for p in (A, B, C, D))
+        C_ = min(rest, key=lambda p: math.dist(p, B))
+        D = [p for p in rest if p is not C_][0]
+        self.A, self.B, self.C, self.D = (np.array(p, float) for p in (A, B, C_, D))
         self.L = math.dist(A, B)
-        self.W = (math.dist(A, D) + math.dist(B, C)) / 2.0
-        self.rect = poly.minimum_rotated_rectangle
+        self.W = (math.dist(A, D) + math.dist(B, C_)) / 2.0
 
     @staticmethod
     def _corners(poly):
-        """Четыре угла контура; для многоугольной границы — описанный прямоугольник."""
         ring = list(poly.exterior.coords)[:-1]
         if len(ring) != 4:
-            simple = poly.simplify(2.0)
-            ring = list(simple.exterior.coords)[:-1]
+            ring = list(poly.simplify(2.0).exterior.coords)[:-1]
         if len(ring) != 4:
             ring = list(poly.minimum_rotated_rectangle.exterior.coords)[:-1]
         return [tuple(p) for p in ring]
@@ -88,26 +80,12 @@ class Frame(object):
         return float(p[0]), float(p[1])
 
     def angle(self, u, v):
-        """Направление оси u в точке — здания разворачиваются вдоль границы."""
-        d = ((1 - v) * (self.B - self.A) + v * (self.C - self.D))
+        d = (1 - v) * (self.B - self.A) + v * (self.C - self.D)
         return math.degrees(math.atan2(d[1], d[0]))
 
-    @property
-    def angle_deg(self):
-        return self.angle(0.5, 0.0)
 
-
-def rect_at(frame, uv, size, rot=0.0):
-    """Прямоугольник size=(вдоль оси, поперёк) с центром в uv."""
-    w, d = size
-    x, y = frame.xy(*uv)
-    p = Polygon([(-w / 2, -d / 2), (w / 2, -d / 2), (w / 2, d / 2), (-w / 2, d / 2)])
-    p = rotate(p, frame.angle(*uv) + rot, origin=(0, 0))
-    return translate(p, x, y)
-
-
+# ------------------------------------------------------------- геометрия ----
 def smooth(pts, closed=False, iters=3):
-    """Сглаживает ломаную по Чайкину — из осевых линий получаются плавные кривые."""
     p = list(pts)
     if closed and p[0] == p[-1]:
         p = p[:-1]
@@ -129,41 +107,44 @@ def smooth(pts, closed=False, iters=3):
     return p
 
 
-def ring_band(frame, uv, radius, width):
-    """Кольцевая дорожка вокруг площадки."""
-    x, y = frame.xy(*uv)
-    return Point(x, y).buffer(radius).exterior.buffer(width / 2.0)
-
-
-def road_band(frame, uv_pts, width, closed=False, curve=True):
-    pts = [frame.xy(u, v) for u, v in uv_pts]
+def band(pts_xy, width, closed=False, curve=True):
+    pts = list(pts_xy)
     if curve and len(pts) > 2:
         pts = smooth(pts, closed=closed)
     return LineString(pts).buffer(width / 2.0, cap_style=2, join_style=1)
 
 
+def road_band(frame, uv_pts, width, closed=False):
+    return band([frame.xy(u, v) for u, v in uv_pts], width, closed)
+
+
+def ring_line(frame, uv, radius):
+    x, y = frame.xy(*uv)
+    return Point(x, y).buffer(radius, 64).exterior
+
+
 def parking_lot(frame, spec):
-    """Ряды машиномест + проезд. Возвращает (полигон площадки, места, N)."""
     sw, sl = C.PARK_STALL
     cols, rows = spec['cols'], spec['rows']
-    w = cols * sw
-    d = rows * sl
-    lot = rect_at(frame, spec['uv'], (w + 1.0, d + 1.0), spec.get('rot', 0.0))
+    w, d = cols * sw, rows * sl
     x, y = frame.xy(*spec['uv'])
+    ang = frame.angle(*spec['uv']) + spec.get('rot', 0.0)
+    lot = translate(rotate(Polygon([(-w / 2 - 1, -d / 2 - 3), (w / 2 + 1, -d / 2 - 3),
+                                    (w / 2 + 1, d / 2 + 1), (-w / 2 - 1, d / 2 + 1)]),
+                           ang, origin=(0, 0)), x, y)
     stalls = []
     for i in range(cols):
         for j in range(rows):
             dx = -w / 2 + sw * (i + 0.5)
             dy = -d / 2 + sl * (j + 0.5)
-            s = Polygon([(-sw / 2 + 0.1, -sl / 2 + 0.1), (sw / 2 - 0.1, -sl / 2 + 0.1),
-                         (sw / 2 - 0.1, sl / 2 - 0.1), (-sw / 2 + 0.1, sl / 2 - 0.1)])
-            s = translate(s, dx, dy)
-            s = rotate(s, frame.angle(*spec['uv']) + spec.get('rot', 0.0), origin=(0, 0))
-            stalls.append(translate(s, x, y))
+            s = translate(Polygon([(-sw / 2 + .1, -sl / 2 + .1), (sw / 2 - .1, -sl / 2 + .1),
+                                   (sw / 2 - .1, sl / 2 - .1), (-sw / 2 + .1, sl / 2 - .1)]),
+                          dx, dy)
+            stalls.append(translate(rotate(s, ang, origin=(0, 0)), x, y))
     return lot, stalls, cols * rows
 
 
-# ----------------------------------------------------------------- сборка ---
+# ------------------------------------------------------- расстановка --------
 def fire_gap(a, b):
     if a == b == 'V':
         return C.FIRE_GAP_V_V
@@ -172,101 +153,220 @@ def fire_gap(a, b):
     return C.FIRE_GAP_V_III
 
 
-def place_facade_row(frame, items):
-    """Раскладывает фасадный ряд вдоль «банной» границы с нормативными разрывами.
-
-    Ряд центрируется в отведённом диапазоне; если длины участка не хватает,
-    объекты всё равно ставятся встык-с-разрывом, а дефицит уходит в отчёт.
-    """
-    row = [i for n in C.ROW_FACADE for i in items if i['n'] == n]
-    if not row:
-        return
-    gaps = [fire_gap(row[k]['fire'], row[k + 1]['fire']) for k in range(len(row) - 1)]
-    need = sum(i['size'][0] for i in row) + sum(gaps)
-    u0, u1 = C.ROW_FACADE_U
-    avail = (u1 - u0) * frame.L
-    start = u0 * frame.L + max((avail - need) / 2.0, 0.0)
-    frame.row_need, frame.row_avail = need, avail
-
-    x = start
-    for k, it in enumerate(row):
-        w, d = it['size']
-        u = (x + w / 2.0) / frame.L
-        v = (C.SETBACK + d / 2.0) / frame.W
-        it['uv'] = (u, v)
-        it['slide'] = 'u'
-        it['poly'] = rect_at(frame, (u, v), it['size'], it['rot'])
-        x += w + (gaps[k] if k < len(gaps) else 0.0)
+def materialize(frame, it):
+    """Собирает части объекта по его положению и разворачивает по границе."""
+    cx, cy = it['center']
+    parts = shapes.make(it['shape'], it['size'][0], it['size'][1], it['angle'], cx, cy)
+    it['parts'] = parts
+    vol = [g for t, g in parts if t == 'building']
+    it['poly'] = unary_union(vol) if vol else unary_union([g for _, g in parts])
+    return it
 
 
-def relax(frame, items, inner, iters=400):
-    """Разводит здания до нормативных разрывов.
+def move(it, dx, dy):
+    it['center'] = (it['center'][0] + dx, it['center'][1] + dy)
+    it['poly'] = translate(it['poly'], dx, dy)
 
-    Итеративно раздвигает пары, у которых разрыв меньше требуемого, и держит
-    всё внутри линии отступа. Объекты фасадного ряда двигаются только вдоль
-    длинной оси участка, КПП зафиксирован у въезда.
-    """
-    B_ = [i for i in items if i['kind'] == 'building' and not i.get('fixed')]
+
+def pull_inside(it, inner, step=1.5, iters=200):
+    for _ in range(iters):
+        if inner.contains(it['poly']):
+            return
+        c = it['poly'].centroid
+        tgt = inner.centroid if not inner.contains(c) else None
+        if tgt is None:
+            a, _b = nearest_points(inner.exterior, c)
+            vx, vy = a.x - c.x, a.y - c.y
+        else:
+            vx, vy = tgt.x - c.x, tgt.y - c.y
+        n = math.hypot(vx, vy) or 1.0
+        move(it, step * vx / n, step * vy / n)
+
+
+def push_off(it, obstacle, bounds, clearance=1.0, iters=40, step=1.0):
+    for _ in range(iters):
+        if it['poly'].distance(obstacle) >= clearance - 0.01:
+            return
+        a, b = nearest_points(obstacle, it['poly'])
+        vx, vy = b.x - a.x, b.y - a.y
+        n = math.hypot(vx, vy)
+        if n < 1e-6:
+            c = it['poly'].centroid
+            a2, _ = nearest_points(obstacle, c)
+            vx, vy = c.x - a2.x, c.y - a2.y
+            n = math.hypot(vx, vy) or 1.0
+        cand = translate(it['poly'], step * vx / n, step * vy / n)
+        if not bounds.contains(cand):
+            return
+        move(it, step * vx / n, step * vy / n)
+
+
+def relax(frame, items, inner, iters=300):
+    movable = [i for i in items if i['kind'] == 'building' and not i.get('fixed')]
     for _ in range(iters):
         moved = 0.0
-        for a in range(len(B_)):
-            for b in range(a + 1, len(B_)):
-                A, Bb = B_[a], B_[b]
-                need = fire_gap(A['fire'], Bb['fire'])
-                got = A['poly'].distance(Bb['poly'])
+        for a in range(len(movable)):
+            for b in range(a + 1, len(movable)):
+                A, B = movable[a], movable[b]
+                need = fire_gap(A['fire'], B['fire'])
+                got = A['poly'].distance(B['poly'])
                 if got >= need - 0.02:
                     continue
-                d = need - got
-                ca, cb = A['poly'].centroid, Bb['poly'].centroid
+                ca, cb = A['poly'].centroid, B['poly'].centroid
                 vx, vy = cb.x - ca.x, cb.y - ca.y
                 n = math.hypot(vx, vy) or 1.0
-                vx, vy = vx / n, vy / n
-                step = min(d, 2.0) * 0.5
-                _shift(frame, A, -vx * step, -vy * step, inner)
-                _shift(frame, Bb, vx * step, vy * step, inner)
-                moved += step
+                step = min(need - got, 2.0) * 0.5
+                for it, sgn in ((A, -1), (B, 1)):
+                    dx, dy = sgn * step * vx / n, sgn * step * vy / n
+                    if it.get('slide') == 'u':
+                        t = math.radians(frame.angle(*it['uv']))
+                        pr = dx * math.cos(t) + dy * math.sin(t)
+                        dx, dy = pr * math.cos(t), pr * math.sin(t)
+                    if inner.buffer(0.05).contains(translate(it['poly'], dx, dy)):
+                        move(it, dx, dy)
+                        moved += step
         if moved < 0.01:
             break
-    for it in items:                      # объекты-спутники за своим зданием
-        if it.get('anchor_to'):
-            host = next(i for i in items if i['n'] == it['anchor_to'])
-            hc = host['poly'].centroid
-            du, dv = it['anchor_off']
-            a = math.radians(frame.angle(*host['uv']))
-            ex = (math.cos(a), math.sin(a))
-            ey = (-math.sin(a), math.cos(a))
-            x = hc.x + ex[0] * du + ey[0] * dv
-            y = hc.y + ex[1] * du + ey[1] * dv
-            it['poly'] = translate(
-                rotate(Polygon([(-it['size'][0] / 2, -it['size'][1] / 2),
-                                (it['size'][0] / 2, -it['size'][1] / 2),
-                                (it['size'][0] / 2, it['size'][1] / 2),
-                                (-it['size'][0] / 2, it['size'][1] / 2)]),
-                       frame.angle(*host['uv']), origin=(0, 0)), x, y)
 
 
-def _shift(frame, it, dx, dy, inner):
-    if it.get('slide') == 'u':            # ряд — только вдоль границы
-        a = math.radians(frame.angle(*it['uv']))
-        ex = (math.cos(a), math.sin(a))
-        t = dx * ex[0] + dy * ex[1]
-        dx, dy = ex[0] * t, ex[1] * t
-    cand = translate(it['poly'], dx, dy)
-    if not inner.buffer(0.05).contains(cand):
-        return
-    it['poly'] = cand
+# ------------------------------------------------------------- дорожки ------
+def path_network(frame, items, ctx):
+    """Строит пешеходную сеть по узлам: у каждой дорожки реальные начало и конец."""
+    by_n = {i['n']: i for i in items}
+
+    def resolve(node):
+        if node == 'hub':
+            return ctx['rings'][0]
+        if node == 'ring11':
+            return ctx['rings'][1]
+        if node == 'lane':
+            return ctx['lane']
+        if node == 'plaza':
+            return ctx['apron']
+        if node == 'loopS':
+            return ctx['loop']
+        it = by_n.get(node)
+        if it is None:
+            return None
+        deck = [g for t, g in it['parts'] if t in ('terrace', 'platform')]
+        return unary_union(deck + [it['poly']])
+
+    def snap(geom, toward):
+        g = geom.boundary if hasattr(geom, 'exterior') else geom
+        p, _ = nearest_points(g, Point(toward))
+        return (p.x, p.y)
+
+    out = []
+    for a, b, vias in C.PATH_LINKS:
+        ga, gb = resolve(a), resolve(b)
+        if ga is None or gb is None:
+            continue
+        pts = [frame.xy(u, v) for u, v in vias]
+        first = pts[0] if pts else gb.centroid.coords[0]
+        last = pts[-1] if pts else ga.centroid.coords[0]
+        line = [snap(ga, first)] + pts + [snap(gb, last)]
+        out.append(band(line, C.PATH_W))
+    out.append(ctx['loop'].buffer(C.PATH_W / 2.0))
+    for ring in ctx['rings']:
+        out.append(ring.buffer(C.PATH_W / 2.0))
+    return out
+
+
+# --------------------------------------------------------------- сборка -----
+FRAME_REF = [None]
+
+
+def build(frame, variant='A'):
+    FRAME_REF[0] = frame
+    items = [dict(o) for o in C.PROGRAM_BASE]
+    if variant in ('A', 'B'):
+        items.append(dict(C.HOTEL))
+    if variant == 'B':
+        pitch = C.COTTAGE_SIZE[0] + fire_gap(C.COTTAGE_FIRE, C.COTTAGE_FIRE)
+        for u0, u1, v, nmax in C.COTTAGE_ROWS:
+            span = (u1 - u0) * frame.L
+            n = max(1, min(nmax, int((span + pitch - C.COTTAGE_SIZE[0]) // pitch)))
+            x0 = u0 * frame.L + (span - (n - 1) * pitch) / 2.0
+            vv = min(v, (frame.W - C.SETBACK - C.COTTAGE_SIZE[1] / 2.0) / frame.W)
+            for i in range(n):
+                it = C.B(16, 'Гостевой домик', ((x0 + i * pitch) / frame.L, vv),
+                         C.COTTAGE_SIZE, C.COTTAGE_H, C.COTTAGE_FIRE,
+                         shape='cottage', wall=3.0, roof='gable')
+                it['slide'] = 'u'
+                it['group'] = 'Гостевые домики'
+                items.append(it)
+
+    for it in items:
+        it['center'] = frame.xy(*it['uv'])
+        it['angle'] = frame.angle(*it['uv'])
+        materialize(frame, it)
+
+    roads = [road_band(frame, C.ENTRY_DRIVE, C.ROAD_W),
+             road_band(frame, C.ROW_LANE, C.ROAD_W)]
+    lane = roads[1]
+    roads += [road_band(frame, r, C.DRIVE_W) for r in C.SPUR_ROADS]
+    if variant == 'B':
+        roads.append(road_band(frame, [(0.470, 0.760), (0.600, 0.830), (0.700, 0.855),
+                                       (0.800, 0.840), (0.860, 0.800)], C.DRIVE_W))
+
+    inner = frame.poly.buffer(-C.SETBACK)
+    for it in items:
+        pull_inside(it, inner)
+    relax(frame, items, inner)
+    ways = unary_union(roads)
+    for it in items:                      # ни объём, ни терраса, ни бассейн не лезут на проезд
+        whole = unary_union([g for _, g in it['parts']])
+        if it['kind'] == 'building' and whole.distance(ways) < 1.0:
+            d0 = it['center']
+            probe = dict(it, poly=whole)
+            push_off(probe, ways, inner.buffer(6.0), clearance=1.2)
+            move(it, probe['center'][0] - d0[0], probe['center'][1] - d0[1])
+            materialize(FRAME_REF[0], it)
+    relax(frame, items, inner, iters=120)
+    for it in items:
+        materialize(frame, it)
+
+    lots, stalls, nstall = [], [], 0
+    obst = [i['poly'] for i in items if i['kind'] == 'building']
+    for spec in C.PARKING:
+        lot, st, n = parking_lot(frame, spec)
+        d = _clear_of(lot, obst, frame.poly.buffer(-1.0))
+        lots.append(translate(lot, *d))
+        stalls += [translate(x, *d) for x in st]
+        nstall += n
+
+    kppg = [i['poly'] for i in items if i['n'] == 1]
+    blobs = [roads[0].buffer(C.PAVED_AROUND['drive'])]
+    blobs += [g.buffer(C.PAVED_AROUND['kpp']) for g in kppg]
+    blobs += [lots[0].buffer(C.PAVED_AROUND['parking'])] if lots else []
+    apron = unary_union(blobs).convex_hull.intersection(inner)
+    for g in kppg:
+        apron = apron.difference(g)
+    roads.append(apron)
+    for lot in lots[1:]:
+        roads.append(lot.buffer(C.PAVED_AROUND['parking']).convex_hull.intersection(inner))
+
+    ctx = dict(lane=lane, apron=apron,
+               loop=LineString([frame.xy(u, v) for u, v in smooth(C.LOOP_SOUTH, True)]),
+               rings=[ring_line(frame, uv, r) for uv, r in C.RINGS])
+    paths = path_network(frame, items, ctx)
+
+    hard = unary_union(roads + paths + lots +
+                       [g for i in items for t, g in i['parts']])
+    green = frame.poly.buffer(-2.0).difference(hard.buffer(2.5))
+    return dict(items=items, roads=roads, paths=paths, lots=lots, stalls=stalls,
+                nstall=nstall, green=green, hard=hard, inner=inner)
 
 
 def _clear_of(lot, obstacles, bounds, step=1.0, iters=80):
-    """Сдвигает парковку с пятен застройки. Возвращает суммарный сдвиг (dx,dy)."""
     dx = dy = 0.0
     cur = lot
     for _ in range(iters):
         hit = [o for o in obstacles if cur.intersects(o.buffer(1.0))]
         if not hit:
             break
-        vx = vy = 0.0
         c = cur.centroid
+        vx = vy = 0.0
         for o in hit:
             oc = o.centroid
             ax, ay = c.x - oc.x, c.y - oc.y
@@ -282,307 +382,167 @@ def _clear_of(lot, obstacles, bounds, step=1.0, iters=80):
     return dx, dy
 
 
-def pull_inside(geom, inner, step=1.5, iters=200):
-    """Втягивает пятно внутрь линии отступа (участок — не прямоугольник)."""
-    cur = geom
-    for _ in range(iters):
-        if inner.contains(cur):
-            break
-        a, b = nearest_points(inner.exterior, cur.centroid)
-        c = cur.centroid
-        vx, vy = a.x - c.x, a.y - c.y
-        n = math.hypot(vx, vy) or 1.0
-        if inner.contains(c):             # центр внутри — тянем к центроиду участка
-            ic = inner.centroid
-            vx, vy = ic.x - c.x, ic.y - c.y
-            n = math.hypot(vx, vy) or 1.0
-        cur = translate(cur, step * vx / n, step * vy / n)
-    return cur
-
-
-def push_off(geom, obstacle, bounds, clearance=1.0, iters=40, step=1.0):
-    """Отодвигает пятно от препятствия (проезда) на нужный просвет."""
-    cur = geom
-    for _ in range(iters):
-        if cur.distance(obstacle) >= clearance - 0.01:
-            break
-        a, b = nearest_points(obstacle, cur)
-        vx, vy = b.x - a.x, b.y - a.y
-        n = math.hypot(vx, vy)
-        if n < 1e-6:                      # пятно лежит прямо на проезде
-            c = cur.centroid
-            a2, _ = nearest_points(obstacle, c)
-            vx, vy = c.x - a2.x, c.y - a2.y
-            n = math.hypot(vx, vy) or 1.0
-        cand = translate(cur, step * vx / n, step * vy / n)
-        if not bounds.contains(cand):
-            break
-        cur = cand
-    return cur
-
-
-def build(frame, variant='A'):
-    items = [dict(o) for o in C.PROGRAM_BASE]
-    if variant in ('A', 'B'):
-        items.append(dict(C.HOTEL))
-    if variant == 'B':
-        k = 100
-        pitch = C.COTTAGE_SIZE[0] + fire_gap(C.COTTAGE_FIRE, C.COTTAGE_FIRE)
-        for u0, u1, v, nmax in C.COTTAGE_ROWS:
-            span = (u1 - u0) * frame.L
-            n = max(1, min(nmax, int((span + pitch - C.COTTAGE_SIZE[0]) // pitch)))
-            x0 = u0 * frame.L + (span - ((n - 1) * pitch)) / 2.0
-            v = min(v, (frame.W - C.SETBACK - C.COTTAGE_SIZE[1] / 2.0) / frame.W)
-            for i in range(n):
-                u = (x0 + i * pitch) / frame.L
-                it = C.B(16, 'Гостевой домик', (u, v),
-                         C.COTTAGE_SIZE, C.COTTAGE_H, C.COTTAGE_FIRE)
-                it['slide'] = 'u'
-                it['group'] = 'Гостевые домики'
-                items.append(it)
-                k += 1
-    place_facade_row(frame, items)
-    for it in items:
-        if 'poly' not in it:
-            if it['kind'] == 'stage':     # амфитеатр — круглый
-                x, y = frame.xy(*it['uv'])
-                it['poly'] = Point(x, y).buffer(it['size'][0] / 2.0)
-            else:
-                it['poly'] = rect_at(frame, it['uv'], it['size'], it['rot'])
-
-    roads = [road_band(frame, C.ENTRY_DRIVE, C.ROAD_W),
-             road_band(frame, C.ROW_LANE, C.ROAD_W)]
-    roads += [road_band(frame, r, C.DRIVE_W) for r in C.SPUR_ROADS]
-    if variant == 'B':
-        roads.append(road_band(frame, [(0.28, 0.855), (0.40, 0.905), (0.52, 0.915),
-                                       (0.64, 0.895), (0.70, 0.855)], C.DRIVE_W))
-    paths = [road_band(frame, p, C.PATH_W) for p in C.PATHS]
-    paths += [ring_band(frame, uv, r, C.PATH_W) for uv, r in C.RINGS]
-
-    inner = frame.poly.buffer(-C.SETBACK)
-    for it in items:
-        if not inner.contains(it['poly']):
-            it['poly'] = pull_inside(it['poly'], inner)
-    relax(frame, items, inner)
-
-    ways = unary_union(roads)
-    for it in items:                      # ничего не стоит на проезде
-        if it['kind'] == 'building' and it['poly'].distance(ways) < 1.0:
-            it['poly'] = push_off(it['poly'], ways, inner, clearance=1.0)
-    relax(frame, items, inner, iters=120)
-
-    lots, stalls, nstall = [], [], 0
-    obst = [i['poly'] for i in items if i['kind'] == 'building']
-    for spec in C.PARKING:
-        lot, st, n = parking_lot(frame, spec)
-        dx, dy = _clear_of(lot, obst, frame.poly.buffer(-1.0))
-        lots.append(translate(lot, dx, dy))
-        stalls += [translate(x, dx, dy) for x in st]
-        nstall += n
-
-    pa = getattr(C, 'PAVED_AROUND', None)
-    if pa:            # въездная площадь замащивается по факту: проезд + КПП + парковки
-        kpp = [i['poly'] for i in items if i['n'] == 1]
-        blobs = [road_band(frame, C.ENTRY_DRIVE, C.ROAD_W).buffer(pa['drive'])]
-        blobs += [l.buffer(pa['parking']) for l in lots]
-        blobs += [g.buffer(pa['kpp']) for g in kpp]
-        entry = unary_union(blobs[:1] + [b for b in blobs[len(blobs) - len(kpp):]]
-                            + ([lots[0].buffer(pa['parking'])] if lots else []))
-        pieces = [entry.convex_hull]
-        pieces += [l.buffer(pa['parking']).convex_hull for l in lots[1:]]
-        for piece in pieces:
-            apron = piece.intersection(inner)
-            for g in kpp:
-                apron = apron.difference(g)
-            roads.append(apron)
-
-    return dict(items=items, roads=roads, paths=paths, lots=lots,
-                stalls=stalls, nstall=nstall)
-
-
-# --------------------------------------------------------------- проверки ---
+# -------------------------------------------------------------- проверки ----
 def checks(frame, m):
-    site = frame.poly
-    inner = site.buffer(-C.SETBACK)
+    site, inner = frame.poly, m['inner']
     msgs = []
-    buildings = [i for i in m['items'] if i['kind'] == 'building']
-
     for it in m['items']:
-        tol_site = site.buffer(0.05)
-        if not tol_site.contains(it['poly']):
+        whole = unary_union([g for _, g in it['parts']])
+        if not site.buffer(0.05).contains(whole):
             msgs.append('ВЫХОД ЗА ГРАНИЦУ: %s' % it['name'])
         elif it['kind'] == 'building' and not inner.buffer(0.05).contains(it['poly']):
             msgs.append('Отступ < %.0f м от границы: %s' % (C.SETBACK, it['name']))
-
     for lot, spec in zip(m['lots'], C.PARKING):
         for it in m['items']:
             if it['kind'] == 'building' and lot.intersects(it['poly'].buffer(-0.1)):
                 msgs.append('Парковка «%s» накладывается на %s' % (spec['name'], it['name']))
-
-    for a in range(len(buildings)):
-        for b in range(a + 1, len(buildings)):
-            A, B_ = buildings[a], buildings[b]
-            need = fire_gap(A['fire'], B_['fire'])
-            got = A['poly'].distance(B_['poly'])
+    bl = [i for i in m['items'] if i['kind'] == 'building']
+    for a in range(len(bl)):
+        for b in range(a + 1, len(bl)):
+            A, B = bl[a], bl[b]
+            need = fire_gap(A['fire'], B['fire'])
+            got = A['poly'].distance(B['poly'])
             if got < need - 0.05:
                 msgs.append('Противопожарный разрыв %.1f м < %.0f м: %s / %s'
-                            % (got, need, A['name'], B_['name']))
-    return msgs, inner
+                            % (got, need, A['name'], B['name']))
+    return msgs
 
 
 def teп(frame, m):
     site = frame.poly
-    foot = unary_union([i['poly'] for i in m['items'] if i['kind'] == 'building'])
+    foot = unary_union([i['poly'] for i in m['items']])
     hard = unary_union(m['roads'] + m['paths'] + m['lots'] +
-                       [i['poly'] for i in m['items'] if i['kind'] != 'building'])
-    hard = hard.difference(foot)
-    green = site.difference(unary_union([foot, hard]))
+                       [g for i in m['items'] for t, g in i['parts']
+                        if t in ('terrace', 'platform', 'court')]).difference(foot)
+    water = unary_union([g for i in m['items'] for t, g in i['parts'] if t == 'water'])
+    green = site.difference(unary_union([foot, hard, water]))
     s = site.area
     return [('Площадь участка', s, 100.0),
-            ('Площадь застройки (пятна)', foot.area, 100 * foot.area / s),
-            ('Проезды, парковки, площадки', hard.area, 100 * hard.area / s),
+            ('Застройка (здания)', foot.area, 100 * foot.area / s),
+            ('Покрытия, террасы, площадки', hard.area, 100 * hard.area / s),
+            ('Вода (бассейны)', water.area, 100 * water.area / s),
             ('Озеленение / лес', green.area, 100 * green.area / s)]
 
 
-# ----------------------------------------------------------------- экспорт --
-LAYERS = [('01_Граница_участка', (220, 30, 30)), ('02_Линия_отступа', (255, 150, 0)),
-          ('03_Забор', (120, 80, 40)), ('04_Проезды', (90, 90, 95)),
-          ('05_Парковка', (130, 130, 140)), ('06_Дорожки', (175, 165, 150)),
-          ('07_Здания_3D', (190, 140, 80)), ('08_Пятна_застройки', (120, 80, 40)),
-          ('09_Площадки', (90, 130, 90)), ('10_Подписи', (20, 20, 20))]
-
-
-def to_3dm(frame, m, inner, path):
-    f = r3.File3dm()
-    f.Settings.ModelUnitSystem = r3.UnitSystem.Meters
-    idx = {}
-    for name, col in LAYERS:
-        lay = r3.Layer()
-        lay.Name = name
-        lay.Color = (col[0], col[1], col[2], 255)
-        idx[name] = f.Layers.Add(lay)
-
-    def att(layer):
-        a = r3.ObjectAttributes()
-        a.LayerIndex = idx[layer]
-        return a
-
-    def curve(poly, layer, z=0.0):
-        rings = [poly.exterior] + list(poly.interiors)
-        for ring in rings:
-            pts = [r3.Point3d(x, y, z) for x, y in ring.coords]
-            f.Objects.AddPolyline(pts, att(layer))
-
-    def shape(geom, layer, z=0.0):
-        if geom.is_empty:
-            return
-        for g in (geom.geoms if geom.geom_type.startswith('Multi') else [geom]):
-            curve(g, layer, z)
-
-    curve(frame.poly, '01_Граница_участка')
-    shape(inner, '02_Линия_отступа')
-    # забор по границе с отступом 0.3 м внутрь, высота 2.2 м
-    fence = frame.poly.buffer(-0.3).exterior
-    fpts = list(fence.coords)
-    for i in range(len(fpts) - 1):
-        a, b = fpts[i], fpts[i + 1]
-        f.Objects.AddPolyline([r3.Point3d(a[0], a[1], 0), r3.Point3d(b[0], b[1], 0),
-                               r3.Point3d(b[0], b[1], 2.2), r3.Point3d(a[0], a[1], 2.2),
-                               r3.Point3d(a[0], a[1], 0)], att('03_Забор'))
-
-    for g in m['roads']:
-        shape(g, '04_Проезды')
-    for g in m['paths']:
-        shape(g, '06_Дорожки')
-    for g in m['lots']:
-        shape(g, '05_Парковка')
-    for g in m['stalls']:
-        shape(g, '05_Парковка')
-
-    for it in m['items']:
-        lay = '08_Пятна_застройки' if it['kind'] == 'building' else '09_Площадки'
-        shape(it['poly'], lay)
-        if it['h'] > 0:
-            pts = [r3.Point3d(x, y, 0) for x, y in it['poly'].exterior.coords]
-            pc = r3.PolylineCurve(pts)
-            ext = r3.Extrusion.Create(pc, it['h'], True)
-            if ext:
-                f.Objects.AddExtrusion(ext, att('07_Здания_3D'))
-        c = it['poly'].centroid
-        label = ('%d. %s' % (it['n'], it['name'])) if it['n'] else it['name']
-        f.Objects.AddTextDot(label, r3.Point3d(c.x, c.y, it['h'] + 1.0),
-                             att('10_Подписи'))
-
-    ok = f.Write(path, 7)
-    return ok
-
-
 def explication(m):
-    """Экспликация строится из того же перечня, что и чертёж, — 1:1 с планом."""
     rows, seen = [], {}
     for it in m['items']:
         key = it.get('group') or it['name']
         if key in seen:
-            r = seen[key]
-            r['count'] += 1
-            r['area'] += it['poly'].area
+            seen[key]['count'] += 1
+            seen[key]['area'] += (it['poly'].area if it['kind'] == 'building'
+                                  else unary_union([g for _, g in it['parts']]).area)
             continue
-        r = dict(n=it['n'], name=key, size=it['size'], h=it['h'],
-                 count=1, area=it['poly'].area, kind=it['kind'])
+        area = (it['poly'].area if it['kind'] == 'building'
+                else unary_union([g for _, g in it['parts']]).area)
+        r = dict(n=it['n'], name=key, size=it['size'], h=it['h'], count=1,
+                 area=area, kind=it['kind'])
         seen[key] = r
         rows.append(r)
     rows.sort(key=lambda r: (r['n'] == 0, r['n']))
     return rows
 
 
-def to_png(frame, m, inner, path, title):
+# --------------------------------------------------------------- экспорт ----
+def to_3dm(frame, m, path):
+    md = model3d.Model()
+    md.curve(frame.poly, '01 Граница участка')
+    md.curve(m['inner'], '02 Линия отступа')
+
+    fence = frame.poly.buffer(-0.3).exterior.coords
+    for a, b in zip(fence, list(fence)[1:]):
+        md.f.Objects.AddPolyline(
+            [r3.Point3d(a[0], a[1], 0), r3.Point3d(b[0], b[1], 0),
+             r3.Point3d(b[0], b[1], 2.2), r3.Point3d(a[0], a[1], 2.2),
+             r3.Point3d(a[0], a[1], 0)], md.att('03 Забор'))
+
+    for g in m['roads']:
+        md.prism(g, *reversed(model3d.SLAB['road'][::-1]), z0=-0.12) if False else \
+            md.prism(g, model3d.SLAB['road'][0], -0.12, model3d.SLAB['road'][1])
+    for g in m['paths']:
+        md.prism(g, model3d.SLAB['path'][0], -0.06, model3d.SLAB['path'][1])
+    for g in m['lots']:
+        md.prism(g, model3d.SLAB['parking'][0], -0.12, model3d.SLAB['parking'][1])
+    for g in m['stalls']:
+        md.curve(g, '05 Парковка', 0.02)
+
+    for it in m['items']:
+        for t, g in it['parts']:
+            if t == 'building':
+                md.prism(g, '11 Здания - стены', 0.0, it['wall'])
+                model3d.roof(md, g, it['wall'], max(it['h'], it['wall'] + 0.5),
+                             it['roof'])
+            elif t == 'canopy':
+                model3d.canopy(md, g, max(it['wall'], 3.0))
+            elif t == 'water':
+                model3d.pool(md, g)
+            elif t in ('terrace', 'platform', 'court'):
+                lay, th = model3d.SLAB[t]
+                md.prism(g, lay, 0.0, th)
+        c = it['poly'].centroid
+        md.dot('%d. %s' % (it['n'], it['name']), c.x, c.y, it['h'] + 1.5)
+
+    n = model3d.trees(md, m['green'], count=300)
+    ok = md.f.Write(path, 7)
+    return ok, n, len(md.f.Objects)
+
+
+def to_png(frame, m, path, title):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    from matplotlib.patches import Rectangle
+    from matplotlib.patches import PathPatch, Rectangle
     from matplotlib.path import Path
-    from matplotlib.patches import PathPatch
 
     fig, (ax, panel) = plt.subplots(
         1, 2, figsize=(19, 12), dpi=150, gridspec_kw={'width_ratios': [3.1, 1.25]})
     ax.set_facecolor('#eef1e8')
     panel.axis('off')
+    panel.set_xlim(0, 1)
+    panel.set_ylim(0, 1)
 
-    def draw(geom, target=ax, **kw):
+    def draw(geom, **kw):
         if geom.is_empty:
             return
         for g in (geom.geoms if geom.geom_type.startswith('Multi') else [geom]):
+            if not hasattr(g, 'exterior'):
+                continue
             verts, codes = [], []
             for ring in [g.exterior] + list(g.interiors):
                 pts = list(ring.coords)
                 verts += pts
                 codes += [Path.MOVETO] + [Path.LINETO] * (len(pts) - 2) + [Path.CLOSEPOLY]
-            target.add_patch(PathPatch(Path(verts, codes), **kw))
+            ax.add_patch(PathPatch(Path(verts, codes), **kw))
 
-    C_SITE, C_SET = '#cc2222', '#ff9900'
-    C_ROAD, C_PARK, C_PATH = '#8c8c92', '#b9b9c2', '#cfc6b4'
-    C_BLD, C_BLD_E = '#b07a3c', '#5a3c1c'
-    C_COURT, C_PLAT, C_STAGE = '#3d7a53', '#9fbf7f', '#c9b07a'
-    C_GREEN = '#e3e9d8'
+    K = dict(site='#e3e9d8', road='#8c8c92', park='#b9b9c2', path='#cfc6b4',
+             bld='#b07a3c', bld_e='#5a3c1c', terr='#d8b98c', water='#7fc4e8',
+             plat='#c9d3ae', court='#3d7a53', canopy='#e0d3bb', tree='#6d9e63')
 
-    draw(frame.poly, facecolor=C_GREEN, edgecolor=C_SITE, lw=2.5, zorder=1)
-    draw(inner, facecolor='none', edgecolor=C_SET, lw=0.9, ls='--', zorder=2)
+    draw(frame.poly, facecolor=K['site'], edgecolor='#cc2222', lw=2.5, zorder=1)
+    draw(m['inner'], facecolor='none', edgecolor='#ff9900', lw=0.9, ls='--', zorder=2)
+    for x, y in m.get('trees', []):
+        ax.add_patch(plt.Circle((x, y), 2.6, color=K['tree'], alpha=0.5, zorder=2))
     for g in m['roads']:
-        draw(g, facecolor=C_ROAD, edgecolor='none', zorder=3)
+        draw(g, facecolor=K['road'], edgecolor='none', zorder=3)
     for g in m['paths']:
-        draw(g, facecolor=C_PATH, edgecolor='none', zorder=3)
+        draw(g, facecolor=K['path'], edgecolor='none', zorder=3)
     for g in m['lots']:
-        draw(g, facecolor=C_PARK, edgecolor='#7a7a82', lw=0.6, zorder=4)
+        draw(g, facecolor=K['park'], edgecolor='#7a7a82', lw=0.6, zorder=4)
     for g in m['stalls']:
         draw(g, facecolor='none', edgecolor='#ffffff', lw=0.6, zorder=5)
 
+    order = {'platform': 6, 'terrace': 7, 'court': 7, 'water': 8, 'canopy': 9,
+             'building': 10}
+    style = {'platform': (K['plat'], '#8a9a72'), 'terrace': (K['terr'], '#9a7748'),
+             'court': (K['court'], '#25503a'), 'water': (K['water'], '#3f7fa5'),
+             'canopy': (K['canopy'], '#a08d6d'), 'building': (K['bld'], K['bld_e'])}
     for it in m['items']:
-        fc, ec = {'building': (C_BLD, C_BLD_E), 'court': (C_COURT, '#25503a'),
-                  'stage': (C_STAGE, '#6a5a34')}.get(it['kind'], (C_PLAT, '#5f7a4a'))
-        draw(it['poly'], facecolor=fc, edgecolor=ec, lw=1.0, zorder=6)
+        for t, g in it['parts']:
+            fc, ec = style.get(t, (K['plat'], '#777777'))
+            draw(g, facecolor=fc, edgecolor=ec, lw=0.9, zorder=order.get(t, 6))
         c = it['poly'].centroid
         ax.text(c.x, c.y, str(it['n']), ha='center', va='center', fontsize=8.5,
-                color='white', zorder=7,
+                color='white', zorder=12,
                 bbox=dict(boxstyle='circle,pad=0.22', fc='#222222', ec='none'))
 
     minx, miny, maxx, maxy = frame.poly.bounds
@@ -594,7 +554,6 @@ def to_png(frame, m, inner, path, title):
     ax.set_title(title, fontsize=15, pad=12)
     ax.set_xlabel('X, м (восток)')
     ax.set_ylabel('Y, м (север)')
-
     x0, y0 = minx - pad + 8, miny - pad + 8
     ax.plot([x0, x0 + 50], [y0, y0], color='black', lw=3)
     ax.text(x0 + 25, y0 + 3, '50 м', ha='center', fontsize=10)
@@ -602,53 +561,49 @@ def to_png(frame, m, inner, path, title):
     ax.annotate('С', xy=(nx_, ny_), xytext=(nx_, ny_ - 24), ha='center', fontsize=12,
                 arrowprops=dict(arrowstyle='-|>', color='black', lw=1.4))
 
-    # ---- экспликация ----
     rows = explication(m)
     y = 0.985
-    panel.text(0.0, y, 'ЭКСПЛИКАЦИЯ', fontsize=12, weight='bold', va='top')
+    panel.text(0, y, 'ЭКСПЛИКАЦИЯ', fontsize=12, weight='bold', va='top')
     y -= 0.030
-    panel.text(0.0, y, '%-3s %-26s %9s' % ('№', 'наименование', 'S, м²'),
+    panel.text(0, y, '%-3s %-26s %8s' % ('№', 'наименование', 'S, м²'),
                fontsize=7.6, family='monospace', va='top', color='#555555')
     y -= 0.018
     for r in rows:
         nm = r['name'] + (' (%d шт.)' % r['count'] if r['count'] > 1 else '')
-        panel.text(0.0, y, '%-3s %-26s %9.0f' % (r['n'], nm[:26], r['area']),
+        panel.text(0, y, '%-3s %-26s %8.0f' % (r['n'], nm[:26], r['area']),
                    fontsize=7.6, family='monospace', va='top')
         y -= 0.0185
-    panel.text(0.0, y - 0.004, '%-30s %9.0f' % ('ИТОГО пятен застройки',
+    panel.text(0, y - 0.004, '%-30s %8.0f' % ('ИТОГО по экспликации',
                sum(r['area'] for r in rows)), fontsize=7.6, family='monospace',
                va='top', weight='bold')
-    y -= 0.048
-
-    panel.text(0.0, y, 'УСЛОВНЫЕ ОБОЗНАЧЕНИЯ', fontsize=12, weight='bold', va='top')
+    y -= 0.050
+    panel.text(0, y, 'УСЛОВНЫЕ ОБОЗНАЧЕНИЯ', fontsize=12, weight='bold', va='top')
     y -= 0.030
-    keys = [('Граница участка', 'none', C_SITE, 2.0),
-            ('Линия отступа 3 м', 'none', C_SET, 1.0),
-            ('Застройка', C_BLD, C_BLD_E, 1.0),
-            ('Концертная площадка', C_STAGE, '#6a5a34', 1.0),
-            ('Спортивный корт', C_COURT, '#25503a', 1.0),
-            ('Детская площадка', C_PLAT, '#5f7a4a', 1.0),
-            ('Проезды', C_ROAD, 'none', 0),
-            ('Парковка (%d м/м)' % m['nstall'], C_PARK, '#7a7a82', 0.6),
-            ('Пешеходные дорожки', C_PATH, 'none', 0),
-            ('Озеленение / лес', C_GREEN, '#b8c3a5', 0.6)]
+    keys = [('Граница участка', 'none', '#cc2222', 2.0),
+            ('Линия отступа 3 м', 'none', '#ff9900', 1.0),
+            ('Здания', K['bld'], K['bld_e'], 1.0),
+            ('Навесы', K['canopy'], '#a08d6d', 1.0),
+            ('Террасы, настилы', K['terr'], '#9a7748', 1.0),
+            ('Бассейны, купели', K['water'], '#3f7fa5', 1.0),
+            ('Площадки', K['plat'], '#8a9a72', 1.0),
+            ('Корты', K['court'], '#25503a', 1.0),
+            ('Проезды', K['road'], 'none', 0),
+            ('Парковка (%d м/м)' % m['nstall'], K['park'], '#7a7a82', 0.6),
+            ('Пешеходные дорожки', K['path'], 'none', 0),
+            ('Озеленение / лес', K['site'], '#b8c3a5', 0.6)]
     for name, fc, ec, lw in keys:
-        panel.add_patch(Rectangle((0.0, y - 0.016), 0.09, 0.016, facecolor=fc,
+        panel.add_patch(Rectangle((0, y - 0.016), 0.09, 0.016, facecolor=fc,
                                   edgecolor=ec, lw=lw, transform=panel.transAxes,
                                   clip_on=False))
         panel.text(0.115, y - 0.004, name, fontsize=8.2, va='top')
         y -= 0.026
     y -= 0.022
-
-    panel.text(0.0, y, 'ТЭП', fontsize=12, weight='bold', va='top')
+    panel.text(0, y, 'ТЭП', fontsize=12, weight='bold', va='top')
     y -= 0.030
     for name, a, pct in teп(frame, m):
-        panel.text(0.0, y, '%-28s %7.0f м²  %4.1f%%' % (name[:28], a, pct),
+        panel.text(0, y, '%-28s %7.0f м²  %4.1f%%' % (name[:28], a, pct),
                    fontsize=7.4, family='monospace', va='top')
         y -= 0.0185
-    panel.set_xlim(0, 1)
-    panel.set_ylim(0, 1)
-
     fig.savefig(path, bbox_inches='tight')
     plt.close(fig)
 
@@ -656,72 +611,73 @@ def to_png(frame, m, inner, path, title):
 def report(frame, m, msgs, path, title):
     lines = [title, '=' * len(title), '',
              'Кадастровый номер: %s' % C.CAD_NUMBER,
-             'Привязка (BASE_POINT): %s' % (str(C.BASE_POINT) if C.BASE_POINT else 'локальные координаты'),
-             'Габариты участка (описанный прямоугольник): %.1f x %.1f м'
-             % (frame.L, frame.W), '',
-             'ТЕХНИКО-ЭКОНОМИЧЕСКИЕ ПОКАЗАТЕЛИ', '-' * 34]
-    for name, a, pct in teп(frame, m):
-        lines.append('%-32s %9.0f м2   %5.1f %%' % (name, a, pct))
-    if hasattr(frame, 'row_need'):
-        lines += ['', 'Фасадный фронт (объекты %s):' % C.ROW_FACADE,
-                  '  требуется по нормам разрывов: %.0f м' % frame.row_need,
-                  '  есть по длине участка:        %.0f м%s'
-                  % (frame.row_avail,
-                     '   ДЕФИЦИТ %.0f м' % (frame.row_need - frame.row_avail)
-                     if frame.row_need > frame.row_avail else '   ок')]
-    lines += ['', 'ЭКСПЛИКАЦИЯ', '-' * 34]
+             'Привязка: %s' % (str(C.BASE_POINT) if C.BASE_POINT else 'локальные координаты'),
+             'Участок: %.0f м2, габарит %.1f x %.1f м' % (frame.poly.area, frame.L, frame.W),
+             '', 'ЭКСПЛИКАЦИЯ', '-' * 60]
     for r in explication(m):
         nm = r['name'] + (' (%d шт.)' % r['count'] if r['count'] > 1 else '')
-        lines.append('%-3s %-30s %6.0f x %-5.0f  %7.0f м2  h=%.1f м'
+        lines.append('%-3s %-32s %5.0f x %-5.0f %7.0f м2  h=%.1f м'
                      % (r['n'], nm, r['size'][0], r['size'][1], r['area'], r['h']))
+    lines += ['', 'ТЕХНИКО-ЭКОНОМИЧЕСКИЕ ПОКАЗАТЕЛИ', '-' * 60]
+    for name, a, pct in teп(frame, m):
+        lines.append('%-34s %9.0f м2  %5.1f %%' % (name, a, pct))
     lines += ['', 'Машиномест: %d' % m['nstall'],
               'Объектов на плане: %d (позиций в экспликации: %d)'
-              % (len(m['items']), len(explication(m))), '',
-              'ПРОВЕРКИ', '-' * 34]
+              % (len(m['items']), len(explication(m))),
+              'Дорожек в сети: %d, все с привязкой начала и конца' % len(m['paths']),
+              '', 'ПРОВЕРКИ', '-' * 60]
     lines += (['  нарушений не найдено'] if not msgs else ['  ! ' + s for s in msgs])
     open(path, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
     return '\n'.join(lines)
 
 
+def scatter_trees(green, count=300, seed=12, rmin=6.0):
+    rnd = random.Random(seed)
+    minx, miny, maxx, maxy = green.bounds
+    pts = []
+    tries = 0
+    while len(pts) < count and tries < count * 60:
+        tries += 1
+        x, y = rnd.uniform(minx, maxx), rnd.uniform(miny, maxy)
+        if not green.contains(Point(x, y)):
+            continue
+        if any((x - a) ** 2 + (y - b) ** 2 < rmin ** 2 for a, b in pts):
+            continue
+        pts.append((x, y))
+    return pts
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--site', default=None)
-    ap.add_argument('--placeholder', action='store_true',
-                    help='считать на условном прямоугольнике вместо реального контура')
+    ap.add_argument('--site-order', default='egrn', choices=['egrn', 'xy'])
+    ap.add_argument('--site-size', default=None)
+    ap.add_argument('--placeholder', action='store_true')
     ap.add_argument('--variant', default='both', choices=['A', 'B', 'both'])
-    ap.add_argument('--site-size', default=None,
-                    help='LxW, м — размер участка-заглушки, напр. 200x95')
     ap.add_argument('--suffix', default='')
-    ap.add_argument('--site-order', default='egrn', choices=['egrn', 'xy'],
-                    help="egrn: X=север,Y=восток (как в выписке); xy: X=восток,Y=север")
     a = ap.parse_args()
 
-    size = None
-    if a.site_size:
-        size = tuple(float(t) for t in a.site_size.lower().split('x'))
-    order = a.site_order
-    site_path = a.site
-    if site_path is None and not a.placeholder and not a.site_size:
+    size = tuple(float(t) for t in a.site_size.lower().split('x')) if a.site_size else None
+    order, site_path = a.site_order, a.site
+    if site_path is None and not a.placeholder and not size:
         site_path = os.path.join(OUT, C.DEFAULT_SITE)
         order = C.DEFAULT_SITE_ORDER
     site, is_placeholder = load_site(site_path, size, order)
-    frame = Frame(site, C.ENTRY_HINT)
-    variants = ['A', 'B'] if a.variant == 'both' else [a.variant]
+    frame = Frame(site)
+
     titles = {'A': 'БОР 495 — генплан, вариант 1 (с гостиницей)',
               'B': 'БОР 495 — генплан, вариант 2 (с гостевыми домиками)'}
-    for v in variants:
+    for v in (['A', 'B'] if a.variant == 'both' else [a.variant]):
         m = build(frame, v)
-        msgs, inner = checks(frame, m)
+        m['trees'] = scatter_trees(m['green'])
+        msgs = checks(frame, m)
         base = os.path.join(OUT, 'BOR495_genplan_%s%s' % (v, a.suffix))
-        ok = to_3dm(frame, m, inner, base + '.3dm')
-        to_png(frame, m, inner, base + '.png', titles[v])
-        txt = report(frame, m, msgs, base + '.txt', titles[v])
-        print(txt)
-        print('\n3dm записан: %s (%s)\n' % (base + '.3dm', ok))
+        ok, ntree, nobj = to_3dm(frame, m, base + '.3dm')
+        to_png(frame, m, base + '.png', titles[v])
+        print(report(frame, m, msgs, base + '.txt', titles[v]))
+        print('\n3dm: %s (%s), объектов %d, деревьев %d\n' % (base + '.3dm', ok, nobj, ntree))
     if is_placeholder:
-        print('!!! Участок — ЗАГЛУШКА (%.0f x %.0f м). Подставьте кадастровый контур: '
-              'python3 genplan.py --site kpt.xml'
-              % (C.PLACEHOLDER_SITE['length'], C.PLACEHOLDER_SITE['width']))
+        print('!!! Участок — заглушка')
 
 
 if __name__ == '__main__':

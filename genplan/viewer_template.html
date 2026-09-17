@@ -1,0 +1,483 @@
+<title>БОР 495 Генплан</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ink:#20231c; --ink-soft:#5c6152; --line:#d6d8c8; --panel:#fbfaf4;
+    --panel-2:#f2f1e6; --accent:#b4761f; --accent-soft:#e8d7b6;
+    --sky:#cfd8d0; --ground:#c9cfba; --shadow:0 10px 30px rgba(32,35,28,.16);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#eceade; --ink-soft:#a2a894; --line:#3a3f33; --panel:#20241d;
+      --panel-2:#272c22; --accent:#e0a54a; --accent-soft:#4a3f26;
+      --sky:#161a15; --ground:#1d2118; --shadow:0 10px 34px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#eceade; --ink-soft:#a2a894; --line:#3a3f33; --panel:#20241d;
+    --panel-2:#272c22; --accent:#e0a54a; --accent-soft:#4a3f26;
+    --sky:#161a15; --ground:#1d2118; --shadow:0 10px 34px rgba(0,0,0,.5);
+  }
+  html,body{height:100%;}
+  body{margin:0;background:var(--sky);color:var(--ink);
+       font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+       overflow:hidden;}
+  #stage{position:fixed;inset:0;}
+  canvas{display:block;width:100%;height:100%;touch-action:none;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:4px;
+        box-shadow:var(--shadow);}
+  #title{position:fixed;left:16px;top:calc(16px + env(safe-area-inset-top,0px));
+         padding:14px 18px;max-width:min(360px,calc(100vw - 32px));z-index:5;}
+  #title h1{font-family:Spectral,Georgia,serif;font-weight:600;font-size:20px;
+            margin:0 0 2px;letter-spacing:.01em;}
+  #title .sub{font-size:12px;color:var(--ink-soft);line-height:1.45;}
+  #title .cad{margin-top:8px;font-size:11px;color:var(--ink-soft);
+              border-top:1px solid var(--line);padding-top:8px;
+              font-variant-numeric:tabular-nums;}
+  #tools{position:fixed;right:16px;top:calc(16px + env(safe-area-inset-top,0px));
+         z-index:5;display:flex;flex-direction:column;gap:8px;
+         max-width:min(230px,calc(100vw - 32px));}
+  .group{padding:10px 12px;}
+  .group h2{font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+            color:var(--ink-soft);margin:0 0 8px;font-weight:600;}
+  .row{display:flex;flex-wrap:wrap;gap:6px;}
+  button{font:inherit;font-size:12px;padding:6px 10px;border-radius:3px;cursor:pointer;
+         border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+         transition:background .15s,border-color .15s;}
+  button:hover{border-color:var(--accent);}
+  button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);
+                              color:var(--ink);font-weight:600;}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  #legend{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+          z-index:5;width:min(330px,calc(100vw - 32px));max-height:52vh;
+          display:flex;flex-direction:column;}
+  #legend header{display:flex;align-items:center;justify-content:space-between;
+                 padding:10px 14px;border-bottom:1px solid var(--line);}
+  #legend h2{font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin:0;
+             color:var(--ink-soft);font-weight:600;}
+  #expl{overflow:auto;padding:6px 6px 10px;}
+  .item{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:baseline;
+        padding:4px 8px;border-radius:3px;cursor:pointer;font-size:12px;
+        background:none;border:none;width:100%;text-align:left;color:var(--ink);}
+  .item:hover{background:var(--panel-2);border-color:transparent;}
+  .item .n{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600;}
+  .item .s{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:11px;}
+  #tep{border-top:1px solid var(--line);padding:10px 14px;display:grid;gap:3px;}
+  #tep div{display:flex;justify-content:space-between;gap:12px;font-size:11.5px;
+           color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+  #tep div b{color:var(--ink);font-weight:600;}
+  #readout{position:fixed;left:50%;transform:translateX(-50%);
+           bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;
+           padding:8px 14px;font-size:12.5px;pointer-events:none;opacity:0;
+           transition:opacity .18s;}
+  #readout.on{opacity:1;}
+  #hint{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+        z-index:5;padding:8px 12px;font-size:11px;color:var(--ink-soft);
+        max-width:min(220px,calc(100vw - 32px));line-height:1.5;}
+  @media (max-width:760px){
+    #legend{display:none;} #hint{display:none;}
+    #title{padding:10px 12px;} #title h1{font-size:16px;}
+    #tools{gap:6px;} .group{padding:8px 10px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+
+<div id="stage"><canvas id="c"></canvas></div>
+
+<section id="title" class="card">
+  <h1>БОР&nbsp;495 — генеральный план</h1>
+  <div class="sub" id="variantName">Загородный банный комплекс. Вариант 1</div>
+  <div class="cad">50:20:0041009:120 · 54&nbsp;720 м² · периметр 948 м</div>
+</section>
+
+<nav id="tools">
+  <div class="group card">
+    <h2>Вариант</h2>
+    <div class="row" id="variants">
+      <button data-v="A" aria-pressed="true">1 · гостиница</button>
+      <button data-v="B" aria-pressed="false">2 · домики</button>
+    </div>
+  </div>
+  <div class="group card">
+    <h2>Вид</h2>
+    <div class="row" id="views">
+      <button data-view="axo">Аксонометрия</button>
+      <button data-view="plan">План</button>
+      <button data-view="entry">От въезда</button>
+      <button data-view="orbit" aria-pressed="false">Облёт</button>
+    </div>
+  </div>
+  <div class="group card">
+    <h2>Слои</h2>
+    <div class="row" id="layers">
+      <button data-layer="trees" aria-pressed="true">Лес</button>
+      <button data-layer="labels" aria-pressed="true">Номера</button>
+      <button data-layer="paving" aria-pressed="true">Покрытия</button>
+    </div>
+  </div>
+</nav>
+
+<aside id="legend" class="card">
+  <header><h2>Экспликация</h2><span class="s" id="stalls"></span></header>
+  <div id="expl"></div>
+  <div id="tep"></div>
+</aside>
+
+<div id="readout" class="card"></div>
+<div id="hint" class="card">Тянуть — поворот · колесо — приближение · Shift+тянуть или два пальца — сдвиг. Клик по объекту — подлететь.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script id="sceneData" type="application/json">/*__SCENE__*/</script>
+<script>
+(function(){
+  "use strict";
+  var DATA = JSON.parse(document.getElementById('sceneData').textContent);
+  var css = function(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+
+  var canvas = document.getElementById('c');
+  var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(42, 1, 1, 4000);
+
+  var SITE = {x:145, z:120};                      // центр участка в координатах сцены
+  var target = new THREE.Vector3(SITE.x, 0, -SITE.z);
+  var sph = {r:430, theta:-0.9, phi:0.95};        // сферические координаты камеры
+
+  function applyCam(){
+    var r = sph.r, p = Math.max(0.12, Math.min(1.53, sph.phi));
+    camera.position.set(
+      target.x + r*Math.sin(p)*Math.sin(sph.theta),
+      target.y + r*Math.cos(p),
+      target.z + r*Math.sin(p)*Math.cos(sph.theta));
+    camera.lookAt(target);
+  }
+
+  // ------------------------------------------------------------- материалы --
+  var M = {
+    site:   new THREE.MeshLambertMaterial({color:0x8fa06e}),
+    road:   new THREE.MeshLambertMaterial({color:0x7c7f82}),
+    parking:new THREE.MeshLambertMaterial({color:0x93969b}),
+    path:   new THREE.MeshLambertMaterial({color:0xcbbfa4}),
+    terrace:new THREE.MeshLambertMaterial({color:0xb5834a}),
+    platform:new THREE.MeshLambertMaterial({color:0xb3bd8e}),
+    court:  new THREE.MeshLambertMaterial({color:0x2f7a52}),
+    wall:   new THREE.MeshLambertMaterial({color:0xcfa470}),
+    roof:   new THREE.MeshLambertMaterial({color:0x4a453e, side:THREE.DoubleSide}),
+    canopy: new THREE.MeshLambertMaterial({color:0xb99b74}),
+    water:  new THREE.MeshPhongMaterial({color:0x4fa3cc, shininess:90,
+              transparent:true, opacity:0.85}),
+    crown:  new THREE.MeshLambertMaterial({color:0x4f7a42}),
+    trunk:  new THREE.MeshLambertMaterial({color:0x5a4632}),
+    hi:     new THREE.MeshLambertMaterial({color:0xe0a54a})
+  };
+
+  // --------------------------------------------------------------- хелперы --
+  function shapeOf(p){
+    var s = new THREE.Shape();
+    p.e.forEach(function(pt,i){ i ? s.lineTo(pt[0],pt[1]) : s.moveTo(pt[0],pt[1]); });
+    (p.h||[]).forEach(function(hole){
+      var hp = new THREE.Path();
+      hole.forEach(function(pt,i){ i ? hp.lineTo(pt[0],pt[1]) : hp.moveTo(pt[0],pt[1]); });
+      s.holes.push(hp);
+    });
+    return s;
+  }
+  function slab(p, h, y, mat, cast){
+    var g = new THREE.ExtrudeGeometry(shapeOf(p), {depth:h, bevelEnabled:false});
+    var m = new THREE.Mesh(g, mat);
+    m.rotation.x = -Math.PI/2; m.position.y = y;
+    m.receiveShadow = true; if (cast) m.castShadow = true;
+    return m;
+  }
+  function stitch(rings, capped){
+    var pos = [], v = function(p){ pos.push(p[0], p[2], -p[1]); };
+    for (var k=0;k<rings.length-1;k++){
+      var a = rings[k], b = rings[k+1], n = Math.min(a.length,b.length);
+      for (var i=0;i<n-1;i++){
+        v(a[i]); v(a[i+1]); v(b[i+1]);
+        v(a[i]); v(b[i+1]); v(b[i]);
+      }
+    }
+    if (capped){
+      var top = rings[rings.length-1], c=[0,0,0];
+      top.forEach(function(p){ c[0]+=p[0]; c[1]+=p[1]; c[2]+=p[2]; });
+      c = [c[0]/top.length, c[1]/top.length, c[2]/top.length];
+      for (var j=0;j<top.length-1;j++){ v(c); v(top[j]); v(top[j+1]); }
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+    g.computeVertexNormals();
+    return g;
+  }
+  function treeMesh(trees){
+    var crown = [], trunk = [], SEG = 10;
+    trees.forEach(function(t){
+      var x=t[0], z=-t[1], h=t[2], r=t[3], base=h*0.42;
+      for (var i=0;i<SEG;i++){
+        var a0=i/SEG*Math.PI*2, a1=(i+1)/SEG*Math.PI*2;
+        crown.push(x+r*Math.cos(a0), base, z+r*Math.sin(a0),
+                   x+r*Math.cos(a1), base, z+r*Math.sin(a1), x, h, z);
+        var tr=0.22;
+        trunk.push(x+tr*Math.cos(a0),0,z+tr*Math.sin(a0),
+                   x+tr*Math.cos(a1),0,z+tr*Math.sin(a1),
+                   x+tr*Math.cos(a1),base,z+tr*Math.sin(a1));
+        trunk.push(x+tr*Math.cos(a0),0,z+tr*Math.sin(a0),
+                   x+tr*Math.cos(a1),base,z+tr*Math.sin(a1),
+                   x+tr*Math.cos(a0),base,z+tr*Math.sin(a0));
+      }
+    });
+    function mk(arr, mat){
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(arr,3));
+      g.computeVertexNormals();
+      var m = new THREE.Mesh(g, mat); m.castShadow = true; m.receiveShadow = true;
+      return m;
+    }
+    var grp = new THREE.Group(); grp.add(mk(crown,M.crown)); grp.add(mk(trunk,M.trunk));
+    return grp;
+  }
+  function labelSprite(text){
+    var cv = document.createElement('canvas'), s = 128;
+    cv.width = cv.height = s;
+    var g = cv.getContext('2d');
+    g.fillStyle = '#20231c'; g.beginPath(); g.arc(s/2,s/2,s*0.36,0,7); g.fill();
+    g.fillStyle = '#fbfaf4'; g.font = '600 56px "IBM Plex Sans", sans-serif';
+    g.textAlign='center'; g.textBaseline='middle'; g.fillText(text, s/2, s/2+2);
+    var tex = new THREE.CanvasTexture(cv);
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
+    sp.scale.set(9,9,1);
+    return sp;
+  }
+
+  // ------------------------------------------------------------- построение --
+  var groups = {};
+  function buildVariant(key){
+    var d = DATA[key], root = new THREE.Group();
+    var parts = {trees:new THREE.Group(), labels:new THREE.Group(),
+                 paving:new THREE.Group(), build:new THREE.Group()};
+
+    d.site.forEach(function(p){
+      var m = slab(p, 0.3, -0.3, M.site); m.userData.ground = true; root.add(m);
+    });
+    d.slabs.forEach(function(s){
+      var mat = M[s.t] || M.path;
+      var y = s.t==='terrace' ? 0.0 : (s.t==='road'||s.t==='parking' ? -0.02 : -0.01);
+      var h = s.t==='terrace' ? 0.45 : 0.14;
+      parts.paving.add(slab(s.p, h, y, mat));
+    });
+    d.water.forEach(function(p){ parts.paving.add(slab(p, 0.3, -0.35, M.water)); });
+
+    var byN = {};
+    d.walls.forEach(function(w){
+      var m = slab(w.p, w.h, w.z, M.wall, true);
+      m.userData.pickable = true; parts.build.add(m);
+    });
+    d.roofs.forEach(function(r){
+      var m = new THREE.Mesh(stitch(r.r, r.c), M.roof);
+      m.castShadow = true; m.receiveShadow = true; parts.build.add(m);
+    });
+    d.canopies.forEach(function(c){
+      parts.build.add(slab(c.p, 0.4, c.h, M.canopy, true));
+    });
+    d.labels.forEach(function(l){
+      var sp = labelSprite(String(l[3]));
+      sp.position.set(l[0], l[2]+3, -l[1]);
+      sp.userData.n = l[3]; sp.userData.name = l[4];
+      parts.labels.add(sp);
+      byN[l[3]] = byN[l[3]] || {x:l[0], y:l[1], h:l[2], name:l[4]};
+    });
+    parts.trees.add(treeMesh(d.trees));
+
+    Object.keys(parts).forEach(function(k){ root.add(parts[k]); });
+    root.userData = {parts:parts, byN:byN, data:d};
+    root.visible = false;
+    scene.add(root);
+    return root;
+  }
+  groups.A = buildVariant('A');
+  groups.B = buildVariant('B');
+
+  // ------------------------------------------------------------------ свет --
+  var hemi = new THREE.HemisphereLight(0xdfe7e4, 0x55603f, 0.75);
+  scene.add(hemi);
+  var sun = new THREE.DirectionalLight(0xfff0d8, 0.95);
+  sun.position.set(SITE.x-210, 260, -SITE.z+180);
+  sun.target.position.copy(target);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048,2048);
+  var sc = sun.shadow.camera;
+  sc.left=-330; sc.right=330; sc.top=330; sc.bottom=-330; sc.near=1; sc.far=1200;
+  scene.add(sun); scene.add(sun.target);
+
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(3000,3000),
+                              new THREE.MeshLambertMaterial({color:0x6f7a55}));
+  ground.rotation.x = -Math.PI/2; ground.position.y = -0.45;
+  ground.receiveShadow = true; scene.add(ground);
+
+  function paintTheme(){
+    scene.background = new THREE.Color(css('--sky') || '#cfd8d0');
+    scene.fog = new THREE.Fog(scene.background.getHex(), 700, 1800);
+  }
+  paintTheme();
+  if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintTheme);
+
+  // --------------------------------------------------------------- интерфейс --
+  var current = 'A';
+  function setVariant(v){
+    current = v;
+    groups.A.visible = (v==='A'); groups.B.visible = (v==='B');
+    document.getElementById('variantName').textContent =
+      'Загородный банный комплекс. ' + DATA[v].title;
+    document.querySelectorAll('#variants button').forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.dataset.v===v));
+    });
+    renderPanel(DATA[v]);
+    applyLayers();
+  }
+  function renderPanel(d){
+    var box = document.getElementById('expl');
+    box.innerHTML = '';
+    d.expl.forEach(function(r){
+      var b = document.createElement('button');
+      b.className = 'item';
+      b.innerHTML = '<span class="n">'+r[0]+'</span><span>'+r[1]+
+                    (r[3]>1 ? ' <span class="s">×'+r[3]+'</span>' : '')+
+                    '</span><span class="s">'+r[2].toLocaleString('ru-RU')+' м²</span>';
+      b.addEventListener('click', function(){ flyTo(r[0]); });
+      box.appendChild(b);
+    });
+    var tep = document.getElementById('tep');
+    tep.innerHTML = '';
+    d.tep.forEach(function(t){
+      var row = document.createElement('div');
+      row.innerHTML = '<span>'+t[0]+'</span><b>'+t[1].toLocaleString('ru-RU')+
+                      ' м² · '+t[2].toFixed(1)+'%</b>';
+      tep.appendChild(row);
+    });
+    document.getElementById('stalls').textContent = d.stallCount + ' м/м';
+  }
+  var layers = {trees:true, labels:true, paving:true};
+  function applyLayers(){
+    var p = groups[current].userData.parts;
+    p.trees.visible = layers.trees;
+    p.labels.visible = layers.labels;
+    p.paving.visible = layers.paving;
+  }
+  document.getElementById('variants').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (b) setVariant(b.dataset.v);
+  });
+  document.getElementById('layers').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    layers[b.dataset.layer] = !layers[b.dataset.layer];
+    b.setAttribute('aria-pressed', String(layers[b.dataset.layer]));
+    applyLayers();
+  });
+
+  var orbiting = false;
+  var VIEWS = {axo:{r:430,theta:-0.9,phi:0.95}, plan:{r:400,theta:0,phi:0.14},
+               entry:{r:190,theta:-1.75,phi:1.30}};
+  document.getElementById('views').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.view==='orbit'){
+      orbiting = !orbiting; b.setAttribute('aria-pressed', String(orbiting)); return;
+    }
+    var v = VIEWS[b.dataset.view];
+    target.set(SITE.x, 0, -SITE.z);
+    tween(v);
+  });
+  var anim = null;
+  function tween(to){
+    var from = {r:sph.r, theta:sph.theta, phi:sph.phi}, t0 = performance.now();
+    anim = function(now){
+      var k = Math.min(1,(now-t0)/700), e = 1-Math.pow(1-k,3);
+      sph.r = from.r+(to.r-from.r)*e;
+      sph.theta = from.theta+(to.theta-from.theta)*e;
+      sph.phi = from.phi+(to.phi-from.phi)*e;
+      if (k>=1) anim = null;
+    };
+  }
+  function flyTo(n){
+    var o = groups[current].userData.byN[n]; if (!o) return;
+    target.set(o.x, 0, -o.y);
+    tween({r:95, theta:sph.theta, phi:0.95});
+    showReadout(n + ' · ' + o.name);
+  }
+  var readout = document.getElementById('readout'), roTimer = null;
+  function showReadout(text){
+    readout.textContent = text; readout.classList.add('on');
+    clearTimeout(roTimer); roTimer = setTimeout(function(){ readout.classList.remove('on'); }, 2600);
+  }
+
+  // ------------------------------------------------------------- управление --
+  var drag = null;
+  canvas.addEventListener('pointerdown', function(e){
+    canvas.setPointerCapture(e.pointerId);
+    drag = {x:e.clientX, y:e.clientY, pan:e.shiftKey||e.button===2, moved:0};
+  });
+  canvas.addEventListener('pointermove', function(e){
+    if (!drag) return;
+    var dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+    drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx)+Math.abs(dy);
+    if (drag.pan){
+      var k = sph.r*0.0016;
+      var s = Math.sin(sph.theta), c = Math.cos(sph.theta);
+      target.x -= (dx*c - dy*s)*k; target.z += (dx*s + dy*c)*k;
+    } else {
+      sph.theta -= dx*0.005; sph.phi = Math.max(0.12, Math.min(1.53, sph.phi - dy*0.005));
+    }
+  });
+  canvas.addEventListener('pointerup', function(e){
+    if (drag && drag.moved < 6) pick(e);
+    drag = null;
+  });
+  canvas.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  canvas.addEventListener('wheel', function(e){
+    e.preventDefault();
+    sph.r = Math.max(55, Math.min(900, sph.r * (1 + Math.sign(e.deltaY)*0.12)));
+  }, {passive:false});
+  var pinch = null;
+  canvas.addEventListener('touchmove', function(e){
+    if (e.touches.length!==2) return;
+    var d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+                       e.touches[0].clientY-e.touches[1].clientY);
+    if (pinch) sph.r = Math.max(55, Math.min(900, sph.r * pinch/d));
+    pinch = d;
+  }, {passive:true});
+  canvas.addEventListener('touchend', function(){ pinch = null; });
+
+  var ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  function pick(e){
+    var rect = canvas.getBoundingClientRect();
+    ndc.x = ((e.clientX-rect.left)/rect.width)*2-1;
+    ndc.y = -((e.clientY-rect.top)/rect.height)*2+1;
+    ray.setFromCamera(ndc, camera);
+    var hits = ray.intersectObjects(groups[current].userData.parts.build.children, false);
+    if (!hits.length) return;
+    var p = hits[0].point, best = null, bd = 1e9, byN = groups[current].userData.byN;
+    Object.keys(byN).forEach(function(n){
+      var o = byN[n], d = Math.pow(o.x-p.x,2)+Math.pow(-o.y-p.z,2);
+      if (d < bd){ bd = d; best = n; }
+    });
+    if (best !== null) flyTo(Number(best));
+  }
+
+  function resize(){
+    var w = innerWidth, h = innerHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect = w/h; camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize);
+  resize(); setVariant('A');
+
+  (function loop(now){
+    requestAnimationFrame(loop);
+    if (anim) anim(now||0);
+    if (orbiting && !drag) sph.theta -= 0.0016;
+    applyCam();
+    renderer.render(scene, camera);
+  })();
+})();
+</script>
