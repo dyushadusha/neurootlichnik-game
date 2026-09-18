@@ -705,8 +705,9 @@ def build(frame, variant='A'):
     # тропа не ложится на проезды, парковки, дорожки и здания
     hard_for_trails = unary_union(list(roads) + list(lots) + list(paths) +
                                   [i['whole'] for i in items]).buffer(1.2)
+    trail_bound = site.buffer(-3.0)        # тропа не подходит к границе ближе 3 м
     for tr in trail_src:
-        g = band(tr, C.TRAIL_W).difference(hard_for_trails)
+        g = band(tr, C.TRAIL_W).intersection(trail_bound).difference(hard_for_trails)
         for q in (g.geoms if g.geom_type.startswith('Multi') else [g]):
             if not q.is_empty and q.area > 6.0:
                 trails.append(q)

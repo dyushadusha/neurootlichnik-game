@@ -85,6 +85,8 @@
                  font-variant-numeric:tabular-nums;}
 #bor495 .bor-tep div b{color:var(--ink); font-weight:600;}
 
+#bor495 .bor-compass{position:absolute; left:50%; transform:translateX(-50%);
+                     top:16px; z-index:5; padding:4px 4px 0; line-height:0;}
 #bor495 .bor-readout{position:absolute; left:50%; transform:translateX(-50%);
                      bottom:16px; z-index:6; padding:8px 14px; font-size:12.5px;
                      pointer-events:none; opacity:0; transition:opacity .18s;}
@@ -96,6 +98,7 @@
 @media (max-width:760px){
   #bor495{--bor-height:88vh;}
   #bor495 .bor-legend, #bor495 .bor-hint{display:none;}
+  #bor495 .bor-compass{top:78px;}
   #bor495 .bor-title{left:8px; right:8px; max-width:none; padding:9px 12px;}
   #bor495 .bor-title h1{font-size:15px;}
   #bor495 .bor-sub{display:none;}

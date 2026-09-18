@@ -35,6 +35,9 @@
     }
     var lastK = fitK();
 
+    var needle = root.querySelector('.bor-needle');
+    var needleLabel = root.querySelector('.bor-needle-label');
+
     function applyCam(){
       var r = sph.r, p = Math.max(0.12, Math.min(1.53, sph.phi));
       camera.position.set(
@@ -42,6 +45,12 @@
         target.y + r*Math.cos(p),
         target.z + r*Math.sin(p)*Math.cos(sph.theta));
       camera.lookAt(target);
+      if (needle){                       // север — минус Z сцены
+        var deg = sph.theta * 180 / Math.PI;
+        needle.setAttribute('transform', 'rotate(' + deg.toFixed(1) + ')');
+        needleLabel.setAttribute('transform',
+          'translate(0,-17) rotate(' + (-deg).toFixed(1) + ')');
+      }
     }
 
     // ------------------------------------------------------------- материалы --

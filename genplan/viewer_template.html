@@ -66,6 +66,9 @@
   #tep div{display:flex;justify-content:space-between;gap:12px;font-size:11.5px;
            color:var(--ink-soft);font-variant-numeric:tabular-nums;}
   #tep div b{color:var(--ink);font-weight:600;}
+  #compass{position:fixed;left:50%;transform:translateX(-50%);
+           top:calc(16px + env(safe-area-inset-top,0px));z-index:5;
+           padding:4px 4px 0;line-height:0;}
   #readout{position:fixed;left:50%;transform:translateX(-50%);
            bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;
            padding:8px 14px;font-size:12.5px;pointer-events:none;opacity:0;
@@ -76,6 +79,7 @@
         max-width:min(220px,calc(100vw - 32px));line-height:1.5;}
   @media (max-width:760px){
     #legend{display:none;} #hint{display:none;}
+    #compass{top:calc(78px + env(safe-area-inset-top,0px));}
     #title{left:8px;right:8px;max-width:none;padding:9px 12px;}
     #title h1{font-size:15px;} #title .sub{display:none;}
     #title .cad{margin-top:6px;padding-top:6px;font-size:10.5px;}
@@ -131,6 +135,21 @@
   <div id="tep"></div>
 </aside>
 
+<div id="compass" class="card" title="Направление на север">
+  <svg viewBox="-22 -22 44 44" width="44" height="44" aria-label="Север">
+    <circle cx="0" cy="0" r="17" fill="none" stroke="var(--line)" stroke-width="1"></circle>
+    <g id="needle">
+      <polygon points="0,-13 4.6,3.5 0,0.8 -4.6,3.5" fill="var(--accent)"></polygon>
+      <polygon points="0,13 4.6,-3.5 0,-0.8 -4.6,-3.5" fill="none"
+               stroke="var(--ink-soft)" stroke-width="1"></polygon>
+      <g id="needleLabel" transform="translate(0,-17)">
+        <text x="0" y="3" text-anchor="middle" font-size="9.5" font-weight="600"
+              fill="var(--ink)">С</text>
+      </g>
+    </g>
+  </svg>
+</div>
+
 <div id="readout" class="card"></div>
 <div id="hint" class="card">Тянуть — поворот · колесо — приближение · Shift+тянуть — сдвиг. С телефона: один палец — поворот, два — сдвиг и щипок. Клик по объекту — подлететь.</div>
 
@@ -163,6 +182,9 @@
   }
   var lastK = fitK();
 
+  var needle = document.getElementById('needle');
+  var needleLabel = document.getElementById('needleLabel');
+
   function applyCam(){
     var r = sph.r, p = Math.max(0.12, Math.min(1.53, sph.phi));
     camera.position.set(
@@ -170,6 +192,12 @@
       target.y + r*Math.cos(p),
       target.z + r*Math.sin(p)*Math.cos(sph.theta));
     camera.lookAt(target);
+    if (needle){                       // север — минус Z сцены
+      var deg = sph.theta * 180 / Math.PI;
+      needle.setAttribute('transform', 'rotate(' + deg.toFixed(1) + ')');
+      needleLabel.setAttribute('transform',
+        'translate(0,-17) rotate(' + (-deg).toFixed(1) + ')');
+    }
   }
 
   // ------------------------------------------------------------- материалы --

@@ -60,6 +60,21 @@ HTML = '''<!-- Просмотрщик генплана «БОР 495». Вста�
     <div class="bor-tep"></div>
   </aside>
 
+  <div class="bor-compass bor-card" title="Направление на север">
+    <svg viewBox="-22 -22 44 44" width="44" height="44" aria-label="Север">
+      <circle cx="0" cy="0" r="17" fill="none" stroke="var(--line)" stroke-width="1"></circle>
+      <g class="bor-needle">
+        <polygon points="0,-13 4.6,3.5 0,0.8 -4.6,3.5" fill="var(--accent)"></polygon>
+        <polygon points="0,13 4.6,-3.5 0,-0.8 -4.6,-3.5" fill="none"
+                 stroke="var(--ink-soft)" stroke-width="1"></polygon>
+        <g class="bor-needle-label" transform="translate(0,-17)">
+          <text x="0" y="3" text-anchor="middle" font-size="9.5" font-weight="600"
+                fill="var(--ink)">С</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
   <div class="bor-readout bor-card"></div>
   <div class="bor-hint bor-card">Тянуть — поворот · колесо — приближение ·
     Shift+тянуть — сдвиг. С телефона: один палец — поворот, два — сдвиг и щипок.
@@ -154,6 +169,8 @@ CSS = '''/* Просмотрщик генплана «БОР 495».
                  font-variant-numeric:tabular-nums;}
 #bor495 .bor-tep div b{color:var(--ink); font-weight:600;}
 
+#bor495 .bor-compass{position:absolute; left:50%; transform:translateX(-50%);
+                     top:16px; z-index:5; padding:4px 4px 0; line-height:0;}
 #bor495 .bor-readout{position:absolute; left:50%; transform:translateX(-50%);
                      bottom:16px; z-index:6; padding:8px 14px; font-size:12.5px;
                      pointer-events:none; opacity:0; transition:opacity .18s;}
@@ -165,6 +182,7 @@ CSS = '''/* Просмотрщик генплана «БОР 495».
 @media (max-width:760px){
   #bor495{--bor-height:88vh;}
   #bor495 .bor-legend, #bor495 .bor-hint{display:none;}
+  #bor495 .bor-compass{top:78px;}
   #bor495 .bor-title{left:8px; right:8px; max-width:none; padding:9px 12px;}
   #bor495 .bor-title h1{font-size:15px;}
   #bor495 .bor-sub{display:none;}
@@ -347,6 +365,10 @@ def adapt(js):
     for name in ('expl', 'tep', 'stalls', 'variants', 'layers', 'views', 'readout'):
         js = js.replace("document.getElementById('%s')" % name,
                         "root.querySelector('.bor-%s')" % name)
+    js = js.replace("document.getElementById('needleLabel')",
+                    "root.querySelector('.bor-needle-label')")
+    js = js.replace("document.getElementById('needle')",
+                    "root.querySelector('.bor-needle')")
     js = js.replace("b.className = 'item';", "b.className = 'bor-item';")
     js = js.replace("'<span class=\"n\">'", "'<span class=\"bor-n\">'")
     js = js.replace("'</span><span class=\"s\">'", "'</span><span class=\"bor-s\">'")

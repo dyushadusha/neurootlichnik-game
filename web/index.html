@@ -52,6 +52,21 @@
     <div class="bor-tep"></div>
   </aside>
 
+  <div class="bor-compass bor-card" title="Направление на север">
+    <svg viewBox="-22 -22 44 44" width="44" height="44" aria-label="Север">
+      <circle cx="0" cy="0" r="17" fill="none" stroke="var(--line)" stroke-width="1"></circle>
+      <g class="bor-needle">
+        <polygon points="0,-13 4.6,3.5 0,0.8 -4.6,3.5" fill="var(--accent)"></polygon>
+        <polygon points="0,13 4.6,-3.5 0,-0.8 -4.6,-3.5" fill="none"
+                 stroke="var(--ink-soft)" stroke-width="1"></polygon>
+        <g class="bor-needle-label" transform="translate(0,-17)">
+          <text x="0" y="3" text-anchor="middle" font-size="9.5" font-weight="600"
+                fill="var(--ink)">С</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
   <div class="bor-readout bor-card"></div>
   <div class="bor-hint bor-card">Тянуть — поворот · колесо — приближение ·
     Shift+тянуть — сдвиг. С телефона: один палец — поворот, два — сдвиг и щипок.
