@@ -470,19 +470,15 @@ def frame_tris(poly, z0, h, mullion=2.2, t=0.12):
     return tris
 
 
-def fence_tris(ring, h=2.1, step=2.6):
-    """Забор по периметру: столбы с шагом и два прогона."""
-    tris = []
-    pts = list(ring)
-    for a, b in zip(pts, pts[1:]):
-        seg = math.dist(a, b)
-        n = max(2, int(seg / step) + 1)
-        for i in range(n):
-            t = i / float(n - 1)
-            tris += _post(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, 0.09, h)
-        for z in (h - 0.18, h * 0.45):
-            tris += _beam(a, b, z, 0.05, 0.14)
-    return tris
+def fence_wall(ring, gaps=(), h=2.2, t=0.30):
+    """Забор единой стеной по периметру с разрывами в местах въездов.
+    gaps — список (точка, ширина) в плане."""
+    from shapely.geometry import LineString, Point as _P
+    line = LineString(ring)
+    wall = line.buffer(t / 2.0, cap_style=2, join_style=2)
+    for pt, wgap in gaps:
+        wall = wall.difference(_P(pt).buffer(wgap / 2.0))
+    return wall
 
 
 def lamp_tris(x, y, h=6.0, kind='road'):

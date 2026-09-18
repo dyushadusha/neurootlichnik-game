@@ -141,6 +141,48 @@ def ring_line(frame, uv, radius):
     return Point(x, y).buffer(radius, 64).exterior
 
 
+def parking_along(frame, spec, items):
+    """Парковочная зона вдоль фасада здания: один ряд мест и проезд 6 м,
+    длинное узкое пятно, развёрнутое по зданию."""
+    host = next((i for i in items if i['n'] == spec['along']), None)
+    if host is None:
+        return None
+    a = math.radians(host['angle'])
+    ex = (math.cos(a), math.sin(a))
+    ey = (-math.sin(a), math.cos(a))
+    hull = host['whole'].convex_hull
+    c = hull.centroid
+    pts = list(hull.exterior.coords)
+    du = [(x - c.x) * ex[0] + (y - c.y) * ex[1] for x, y in pts]
+    dv = [(x - c.x) * ey[0] + (y - c.y) * ey[1] for x, y in pts]
+    half_v = max(abs(min(dv)), abs(max(dv)))
+    sw, sl = C.PARK_STALL
+    n = spec['count']
+    L = n * sw
+    depth = sl + C.AISLE_W
+    sgn = 1.0 if spec.get('side', 'front') == 'back' else -1.0
+    off = half_v + spec.get('gap', 8.0) + depth / 2.0
+    cx = c.x + ey[0] * off * sgn + ex[0] * spec.get('shift', 0.0)
+    cy = c.y + ey[1] * off * sgn + ex[1] * spec.get('shift', 0.0)
+
+    def place(g):
+        return translate(rotate(g, host['angle'], origin=(0, 0)), cx, cy)
+
+    lot = place(Polygon([(-L / 2 - 1.5, -depth / 2 - 0.8), (L / 2 + 1.5, -depth / 2 - 0.8),
+                         (L / 2 + 1.5, depth / 2 + 0.8), (-L / 2 - 1.5, depth / 2 + 0.8)]))
+    stalls = []
+    row_y = -depth / 2 + sl / 2 if sgn < 0 else depth / 2 - sl / 2
+    for i in range(n):
+        dx = -L / 2 + sw * (i + 0.5)
+        for lx in (dx - sw / 2, dx + sw / 2):
+            stalls.append(place(Polygon([(lx - 0.06, row_y - sl / 2), (lx + 0.06, row_y - sl / 2),
+                                         (lx + 0.06, row_y + sl / 2), (lx - 0.06, row_y + sl / 2)])))
+        ey_line = row_y - sl / 2 if sgn < 0 else row_y + sl / 2
+        stalls.append(place(Polygon([(dx - sw / 2, ey_line - 0.06), (dx + sw / 2, ey_line - 0.06),
+                                     (dx + sw / 2, ey_line + 0.06), (dx - sw / 2, ey_line + 0.06)])))
+    return lot, stalls, n
+
+
 def parking_lot(frame, spec):
     """Парковочная зона: ряды машиномест 2,5x5,3 с проездом 6 м."""
     sw, sl = C.PARK_STALL
@@ -404,8 +446,12 @@ def path_network(frame, items, ctx):
                            for i in items]).buffer(0.2)
 
     axes = [LineString(smooth([frame.xy(u, v) for u, v in C.SPINE]))]
-    for uv, r in C.RINGS:
-        axes.append(ring_line(frame, uv, r))
+    for n_obj, rad in C.RING_AROUND:      # кольцо строго вокруг объекта
+        host = next((i for i in items if i['n'] == n_obj), None)
+        if host is None:
+            continue
+        c = host['whole'].centroid
+        axes.append(Point(c.x, c.y).buffer(rad, 64).exterior)
     trunk = unary_union(axes + [ctx['lane'], ctx['apron']])
 
     for it in items:                      # отвод от сети ко входу
@@ -509,7 +555,8 @@ def build(frame, variant='A'):
     for it in items:
         f = it['frame']
         it['center'] = f.xy(*it['uv'])
-        it['angle'] = f.angle(*it['uv']) + it.get('rot', 0.0)
+        it['angle'] = (it['fix_angle'] if it.get('fix_angle') is not None
+                       else f.angle(*it['uv']) + it.get('rot', 0.0))
         materialize(f, it)
 
     roads = [road_band(west, C.ENTRY_DRIVE, C.ROAD_W),
@@ -572,11 +619,34 @@ def build(frame, variant='A'):
         if not moved:
             break
 
+    for it in items:                      # спутники: открытый корт у падел-центра
+        if not it.get('anchor_to'):
+            continue
+        host = next((h for h in items if h['n'] == it['anchor_to']), None)
+        if host is None:
+            continue
+        a = math.radians(host['angle'])
+        du, dv = it['anchor_off']
+        it['center'] = (host['center'][0] + du * math.cos(a) - dv * math.sin(a),
+                        host['center'][1] + du * math.sin(a) + dv * math.cos(a))
+        it['angle'] = host['angle']
+        materialize(it['frame'], it)
+
     lots, stalls, nstall = [], [], 0
     obst = [i['poly'] for i in items if i['kind'] == 'building'] + list(roads)
     for spec in C.PARKING:
-        lot, st, n = parking_lot(west, spec)
-        d = _clear_of(lot, obst, site.buffer(-1.0))   # карман отодвигается от проезда
+        if spec.get('along'):
+            res = parking_along(west, spec, items)
+            if res is None:
+                continue
+            lot, st, n = res
+            host_poly = next((i['whole'] for i in items if i['n'] == spec['along']), None)
+            obs = [o for o in obst if host_poly is None or not o.equals(host_poly)]
+            obs = [i['whole'] for i in items if i['n'] != spec['along']] + list(roads)
+            d = _clear_of(lot, obs, site.buffer(-1.0), clearance=2.0)
+        else:
+            lot, st, n = parking_lot(west, spec)
+            d = _clear_of(lot, obst, site.buffer(-1.0))
         lots.append(translate(lot, *d))
         stalls += [translate(x, *d) for x in st]
         nstall += n
@@ -603,6 +673,19 @@ def build(frame, variant='A'):
         if not g.is_empty:
             trails.append(g)
 
+    merged_roads = unary_union(roads).buffer(1.4, join_style=1).buffer(-1.4, join_style=1)
+    roads = [merged_roads] if not merged_roads.is_empty else roads
+
+    # забор сплошной стеной с разрывами на въездах
+    ring = list(site.buffer(-0.6).exterior.coords)
+    gaps = []
+    for ax in road_axes:
+        inter = ax.intersection(site.buffer(-0.6).exterior)
+        for g in (inter.geoms if hasattr(inter, 'geoms') else [inter]):
+            if not g.is_empty and g.geom_type == 'Point':
+                gaps.append(((g.x, g.y), C.ROAD_W + 6.0))
+    fence = [model3d.fence_wall(ring, gaps)]
+
     occupied = unary_union([i['whole'] for i in items] + lots).buffer(1.0)
     furn = furniture(road_axes, path_axes, occupied, site.buffer(-2.0))
     for lot in lots:                          # освещение парковочных зон
@@ -617,7 +700,7 @@ def build(frame, variant='A'):
         unary_union(roads + paths + lots).buffer(2.5)).difference(built)
     return dict(items=items, roads=roads, paths=paths, lots=lots, stalls=stalls,
                 nstall=nstall, green=green, hard=hard, inner=inner, furn=furn,
-                trails=trails,
+                trails=trails, fence=fence,
                 west=west, east=east, variant=variant)
 
 
@@ -804,8 +887,9 @@ def draw_part(md, t, sp, it):
         md.prism(rim, '07 Террасы и настилы', 0.0, 0.4)
         md.prism(sp['poly'], '10 Вода', -0.4, 0.35)
     elif t == 'tub':
-        md.prism(sp['poly'].buffer(0.12), '14 Колонны, трубы', 0.0, sp['h'])
-        md.prism(sp['poly'], '10 Вода', sp['h'] - 0.25, 0.2)
+        z0 = sp.get('z0', 0.0)
+        md.prism(sp['poly'].buffer(0.12), '14 Колонны, трубы', z0, sp['h'])
+        md.prism(sp['poly'], '10 Вода', z0 + sp['h'] - 0.25, 0.2)
     elif t == 'equip':
         md.prism(sp['poly'], '16 Оборудование', 0.0, sp.get('h', 1.0))
     elif t == 'entrance':
@@ -831,8 +915,8 @@ def to_3dm(frame, m, path):
     md.curve(frame.poly, '01 Граница участка')
     md.curve(m['inner'], '02 Линия отступа')
 
-    fence = list(frame.poly.buffer(-0.5).exterior.coords)
-    md.tris(model3d.fence_tris(fence, 2.1), '03 Забор')
+    for g in m.get('fence', []):
+        md.prism(g, '03 Забор', 0.0, 2.2)
 
     for g in m['roads']:
         md.prism(g, '04 Проезды', -0.12, 0.14)

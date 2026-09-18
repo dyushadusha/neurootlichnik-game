@@ -24,8 +24,7 @@ def poly_json(g, tol=0.25, nd=2):
 
 def scene(frame, m, title):
     s = {'title': title, 'site': poly_json(frame.poly, 0.05),
-         'fence': [[round(x, 1), round(y, 1)]
-                   for x, y in frame.poly.buffer(-0.5).exterior.coords],
+         'fence': [p for g in m.get('fence', []) for p in poly_json(g, 0.05)],
          'slabs': [], 'water': [], 'vols': [], 'roofs': [], 'cyls': [], 'barrels': [],
          'glass': [], 'rails': [], 'lamps': [], 'benches': [],
          'equip': [], 'trees': [], 'labels': [], 'stalls': [],

@@ -93,6 +93,12 @@ def door(cx, y, w=1.6, t=0.44, h=2.3):
     return GLASS(box(cx - w / 2, y - t / 2, cx + w / 2, y + t / 2), 0.1, h)
 
 
+def tub_on_base(cx, cy, r, h=1.2):
+    """Чан на круглом основании — стоит на земле, а не висит."""
+    return [('plinth', dict(poly=Point(cx, cy).buffer(r + 0.45, 20), h=0.25)),
+            ('tub', dict(poly=Point(cx, cy).buffer(r, 18), h=h, z0=0.25))]
+
+
 def plinth(poly, h=0.7):
     return ('plinth', dict(poly=poly.buffer(0.4), h=h))
 
@@ -145,30 +151,25 @@ def admin(w, d):
 
 # ------------------------------------------------------------- ресторан -----
 def restaurant(w, d):
-    """По референсу: одноэтажный зал с высокими потолками под ПЛОСКОЙ кровлей
-    с тонким скруглённым выносом на пилонах, сплошное остекление, тёмный
-    верхний объём-вставка, входной блок с отдельным круглым навесом и
-    вывеской, терраса и пруд перед фасадом."""
-    hall = _stadium(w * 0.74, d * 0.56, r=d * 0.16)
-    hall = translate(hall, w * 0.12, d * 0.10)
-    entry = _stadium(w * 0.28, d * 0.36, r=d * 0.10)
-    entry = translate(entry, -w * 0.30, d * 0.06)
-    upper = _box(w * 0.16, d * 0.20, -w * 0.06, d * 0.16)
-    fy = d * 0.06 - d * 0.23
-    pil = cols_line(w * 0.15 - w * 0.28, fy - 0.8, w * 0.15 + w * 0.28, fy - 0.8, 8, 0.40)
+    """Одноэтажный зал с высокими потолками, прямоугольный в плане, плоская
+    кровля с ровным выносом на пилонах, сплошное остекление главного фасада,
+    тёмный верхний объём-вставка, терраса и пруд (референс)."""
+    hall = _stadium(w * 0.92, d * 0.62, r=d * 0.12)
+    hall = translate(hall, 0.0, d * 0.08)
+    upper = _box(w * 0.30, d * 0.22, -w * 0.18, d * 0.16)
+    fy = d * 0.08 - d * 0.31
+    pil = cols_line(-w * 0.42, fy - 0.8, w * 0.42, fy - 0.8, 11, 0.40)
     return [
-        V(hall, 6.6, 7.0, 'flat', over=2.4),
-        V(entry, 5.0, 5.4, 'flat', over=1.8),
-        V(upper, 8.6, 9.0, 'flat', over=0.5),             # тёмный верхний объём
+        V(hall, 6.6, 7.0, 'flat', over=2.2),
+        V(upper, 8.6, 9.0, 'flat', over=0.5),
         ('column', dict(pts=pil, h=6.6)),
-        win_band(w * 0.15 - w * 0.29, w * 0.15 + w * 0.29, fy + 0.15, z0=0.5, h=5.4),
-        win_band(-w * 0.37, -w * 0.19, -d * 0.12, z0=0.5, h=3.8),
-        GLASS(_box(w * 0.12, 0.3, -w * 0.28, -d * 0.16), 3.4, 0.9),   # вывеска
-        door(-w * 0.28, -d * 0.13, 2.4),
-        ('deck', dict(poly=_box(w * 0.66, d * 0.14, w * 0.15, fy - 2.2))),
-        steps(w * 0.20, -d * 0.34),
-        ('water', dict(poly=_oval(w * 0.50, d * 0.17, w * 0.12, -d * 0.52), rim=0.9)),
-        ENT(-w * 0.28, -d * 0.19),
+        win_band(-w * 0.43, w * 0.43, fy + 0.15, z0=0.5, h=5.4),
+        GLASS(_box(w * 0.14, 0.3, -w * 0.30, fy + 0.10), 3.4, 0.9),
+        door(w * 0.06, fy + 0.12, 2.6),
+        ('deck', dict(poly=_box(w * 0.92, d * 0.14, 0.0, fy - 2.2))),
+        steps(w * 0.20, fy - 4.2),
+        ('water', dict(poly=_oval(w * 0.56, d * 0.16, 0.0, d * 0.52), rim=0.9)),
+        ENT(w * 0.06, fy),
     ]
 
 def hotel(w, d):
@@ -226,7 +227,7 @@ def bath_petrovskaya(w, d):
         ('chimney', dict(poly=_box(1.4, 1.4, -w * 0.28, d * 0.26), h=9.4)),
         ('chimney', dict(poly=_box(1.1, 1.1, w * 0.25, d * 0.12), h=8.6)),
         ('water', dict(poly=Point(w * 0.10, d * 0.52).buffer(4.2, 32), rim=0.8)),
-        ('tub', dict(poly=Point(-w * 0.30, d * 0.44).buffer(1.15, 16), h=1.2)),
+        *tub_on_base(-w * 0.30, d * 0.44, 1.15),
         ('deck', dict(poly=_box(w * 0.52, d * 0.20, 0.0, d * 0.46))),
         ENT(-w * 0.11, fy),
     ]
@@ -257,7 +258,7 @@ def bath_log(w, d):
         steps(3.6, fy - d * 0.18),
         ('chimney', dict(poly=_box(0.9, 0.9, -w * 0.04, d * 0.26), h=7.9)),
         ('chimney', dict(poly=_box(0.9, 0.9, w * 0.26, d * 0.26), h=7.7)),
-        ('tub', dict(poly=Point(w * 0.26, d * 0.42).buffer(1.2, 16), h=1.2)),
+        *tub_on_base(w * 0.26, d * 0.42, 1.2),
         ('deck', dict(poly=_box(w * 0.46, d * 0.18, w * 0.10, d * 0.42))),
         ENT(-w * 0.32, -d * 0.19),
     ]
@@ -280,7 +281,7 @@ def bath_belaya(w, d):
         ('deck', dict(poly=por.buffer(0.3))),
         steps(3.0, fy - 2.8),
         ('chimney', dict(poly=_box(1.0, 1.0, w * 0.22, d * 0.24), h=7.6)),
-        ('tub', dict(poly=Point(-w * 0.24, d * 0.44).buffer(1.15, 16), h=1.2)),
+        *tub_on_base(-w * 0.24, d * 0.44, 1.15),
         ('deck', dict(poly=_box(w * 0.44, d * 0.18, 0.0, d * 0.44))),
         ENT(-w * 0.16, fy),
     ]
@@ -294,8 +295,8 @@ def bath_bochka(w, d):
     r = min(d * 0.19, w * 0.155)
     fy = -d * 0.27
     ver = _box(w * 0.56, d * 0.17, 0.0, fy - d * 0.09)
-    b1 = Point(-w * 0.37, -d * 0.04).buffer(r, 28)
-    b2 = Point(w * 0.37, -d * 0.04).buffer(r * 0.95, 28)
+    b1 = Point(-w * 0.34, -d * 0.16).buffer(r, 28)
+    b2 = Point(w * 0.34, -d * 0.16).buffer(r * 0.95, 28)
     return [
         plinth(core, 0.5),
         ('plinth', dict(poly=b1.buffer(0.35), h=0.55)),
@@ -312,7 +313,7 @@ def bath_bochka(w, d):
         ('deck', dict(poly=ver.buffer(0.35))),
         steps(3.4, fy - d * 0.19),
         steps(2.4, fy - d * 0.19),
-        ('tub', dict(poly=Point(0.0, d * 0.40).buffer(1.7, 20), h=1.3)),
+        *tub_on_base(0.0, d * 0.40, 1.7),
         ('deck', dict(poly=_box(w * 0.40, d * 0.16, 0.0, d * 0.38))),
         ENT(0.0, fy),
     ]
@@ -462,7 +463,7 @@ def cottage(w, d):
         ('deck', dict(poly=ver.buffer(0.35))),
         steps(3.2, fy - d * 0.19),
         ('chimney', dict(poly=_box(0.9, 0.9, -w * 0.18, d * 0.26), h=8.4)),
-        ('tub', dict(poly=Point(-w * 0.28, d * 0.42).buffer(1.1, 16), h=1.1)),
+        *tub_on_base(-w * 0.28, d * 0.42, 1.1),
         ('deck', dict(poly=_box(w * 0.40, d * 0.16, -w * 0.20, d * 0.42))),
         ENT(w * 0.33, -d * 0.19),
     ]
