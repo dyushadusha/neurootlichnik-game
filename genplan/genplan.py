@@ -579,12 +579,17 @@ def build(frame, variant='A'):
     # с юга к нему подходят два въезда. Контур задан в метрах по схеме.
     roads, road_axes, entry_polys = [], [], []
     ring_xy = getattr(C, 'RING_ROAD_XY', None)
+    if variant == 'A' and getattr(C, 'RING_ROAD_A_XY', None):
+        ring_xy = C.RING_ROAD_A_XY
     lane = None
     if ring_xy:
         roads.append(band(ring_xy, C.ROAD_W, closed=True))
         road_axes.append(LineString(smooth(ring_xy, closed=True)))
         lane = roads[0]
-    for drive in getattr(C, 'ENTRY_DRIVES_XY', []):
+    drives = getattr(C, 'ENTRY_DRIVES_XY', [])
+    if variant == 'A' and getattr(C, 'ENTRY_DRIVES_A_XY', None):
+        drives = C.ENTRY_DRIVES_A_XY
+    for drive in drives:
         g = band(drive, C.ROAD_W)
         entry_polys.append(g)
         roads.append(g)
@@ -857,14 +862,11 @@ def teп(frame, m):
     hard = unary_union(m['roads'] + m['paths'] + m['lots'] +
                        [s['poly'] for i in m['items'] for t, s in i['parts']
                         if t in ('deck', 'platform', 'court')]).difference(foot)
-    water = unary_union([s['poly'] for i in m['items'] for t, s in i['parts']
-                         if t in ('water', 'tub')])
-    green = site.difference(unary_union([foot, hard, water]))
+    green = site.difference(unary_union([foot, hard]))
     s = site.area
     return [('Площадь участка', s, 100.0),
             ('Застройка (здания)', foot.area, 100 * foot.area / s),
             ('Покрытия, террасы, площадки', hard.area, 100 * hard.area / s),
-            ('Вода (бассейны)', water.area, 100 * water.area / s),
             ('Озеленение / лес', green.area, 100 * green.area / s)]
 
 

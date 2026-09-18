@@ -28,7 +28,7 @@ def scene(frame, m, title):
          'slabs': [], 'water': [], 'vols': [], 'roofs': [], 'cyls': [], 'barrels': [],
          'glass': [], 'rails': [], 'lamps': [], 'benches': [],
          'equip': [], 'trees': [], 'labels': [], 'stalls': [],
-         'zones': [], 'stallCount': m['nstall'],
+         'stallCount': m['nstall'],
          'tep': [[n, round(a), round(p, 1)] for n, a, p in G.teп(frame, m)],
          'expl': [[r['n'], r['name'], round(r['area']), r['count']]
                   for r in G.explication(m)]}
@@ -117,11 +117,6 @@ def scene(frame, m, title):
 
     s['roofs'] = [round(v, 2) for tri in roof_tris for p in tri for v in p]
     s['wallfill'] = [round(v, 2) for tri in wall_tris for p in tri for v in p]
-
-    for name, color, uv in C.ZONES:
-        pts = [[round(x, 1), round(y, 1)] for x, y in
-               [frame.xy(u, v) for u, v in uv]]
-        s['zones'].append([name, color, pts])
 
     for t, sp in m.get('furn', []):
         if t == 'lamp':

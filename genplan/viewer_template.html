@@ -121,7 +121,6 @@
       <button data-layer="trees" aria-pressed="true">Лес</button>
       <button data-layer="labels" aria-pressed="true">Номера</button>
       <button data-layer="paving" aria-pressed="true">Покрытия</button>
-      <button data-layer="zones" aria-pressed="false">Зонирование</button>
     </div>
   </div>
 </nav>
@@ -133,7 +132,7 @@
 </aside>
 
 <div id="readout" class="card"></div>
-<div id="hint" class="card">Тянуть — поворот · колесо — приближение · Shift+тянуть или два пальца — сдвиг. Клик по объекту — подлететь.</div>
+<div id="hint" class="card">Тянуть — поворот · колесо — приближение · Shift+тянуть — сдвиг. С телефона: один палец — поворот, два — сдвиг и щипок. Клик по объекту — подлететь.</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script id="sceneData" type="application/json">/*__SCENE__*/</script>
@@ -145,7 +144,9 @@
 
   var canvas = document.getElementById('c');
   var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  var MOBILE = Math.min(innerWidth, innerHeight) < 760 ||
+               /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, MOBILE ? 1.5 : 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   var scene = new THREE.Scene();
@@ -288,8 +289,7 @@
   function buildVariant(key){
     var d = DATA[key], root = new THREE.Group();
     var parts = {trees:new THREE.Group(), labels:new THREE.Group(),
-                 paving:new THREE.Group(), build:new THREE.Group(),
-                 zones:new THREE.Group()};
+                 paving:new THREE.Group(), build:new THREE.Group()};
 
     d.site.forEach(function(p){ root.add(slab(p, 0.3, -0.3, M.site)); });
 
@@ -429,19 +429,6 @@
       byN[l[3]] = {x:l[0], y:l[1], h:l[2], name:l[4]};
     });
 
-    (d.zones||[]).forEach(function(z){
-      var sh = new THREE.Shape();
-      z[2].forEach(function(pt,i){ i ? sh.lineTo(pt[0],pt[1]) : sh.moveTo(pt[0],pt[1]); });
-      var geo = new THREE.ShapeGeometry(sh);
-      var mat = new THREE.MeshBasicMaterial({color:new THREE.Color(z[1]),
-                 transparent:true, opacity:0.32, side:THREE.DoubleSide,
-                 depthWrite:false});
-      var m = new THREE.Mesh(geo, mat);
-      m.rotation.x = -Math.PI/2; m.position.y = 0.55;
-      parts.zones.add(m);
-    });
-    parts.zones.visible = false;
-
     parts.trees.add(treeMesh(d.trees));
     Object.keys(parts).forEach(function(k){ root.add(parts[k]); });
     root.userData = {parts:parts, byN:byN, data:d};
@@ -459,7 +446,7 @@
   sun.position.set(SITE.x-190, 300, SITE.z-210);
   sun.target.position.copy(target);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
   var sc = sun.shadow.camera;
   sc.left=-330; sc.right=330; sc.top=330; sc.bottom=-330; sc.near=1; sc.far=1200;
   scene.add(sun); scene.add(sun.target);
@@ -511,13 +498,12 @@
     });
     document.getElementById('stalls').textContent = d.stallCount + ' м/м';
   }
-  var layers = {trees:true, labels:true, paving:true, zones:false};
+  var layers = {trees:true, labels:true, paving:true};
   function applyLayers(){
     var p = groups[current].userData.parts;
     p.trees.visible = layers.trees;
     p.labels.visible = layers.labels;
     p.paving.visible = layers.paving;
-    p.zones.visible = layers.zones;
   }
   document.getElementById('variants').addEventListener('click', function(e){
     var b = e.target.closest('button'); if (b) setVariant(b.dataset.v);
@@ -530,16 +516,19 @@
   });
 
   var orbiting = false;
-  var VIEWS = {axo:{r:350,theta:-0.9,phi:0.92}, plan:{r:400,theta:0,phi:0.14},
-               entry:{r:190,theta:-1.75,phi:1.30}};
+  // theta = 0 — камера южнее цели (ось z сцены смотрит на юг участка)
+  var VIEWS = {axo:  {r:350, theta:-0.9, phi:0.92},
+               plan: {r:400, theta:0.0,  phi:0.14},
+               entry:{r:185, theta:0.0,  phi:1.33, t:{x:114, z:140}, maxFit:1.15}};
   document.getElementById('views').addEventListener('click', function(e){
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.view==='orbit'){
       orbiting = !orbiting; b.setAttribute('aria-pressed', String(orbiting)); return;
     }
     var v = VIEWS[b.dataset.view];
-    target.set(SITE.x, 0, SITE.z);
-    tween({r: v.r * fitK(), theta: v.theta, phi: v.phi});
+    target.set(v.t ? v.t.x : SITE.x, 0, v.t ? v.t.z : SITE.z);
+    var k = v.maxFit ? Math.min(v.maxFit, fitK()) : fitK();
+    tween({r: v.r * k, theta: v.theta, phi: v.phi});
   });
   var anim = null;
   function tween(to){
@@ -565,41 +554,72 @@
   }
 
   // ------------------------------------------------------------- управление --
-  var drag = null;
+  // мышь: тянуть — поворот, Shift или правая кнопка — сдвиг, колесо — зум.
+  // палец: один — поворот, два — сдвиг и щипок.
+  var pts = new Map(), drag = null, gest = null;
+
+  function two(){
+    var a = Array.from(pts.values());
+    var dx = a[0].x - a[1].x, dy = a[0].y - a[1].y;
+    return {d: Math.hypot(dx, dy) || 1,
+            cx: (a[0].x + a[1].x) / 2, cy: (a[0].y + a[1].y) / 2};
+  }
+  function panBy(dx, dy){
+    var k = sph.r * 0.0016;
+    var si = Math.sin(sph.theta), co = Math.cos(sph.theta);
+    target.x -= (dx * co - dy * si) * k;
+    target.z += (dx * si + dy * co) * k;
+  }
+
   canvas.addEventListener('pointerdown', function(e){
-    canvas.setPointerCapture(e.pointerId);
-    drag = {x:e.clientX, y:e.clientY, pan:e.shiftKey||e.button===2, moved:0};
-  });
-  canvas.addEventListener('pointermove', function(e){
-    if (!drag) return;
-    var dx = e.clientX-drag.x, dy = e.clientY-drag.y;
-    drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx)+Math.abs(dy);
-    if (drag.pan){
-      var k = sph.r*0.0016;
-      var s = Math.sin(sph.theta), c = Math.cos(sph.theta);
-      target.x -= (dx*c - dy*s)*k; target.z += (dx*s + dy*c)*k;
-    } else {
-      sph.theta -= dx*0.005; sph.phi = Math.max(0.12, Math.min(1.53, sph.phi - dy*0.005));
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if (pts.size === 1){
+      drag = {x:e.clientX, y:e.clientY, pan:e.shiftKey || e.button === 2, moved:0};
+      gest = null;
+    } else if (pts.size === 2){
+      drag = null; gest = two();          // второй палец — переходим к жесту
     }
   });
-  canvas.addEventListener('pointerup', function(e){
-    if (drag && drag.moved < 6) pick(e);
-    drag = null;
+
+  canvas.addEventListener('pointermove', function(e){
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if (pts.size >= 2){
+      if (!gest) { gest = two(); return; }
+      var g = two();
+      sph.r = Math.max(55, Math.min(900, sph.r * gest.d / g.d));
+      panBy(g.cx - gest.cx, g.cy - gest.cy);
+      gest = g;
+      applyCam();
+      return;
+    }
+    if (!drag) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    drag.x = e.clientX; drag.y = e.clientY;
+    drag.moved += Math.abs(dx) + Math.abs(dy);
+    if (drag.pan) panBy(dx, dy);
+    else {
+      sph.theta -= dx * 0.005;
+      sph.phi = Math.max(0.12, Math.min(1.53, sph.phi - dy * 0.005));
+    }
   });
+
+  function release(e){
+    var had = pts.size;
+    pts.delete(e.pointerId);
+    if (pts.size < 2) gest = null;
+    if (had === 1 && drag && drag.moved < 10) pick(e);
+    if (pts.size === 0) drag = null;
+  }
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+
   canvas.addEventListener('contextmenu', function(e){ e.preventDefault(); });
   canvas.addEventListener('wheel', function(e){
     e.preventDefault();
-    sph.r = Math.max(55, Math.min(900, sph.r * (1 + Math.sign(e.deltaY)*0.12)));
+    sph.r = Math.max(55, Math.min(900, sph.r * (1 + Math.sign(e.deltaY) * 0.12)));
   }, {passive:false});
-  var pinch = null;
-  canvas.addEventListener('touchmove', function(e){
-    if (e.touches.length!==2) return;
-    var d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
-                       e.touches[0].clientY-e.touches[1].clientY);
-    if (pinch) sph.r = Math.max(55, Math.min(900, sph.r * pinch/d));
-    pinch = d;
-  }, {passive:true});
-  canvas.addEventListener('touchend', function(){ pinch = null; });
 
   var ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   function pick(e){
