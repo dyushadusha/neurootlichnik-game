@@ -559,10 +559,23 @@ def build(frame, variant='A'):
                        else f.angle(*it['uv']) + it.get('rot', 0.0))
         materialize(f, it)
 
-    roads = [road_band(west, C.ENTRY_DRIVE, C.ROAD_W),
-             road_band(west, C.ROW_LANE, C.ROAD_W)]
-    road_axes = [road_axis(west, C.ENTRY_DRIVE), road_axis(west, C.ROW_LANE)]
-    lane = roads[1]
+    # Главная дорога — замкнутое кольцо вокруг ядра комплекса,
+    # к нему с юга подходят два въезда.
+    roads, road_axes, entry_polys = [], [], []
+    ring_uv = getattr(C, 'RING_ROAD', None)
+    if ring_uv:
+        roads.append(road_band(west, ring_uv, C.ROAD_W, closed=True))
+        road_axes.append(road_axis(west, ring_uv, closed=True))
+        lane = roads[0]
+    else:
+        lane = None
+    for drive in getattr(C, 'ENTRY_DRIVES', None) or [C.ENTRY_DRIVE]:
+        g = road_band(west, drive, C.ROAD_W)
+        entry_polys.append(g)
+        roads.append(g)
+        road_axes.append(road_axis(west, drive))
+    if lane is None:
+        lane = entry_polys[0]
     roads += [road_band(west, r, C.DRIVE_W) for r in C.SPUR_ROADS]
     road_axes += [road_axis(west, r) for r in C.SPUR_ROADS]
     if variant == 'B':
@@ -633,6 +646,8 @@ def build(frame, variant='A'):
         materialize(it['frame'], it)
 
     lots, stalls, nstall = [], [], 0
+    # парковки комплекса не выходят за свою половину участка
+    park_bound = west.poly.buffer(2.0).intersection(site.buffer(-1.0))
     obst = [i['poly'] for i in items if i['kind'] == 'building'] + list(roads)
     for spec in C.PARKING:
         if spec.get('along'):
@@ -640,19 +655,17 @@ def build(frame, variant='A'):
             if res is None:
                 continue
             lot, st, n = res
-            host_poly = next((i['whole'] for i in items if i['n'] == spec['along']), None)
-            obs = [o for o in obst if host_poly is None or not o.equals(host_poly)]
-            obs = [i['whole'] for i in items if i['n'] != spec['along']] + list(roads)
-            d = _clear_of(lot, obs, site.buffer(-1.0), clearance=2.0)
+            obs = [i['whole'] for i in items] + list(roads) + lots
+            d = _clear_of(lot, obs, park_bound, clearance=2.0)
         else:
             lot, st, n = parking_lot(west, spec)
-            d = _clear_of(lot, obst, site.buffer(-1.0))
+            d = _clear_of(lot, obst + lots, park_bound)
         lots.append(translate(lot, *d))
         stalls += [translate(x, *d) for x in st]
         nstall += n
 
     kppg = [i['poly'] for i in items if i['n'] == 1]
-    blobs = [roads[0].buffer(C.PAVED_AROUND['drive'])]
+    blobs = [g.buffer(C.PAVED_AROUND['drive']) for g in entry_polys]
     blobs += [g.buffer(C.PAVED_AROUND['kpp']) for g in kppg]
     blobs += [l.buffer(C.PAVED_AROUND['parking']) for l in lots]
     apron = unary_union(blobs).buffer(1.2).buffer(-1.2).intersection(
