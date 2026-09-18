@@ -190,8 +190,12 @@ def parking_lot(frame, spec):
     aisle = C.AISLE_W if spec.get('aisle', True) else 0.0
     w = cols * sw
     d = rows * sl + aisle
-    x, y = frame.xy(*spec['uv'])
-    ang = frame.angle(*spec['uv']) + spec.get('rot', 0.0)
+    if spec.get('xy'):
+        x, y = spec['xy']
+        ang = spec.get('ang', 0.0)
+    else:
+        x, y = frame.xy(*spec['uv'])
+        ang = frame.angle(*spec['uv']) + spec.get('rot', 0.0)
 
     def place(g):
         return translate(rotate(g, ang, origin=(0, 0)), x, y)
@@ -330,7 +334,7 @@ def settle(frame, items, iters=600):
     заданной композицией точке. Так замысел сохраняется, а коллизии уходят."""
     movable = [i for i in items if not i.get('fixed')]
     for it in movable:
-        it['anchor'] = it['frame'].xy(*it['uv'])
+        it['anchor'] = it.get('place_xy') or it['frame'].xy(*it['uv'])
     for step_i in range(iters):
         k = 1.0 - step_i / float(iters)
         moved = 0.0
@@ -376,7 +380,7 @@ def _try_move(it, dx, dy, keep_gaps=None):
     a = it.get('anchor')
     if a is not None:                     # поводок: далеко от замысла не уходим
         c = cand.centroid
-        if math.hypot(c.x - a[0], c.y - a[1]) > LEASH:
+        if math.hypot(c.x - a[0], c.y - a[1]) > it.get('leash', LEASH):
             cur = it['poly'].centroid
             if math.hypot(c.x - a[0], c.y - a[1]) > math.hypot(cur.x - a[0], cur.y - a[1]):
                 return 0.0
@@ -445,7 +449,7 @@ def path_network(frame, items, ctx):
                                                  'court', 'water')])
                            for i in items]).buffer(0.2)
 
-    axes = [LineString(smooth([frame.xy(u, v) for u, v in C.SPINE]))]
+    axes = [LineString(smooth(C.SPINE_XY))]
     for n_obj, rad in C.RING_AROUND:      # кольцо строго вокруг объекта
         host = next((i for i in items if i['n'] == n_obj), None)
         if host is None:
@@ -552,42 +556,47 @@ def build(frame, variant='A'):
         fit_size(it)
     if getattr(C, 'BATH_COLUMN', None):
         place_column(west, [i for i in items if i['frame'] is west], C.BATH_COLUMN)
+    place = getattr(C, 'PLACE', {})
     for it in items:
         f = it['frame']
-        it['center'] = f.xy(*it['uv'])
-        it['angle'] = (it['fix_angle'] if it.get('fix_angle') is not None
-                       else f.angle(*it['uv']) + it.get('rot', 0.0))
+        if it['n'] in place:                 # точка и разворот заданы по схеме
+            x, y, ang = place[it['n']]
+            it['center'] = (x, y)
+            it['angle'] = ang
+            it['place_xy'] = (x, y)
+            it['leash'] = 8.0          # от точки схемы объект отходит не дальше
+            it['no_align'] = True      # разворот задан схемой
+        else:
+            it['center'] = f.xy(*it['uv'])
+            it['angle'] = (it['fix_angle'] if it.get('fix_angle') is not None
+                           else f.angle(*it['uv']) + it.get('rot', 0.0))
         materialize(f, it)
 
-    # Главная дорога — замкнутое кольцо вокруг ядра комплекса,
-    # к нему с юга подходят два въезда.
+    # Главная дорога — замкнутое кольцо вокруг всей застройки,
+    # с юга к нему подходят два въезда. Контур задан в метрах по схеме.
     roads, road_axes, entry_polys = [], [], []
-    ring_uv = getattr(C, 'RING_ROAD', None)
-    if ring_uv:
-        roads.append(road_band(west, ring_uv, C.ROAD_W, closed=True))
-        road_axes.append(road_axis(west, ring_uv, closed=True))
+    ring_xy = getattr(C, 'RING_ROAD_XY', None)
+    lane = None
+    if ring_xy:
+        roads.append(band(ring_xy, C.ROAD_W, closed=True))
+        road_axes.append(LineString(smooth(ring_xy, closed=True)))
         lane = roads[0]
-    else:
-        lane = None
-    for drive in getattr(C, 'ENTRY_DRIVES', None) or [C.ENTRY_DRIVE]:
-        g = road_band(west, drive, C.ROAD_W)
+    for drive in getattr(C, 'ENTRY_DRIVES_XY', []):
+        g = band(drive, C.ROAD_W)
         entry_polys.append(g)
         roads.append(g)
-        road_axes.append(road_axis(west, drive))
+        road_axes.append(LineString(smooth(drive)))
     if lane is None:
         lane = entry_polys[0]
-    roads += [road_band(west, r, C.DRIVE_W) for r in C.SPUR_ROADS]
-    road_axes += [road_axis(west, r) for r in C.SPUR_ROADS]
+    for r in getattr(C, 'SPUR_ROADS_XY', []):
+        roads.append(band(r, C.DRIVE_W))
+        road_axes.append(LineString(smooth(r)))
     if variant == 'B':
-        roads.append(road_band(east, C.COTTAGE_LANE, C.DRIVE_W))
-        road_axes.append(road_axis(east, C.COTTAGE_LANE))
-        roads += [road_band(east, r, C.DRIVE_W) for r in C.COTTAGE_SPURS]
-        road_axes += [road_axis(east, r) for r in C.COTTAGE_SPURS]
-        for r in getattr(C, 'COTTAGE_LINK', []):
-            roads.append(road_band(east, r, C.DRIVE_W))
-            road_axes.append(road_axis(east, r))
+        for r in getattr(C, 'COTTAGE_SPURS_XY', []):
+            roads.append(band(r, C.DRIVE_W))
+            road_axes.append(LineString(smooth(r)))
 
-    spine_axis = LineString(smooth([west.xy(u, v) for u, v in C.SPINE]))
+    spine_axis = LineString(smooth(C.SPINE_XY))
     align_to_roads(items, road_axes + [spine_axis])   # параллельно дорогам
     for it in items:
         materialize(it['frame'], it)
@@ -595,8 +604,11 @@ def build(frame, variant='A'):
     inner = site.buffer(-C.SETBACK)
     for it in items:                      # объект не выходит за свою половину
         half = (west if it['frame'] is west else east).poly.buffer(1.5)
+        if it.get('place_xy'):
+            half = site.buffer(1.5)
         it['bound'] = half.intersection(site.buffer(-setback_of(it)))
-        pull_inside(it, it['bound'])
+        if not (it.get('fixed') or it.get('place_xy')):
+            pull_inside(it, it['bound'])
     settle(frame, items)
     for it in items:
         materialize(it['frame'], it)
@@ -647,7 +659,7 @@ def build(frame, variant='A'):
 
     lots, stalls, nstall = [], [], 0
     # парковки комплекса не выходят за свою половину участка
-    park_bound = west.poly.buffer(2.0).intersection(site.buffer(-1.0))
+    park_bound = site.buffer(-1.0)
     obst = [i['poly'] for i in items if i['kind'] == 'building'] + list(roads)
     for spec in C.PARKING:
         if spec.get('along'):
@@ -659,7 +671,8 @@ def build(frame, variant='A'):
             d = _clear_of(lot, obs, park_bound, clearance=2.0)
         else:
             lot, st, n = parking_lot(west, spec)
-            d = _clear_of(lot, obst + lots, park_bound)
+            d = ((0.0, 0.0) if spec.get('fixed')
+                 else _clear_of(lot, obst + lots, park_bound))
         lots.append(translate(lot, *d))
         stalls += [translate(x, *d) for x in st]
         nstall += n
