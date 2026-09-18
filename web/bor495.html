@@ -1,0 +1,48 @@
+<!-- Просмотрщик генплана «БОР 495». Вставьте этот блок в страницу. -->
+<div id="bor495">
+  <div class="bor-stage"><canvas class="bor-canvas"></canvas></div>
+
+  <section class="bor-title bor-card">
+    <h1>БОР&nbsp;495 — генеральный план</h1>
+    <div class="bor-sub bor-variant-name">Загородный банный комплекс. Вариант 1</div>
+    <div class="bor-cad">50:20:0041009:120 · 54&nbsp;720 м² · периметр 948 м</div>
+  </section>
+
+  <nav class="bor-tools">
+    <div class="bor-group bor-card">
+      <h2>Вариант</h2>
+      <div class="bor-row bor-variants">
+        <button type="button" data-v="A" aria-pressed="true">1 · лес</button>
+        <button type="button" data-v="B" aria-pressed="false">2 · дома</button>
+      </div>
+    </div>
+    <div class="bor-group bor-card">
+      <h2>Вид</h2>
+      <div class="bor-row bor-views">
+        <button type="button" data-view="axo">Аксонометрия</button>
+        <button type="button" data-view="plan">План</button>
+        <button type="button" data-view="entry">От въезда</button>
+        <button type="button" data-view="orbit" aria-pressed="false">Облёт</button>
+      </div>
+    </div>
+    <div class="bor-group bor-card">
+      <h2>Слои</h2>
+      <div class="bor-row bor-layers">
+        <button type="button" data-layer="trees" aria-pressed="true">Лес</button>
+        <button type="button" data-layer="labels" aria-pressed="true">Номера</button>
+        <button type="button" data-layer="paving" aria-pressed="true">Покрытия</button>
+      </div>
+    </div>
+  </nav>
+
+  <aside class="bor-legend bor-card">
+    <header><h2>Экспликация</h2><span class="bor-s bor-stalls"></span></header>
+    <div class="bor-expl"></div>
+    <div class="bor-tep"></div>
+  </aside>
+
+  <div class="bor-readout bor-card"></div>
+  <div class="bor-hint bor-card">Тянуть — поворот · колесо — приближение ·
+    Shift+тянуть — сдвиг. С телефона: один палец — поворот, два — сдвиг и щипок.
+    Клик по объекту — подлететь.</div>
+</div>

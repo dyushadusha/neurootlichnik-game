@@ -1,0 +1,110 @@
+/* Просмотрщик генплана «БОР 495».
+   Все правила ограничены контейнером #bor495 и со стилями сайта не пересекаются.
+   Высота задаётся переменной --bor-height (по умолчанию 78vh, минимум 460px). */
+
+#bor495{
+  --bor-height:78vh;
+  --ink:#20231c; --ink-soft:#5c6152; --line:#d6d8c8; --panel:#fbfaf4;
+  --panel-2:#f2f1e6; --accent:#b4761f; --accent-soft:#e8d7b6;
+  --sky:#cfd8d0; --shadow:0 10px 30px rgba(32,35,28,.16);
+
+  position:relative; overflow:hidden; isolation:isolate;
+  height:max(var(--bor-height), 460px);
+  background:var(--sky); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:14px; line-height:1.4;
+}
+@media (prefers-color-scheme: dark){
+  #bor495:not([data-theme="light"]){
+    --ink:#eceade; --ink-soft:#a2a894; --line:#3a3f33; --panel:#20241d;
+    --panel-2:#272c22; --accent:#e0a54a; --accent-soft:#4a3f26;
+    --sky:#161a15; --shadow:0 10px 34px rgba(0,0,0,.5);
+  }
+}
+#bor495[data-theme="dark"]{
+  --ink:#eceade; --ink-soft:#a2a894; --line:#3a3f33; --panel:#20241d;
+  --panel-2:#272c22; --accent:#e0a54a; --accent-soft:#4a3f26;
+  --sky:#161a15; --shadow:0 10px 34px rgba(0,0,0,.5);
+}
+
+#bor495 *{box-sizing:border-box;}
+#bor495 .bor-stage{position:absolute; inset:0;}
+#bor495 .bor-canvas{display:block; width:100%; height:100%; touch-action:none;}
+#bor495 .bor-card{background:var(--panel); border:1px solid var(--line);
+                  border-radius:4px; box-shadow:var(--shadow);}
+
+#bor495 .bor-title{position:absolute; left:16px; top:16px; z-index:5;
+                   padding:14px 18px; max-width:min(360px, calc(100% - 32px));}
+#bor495 .bor-title h1{font-family:Spectral,Georgia,serif; font-weight:600;
+                      font-size:20px; margin:0 0 2px; letter-spacing:.01em;
+                      line-height:1.2; color:var(--ink);}
+#bor495 .bor-sub{font-size:12px; color:var(--ink-soft); line-height:1.45;}
+#bor495 .bor-cad{margin-top:8px; font-size:11px; color:var(--ink-soft);
+                 border-top:1px solid var(--line); padding-top:8px;
+                 font-variant-numeric:tabular-nums;}
+
+#bor495 .bor-tools{position:absolute; right:16px; top:16px; z-index:5;
+                   display:flex; flex-direction:column; gap:8px;
+                   max-width:min(230px, calc(100% - 32px));}
+#bor495 .bor-group{padding:10px 12px;}
+#bor495 .bor-group h2{font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+                      color:var(--ink-soft); margin:0 0 8px; font-weight:600;}
+#bor495 .bor-row{display:flex; flex-wrap:wrap; gap:6px;}
+
+#bor495 button{font:inherit; font-size:12px; padding:6px 10px; border-radius:3px;
+               cursor:pointer; border:1px solid var(--line); background:var(--panel-2);
+               color:var(--ink); transition:background .15s, border-color .15s;
+               -webkit-tap-highlight-color:transparent;}
+#bor495 button:hover{border-color:var(--accent);}
+#bor495 button[aria-pressed="true"]{background:var(--accent-soft);
+               border-color:var(--accent); color:var(--ink); font-weight:600;}
+#bor495 button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+#bor495 .bor-legend{position:absolute; left:16px; bottom:16px; z-index:5;
+                    width:min(330px, calc(100% - 32px)); max-height:60%;
+                    display:flex; flex-direction:column;}
+#bor495 .bor-legend header{display:flex; align-items:center;
+                    justify-content:space-between; padding:10px 14px;
+                    border-bottom:1px solid var(--line);}
+#bor495 .bor-legend h2{font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+                    margin:0; color:var(--ink-soft); font-weight:600;}
+#bor495 .bor-expl{overflow:auto; padding:6px 6px 10px;}
+#bor495 .bor-item{display:grid; grid-template-columns:26px 1fr auto; gap:8px;
+                  align-items:baseline; padding:4px 8px; border-radius:3px;
+                  cursor:pointer; font-size:12px; background:none; border:none;
+                  width:100%; text-align:left; color:var(--ink);}
+#bor495 .bor-item:hover{background:var(--panel-2); border-color:transparent;}
+#bor495 .bor-item .bor-n{font-variant-numeric:tabular-nums; color:var(--accent);
+                         font-weight:600;}
+#bor495 .bor-item .bor-s{font-variant-numeric:tabular-nums; color:var(--ink-soft);
+                         font-size:11px;}
+#bor495 .bor-tep{border-top:1px solid var(--line); padding:10px 14px;
+                 display:grid; gap:3px;}
+#bor495 .bor-tep div{display:flex; justify-content:space-between; gap:12px;
+                 font-size:11.5px; color:var(--ink-soft);
+                 font-variant-numeric:tabular-nums;}
+#bor495 .bor-tep div b{color:var(--ink); font-weight:600;}
+
+#bor495 .bor-readout{position:absolute; left:50%; transform:translateX(-50%);
+                     bottom:16px; z-index:6; padding:8px 14px; font-size:12.5px;
+                     pointer-events:none; opacity:0; transition:opacity .18s;}
+#bor495 .bor-readout.on{opacity:1;}
+#bor495 .bor-hint{position:absolute; right:16px; bottom:16px; z-index:5;
+                  padding:8px 12px; font-size:11px; color:var(--ink-soft);
+                  max-width:min(220px, calc(100% - 32px)); line-height:1.5;}
+
+@media (max-width:760px){
+  #bor495{--bor-height:88vh;}
+  #bor495 .bor-legend, #bor495 .bor-hint{display:none;}
+  #bor495 .bor-title{left:8px; right:8px; max-width:none; padding:9px 12px;}
+  #bor495 .bor-title h1{font-size:15px;}
+  #bor495 .bor-sub{display:none;}
+  #bor495 .bor-cad{margin-top:6px; padding-top:6px; font-size:10.5px;}
+  #bor495 .bor-tools{left:8px; right:8px; top:auto; bottom:8px; max-width:none;
+                     flex-direction:row; flex-wrap:wrap; gap:6px;}
+  #bor495 .bor-group{flex:1 1 150px; padding:7px 9px;}
+  #bor495 .bor-group h2{margin-bottom:6px;}
+  #bor495 .bor-row{gap:5px;}
+  #bor495 button{padding:5px 9px; font-size:11.5px;}
+}
+@media (prefers-reduced-motion:reduce){ #bor495 *{transition:none !important;} }

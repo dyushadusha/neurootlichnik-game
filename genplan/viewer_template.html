@@ -492,8 +492,9 @@
     tep.innerHTML = '';
     d.tep.forEach(function(t){
       var row = document.createElement('div');
-      row.innerHTML = '<span>'+t[0]+'</span><b>'+t[1].toLocaleString('ru-RU')+
-                      ' м² · '+t[2].toFixed(1)+'%</b>';
+      var val = t[1].toLocaleString('ru-RU') + ' ' + (t[3] || 'м²');
+      if (t[2] !== null && t[2] !== undefined) val += ' · ' + t[2].toFixed(1) + '%';
+      row.innerHTML = '<span>' + t[0] + '</span><b>' + val + '</b>';
       tep.appendChild(row);
     });
     document.getElementById('stalls').textContent = d.stallCount + ' м/м';

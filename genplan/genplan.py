@@ -700,12 +700,16 @@ def build(frame, variant='A'):
     paths, path_axes = path_network(west, items, ctx)
 
     trails = []
-    for tr in getattr(C, 'FOREST_TRAILS', []):
-        f = west if tr[0] == 'w' else east
-        g = band([f.xy(u, v) for u, v in tr[1]], C.TRAIL_W)
-        g = g.difference(unary_union([i['whole'] for i in items]).buffer(0.5))
-        if not g.is_empty:
-            trails.append(g)
+    trail_src = (getattr(C, 'FOREST_TRAILS_B_XY', []) if variant == 'B'
+                 else getattr(C, 'FOREST_TRAILS_XY', []))
+    # тропа не ложится на проезды, парковки, дорожки и здания
+    hard_for_trails = unary_union(list(roads) + list(lots) + list(paths) +
+                                  [i['whole'] for i in items]).buffer(1.2)
+    for tr in trail_src:
+        g = band(tr, C.TRAIL_W).difference(hard_for_trails)
+        for q in (g.geoms if g.geom_type.startswith('Multi') else [g]):
+            if not q.is_empty and q.area > 6.0:
+                trails.append(q)
 
     merged_roads = unary_union(roads).buffer(1.4, join_style=1).buffer(-1.4, join_style=1)
     roads = [merged_roads] if not merged_roads.is_empty else roads
@@ -857,17 +861,38 @@ def checks(frame, m):
 
 
 def teп(frame, m):
+    """ТЭП: (наименование, величина, доля от участка или None, единица).
+
+    Покрытия разложены по видам, доли считаются без двойного счёта —
+    каждый квадратный метр попадает ровно в одну строку."""
     site = frame.poly
     foot = unary_union([i['poly'] for i in m['items']])
-    hard = unary_union(m['roads'] + m['paths'] + m['lots'] +
-                       [s['poly'] for i in m['items'] for t, s in i['parts']
-                        if t in ('deck', 'platform', 'court')]).difference(foot)
-    green = site.difference(unary_union([foot, hard]))
+    taken = foot
+
+    def layer(geoms):
+        g = unary_union(list(geoms)).difference(taken) if geoms else Polygon()
+        return g
+
+    roads_g = layer(list(m['roads']) + list(m['lots']))
+    taken = unary_union([taken, roads_g])
+    paths_g = layer(m['paths'])
+    taken = unary_union([taken, paths_g])
+    trails_g = layer(m.get('trails', []))
+    taken = unary_union([taken, trails_g])
+    decks_g = layer([sp['poly'] for i in m['items'] for t, sp in i['parts']
+                     if t in ('deck', 'platform', 'court')])
+    taken = unary_union([taken, decks_g])
+    green = site.difference(taken)
     s = site.area
-    return [('Площадь участка', s, 100.0),
-            ('Застройка (здания)', foot.area, 100 * foot.area / s),
-            ('Покрытия, террасы, площадки', hard.area, 100 * hard.area / s),
-            ('Озеленение / лес', green.area, 100 * green.area / s)]
+    rows = [('Площадь участка', s, 100.0, 'м²'),
+            ('Застройка (здания)', foot.area, 100 * foot.area / s, 'м²'),
+            ('Проезды и парковки', roads_g.area, 100 * roads_g.area / s, 'м²'),
+            ('Пешеходные дорожки', paths_g.area, 100 * paths_g.area / s, 'м²'),
+            ('Лесные тропы', trails_g.area, 100 * trails_g.area / s, 'м²'),
+            ('Террасы, настилы, площадки', decks_g.area, 100 * decks_g.area / s, 'м²'),
+            ('Озеленение / лес', green.area, 100 * green.area / s, 'м²'),
+            ('Машиноместа', m['nstall'], None, 'м/м')]
+    return rows
 
 
 def explication(m):
@@ -1120,8 +1145,9 @@ def to_png(frame, m, path, title):
     y -= 0.022
     panel.text(0, y, 'ТЭП', fontsize=12, weight='bold', va='top')
     y -= 0.030
-    for name, a, pct in teп(frame, m):
-        panel.text(0, y, '%-28s %7.0f м²  %4.1f%%' % (name[:28], a, pct),
+    for name, a, pct, unit in teп(frame, m):
+        panel.text(0, y, '%-28s %7.0f %-3s %s'
+                   % (name[:28], a, unit, '' if pct is None else '%4.1f%%' % pct),
                    fontsize=7.4, family='monospace', va='top')
         y -= 0.0185
     fig.savefig(path, bbox_inches='tight')
@@ -1197,10 +1223,11 @@ def report(frame, m, msgs, path, title):
         lines.append('%-3s %-32s %5.0f x %-5.0f %7.0f м2  h=%.1f м'
                      % (r['n'], nm, r['size'][0], r['size'][1], r['area'], r['h']))
     lines += ['', 'ТЕХНИКО-ЭКОНОМИЧЕСКИЕ ПОКАЗАТЕЛИ', '-' * 60]
-    for name, a, pct in teп(frame, m):
-        lines.append('%-34s %9.0f м2  %5.1f %%' % (name, a, pct))
-    lines += ['', 'Машиномест: %d' % m['nstall'],
-              'Объектов на плане: %d (позиций в экспликации: %d)'
+    for name, a, pct, unit in teп(frame, m):
+        lines.append('%-34s %9.0f %-4s %s'
+                     % (name, a, unit.replace('м²', 'м2'),
+                        '' if pct is None else '%5.1f %%' % pct))
+    lines += ['', 'Объектов на плане: %d (позиций в экспликации: %d)'
               % (len(m['items']), len(explication(m))),
               'Дорожек в сети: %d, связных кусков сети: %d'
               % (len(m['paths']), m.get('net_components', 0)),

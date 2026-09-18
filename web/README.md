@@ -1,0 +1,64 @@
+# Просмотрщик генплана «БОР 495» — встраивание на сайт
+
+Файлы в этой папке:
+
+| файл | что это |
+|---|---|
+| `bor495.html` | блок разметки, вставляется в страницу |
+| `bor495.css` | стили, все правила внутри `#bor495` |
+| `bor495.js` | логика просмотрщика, глобальный объект `BOR495` |
+| `bor495-scene.json` | геометрия обоих вариантов генплана (~750 КБ) |
+| `three.min.js` | three.js r128, можно заменить своей копией или CDN |
+| `index.html` | готовый пример: откройте, чтобы проверить |
+
+## Как вставить
+
+1. Скопируйте `bor495.css`, `bor495.js`, `bor495-scene.json`, `three.min.js`
+   на сайт (например, в `/assets/bor495/`).
+2. В `<head>` страницы:
+
+```html
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/assets/bor495/bor495.css">
+```
+
+3. В нужное место страницы — содержимое `bor495.html`.
+4. Перед `</body>`:
+
+```html
+<script src="/assets/bor495/three.min.js"></script>
+<script src="/assets/bor495/bor495.js"
+        data-scene="/assets/bor495/bor495-scene.json" defer></script>
+```
+
+Блок сам подхватит контейнер `#bor495`. Если контейнер называется иначе,
+добавьте скрипту `data-target="ваш-id"`.
+
+## Ручной запуск
+
+```html
+<script src="/assets/bor495/bor495.js"></script>
+<script>
+  BOR495.load(document.getElementById('bor495'), '/assets/bor495/bor495-scene.json');
+  // или, если сцена уже в переменной:
+  // BOR495.init(document.getElementById('bor495'), sceneObject);
+</script>
+```
+
+## Настройка
+
+* **Высота.** По умолчанию `78vh`, но не меньше 460 px. Меняется переменной:
+  `#bor495{ --bor-height: 600px; }`
+* **Тема.** Светлая и тёмная переключаются по системной настройке.
+  Принудительно: `<div id="bor495" data-theme="dark">` или `data-theme="light"`.
+* **Шрифты.** Spectral и IBM Plex Sans подключаются с Google Fonts. Без них
+  просмотрщик работает, подставится системный шрифт.
+
+## Требования
+
+* Браузер с WebGL — все актуальные десктопные и мобильные.
+* Файл сцены грузится через `fetch`, поэтому страницу нужно открывать с
+  сервера (по `http://` или `https://`), а не двойным кликом по файлу.
+  Для проверки локально: `python3 -m http.server` в этой папке.
+* Управление: мышь — тянуть поворот, колесо приближение, Shift+тянуть сдвиг;
+  палец — один поворот, два сдвиг и щипок; клик по объекту — подлететь к нему.

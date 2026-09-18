@@ -29,7 +29,8 @@ def scene(frame, m, title):
          'glass': [], 'rails': [], 'lamps': [], 'benches': [],
          'equip': [], 'trees': [], 'labels': [], 'stalls': [],
          'stallCount': m['nstall'],
-         'tep': [[n, round(a), round(p, 1)] for n, a, p in G.teп(frame, m)],
+         'tep': [[n, round(a), None if p is None else round(p, 1), u]
+                 for n, a, p, u in G.teп(frame, m)],
          'expl': [[r['n'], r['name'], round(r['area']), r['count']]
                   for r in G.explication(m)]}
 
