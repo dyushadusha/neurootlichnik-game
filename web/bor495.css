@@ -3,11 +3,12 @@
    Высота задаётся переменной --bor-height (по умолчанию 78vh, минимум 460px). */
 
 #bor495{
-  color-scheme:light;               /* сцена дневная, тёмную тему не включаем */
+  color-scheme:dark;                /* плашки тёмные; сцена остаётся дневной */
   --bor-height:78vh;
-  --ink:#20231c; --ink-soft:#5c6152; --line:#d6d8c8; --panel:#fbfaf4;
-  --panel-2:#f2f1e6; --accent:#b4761f; --accent-soft:#e8d7b6;
-  --sky:#cfd8d0; --shadow:0 10px 30px rgba(32,35,28,.16);
+  --ink:#ffffff; --ink-soft:rgba(255,255,255,.66); --line:#454545;
+  --panel:#2A2A2A; --panel-2:#383838;
+  --accent:#DBFC3B; --accent-soft:#DBFC3B; --on-accent:#1b1b1b;
+  --sky:#cfd8d0; --shadow:0 10px 30px rgba(0,0,0,.34);
 
   position:relative; overflow:hidden; isolation:isolate;
   height:max(var(--bor-height), 460px);
@@ -45,7 +46,7 @@
                -webkit-tap-highlight-color:transparent;}
 #bor495 button:hover{border-color:var(--accent);}
 #bor495 button[aria-pressed="true"]{background:var(--accent-soft);
-               border-color:var(--accent); color:var(--ink); font-weight:600;}
+               border-color:var(--accent); color:var(--on-accent); font-weight:600;}
 #bor495 button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
 
 #bor495 .bor-legend{position:absolute; left:16px; bottom:16px; z-index:5;
