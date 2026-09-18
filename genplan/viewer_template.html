@@ -13,11 +13,12 @@
        -webkit-text-size-adjust:100%;
        font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
        overflow:hidden;}
-  #stage{position:fixed;inset:0;}
+  #app{position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden;}
+  #stage{position:absolute;inset:0;}
   canvas{display:block;width:100%;height:100%;touch-action:none;}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:4px;
         box-shadow:var(--shadow);}
-  #title{position:fixed;left:16px;top:calc(16px + env(safe-area-inset-top,0px));
+  #title{position:absolute;left:16px;top:calc(16px + env(safe-area-inset-top,0px));
          padding:14px 18px;max-width:min(360px,calc(100vw - 32px));z-index:5;}
   #title h1{font-family:Spectral,Georgia,serif;font-weight:600;font-size:20px;
             margin:0 0 2px;letter-spacing:.01em;}
@@ -25,7 +26,7 @@
   #title .cad{margin-top:8px;font-size:11px;color:var(--ink-soft);
               border-top:1px solid var(--line);padding-top:8px;
               font-variant-numeric:tabular-nums;}
-  #tools{position:fixed;right:16px;top:calc(16px + env(safe-area-inset-top,0px));
+  #tools{position:absolute;right:16px;top:calc(16px + env(safe-area-inset-top,0px));
          z-index:5;display:flex;flex-direction:column;gap:8px;
          max-width:min(230px,calc(100vw - 32px));}
   .group{padding:10px 12px;}
@@ -39,7 +40,7 @@
   button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);
                               color:var(--ink);font-weight:600;}
   button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
-  #legend{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  #legend{position:absolute;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
           z-index:5;width:min(330px,calc(100vw - 32px));max-height:52vh;
           display:flex;flex-direction:column;}
   #legend header{display:flex;align-items:center;justify-content:space-between;
@@ -57,21 +58,26 @@
   #tep div{display:flex;justify-content:space-between;gap:12px;font-size:11.5px;
            color:var(--ink-soft);font-variant-numeric:tabular-nums;}
   #tep div b{color:var(--ink);font-weight:600;}
-  #compass{position:fixed;left:50%;transform:translateX(-50%);
+  #compass{position:absolute;left:50%;transform:translateX(-50%);
            top:calc(16px + env(safe-area-inset-top,0px));z-index:5;
            padding:4px 4px 0;line-height:0;}
-  #readout{position:fixed;left:50%;transform:translateX(-50%);
+  #boot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
+        padding:16px 20px;width:min(360px,calc(100vw - 32px));text-align:center;
+        display:grid;gap:8px;font-size:12.5px;line-height:1.5;color:var(--ink-soft);}
+  #boot b{font-size:14px;color:var(--ink);}
+  #readout{position:absolute;left:50%;transform:translateX(-50%);
            bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;
            padding:8px 14px;font-size:12.5px;pointer-events:none;opacity:0;
            transition:opacity .18s;}
   #readout.on{opacity:1;}
-  #hint{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  #hint{position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
         z-index:5;padding:8px 12px;font-size:11px;color:var(--ink-soft);
         max-width:min(220px,calc(100vw - 32px));line-height:1.5;}
   @media (max-width:760px){
     #legend{display:none;} #hint{display:none;}
-    #compass{top:calc(78px + env(safe-area-inset-top,0px));}
-    #title{left:8px;right:8px;max-width:none;padding:9px 12px;}
+    #compass{top:calc(74px + env(safe-area-inset-top,0px));}
+    #title{left:8px;right:8px;max-width:none;padding:9px 12px;
+           top:calc(8px + env(safe-area-inset-top,0px));}
     #title h1{font-size:15px;} #title .sub{display:none;}
     #title .cad{margin-top:6px;padding-top:6px;font-size:10.5px;}
     #tools{left:8px;right:8px;top:auto;max-width:none;
@@ -85,7 +91,15 @@
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 
+<div id="app">
 <div id="stage"><canvas id="c"></canvas></div>
+
+<div id="boot" class="card">
+  <b>Загрузка 3D…</b>
+  <span>Если это сообщение осталось, страница открыта в просмотрщике файлов
+  без поддержки скриптов. Откройте её в Safari или Chrome — или нажмите
+  «Поделиться» → «Открыть в Safari».</span>
+</div>
 
 <section id="title" class="card">
   <h1>БОР&nbsp;495 — генеральный план</h1>
@@ -144,6 +158,8 @@
 <div id="readout" class="card"></div>
 <div id="hint" class="card">Тянуть — поворот · колесо — приближение · Shift+тянуть — сдвиг. С телефона: один палец — поворот, два — сдвиг и щипок. Клик по объекту — подлететь.</div>
 
+</div><!-- /#app -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script id="sceneData" type="application/json">/*__SCENE__*/</script>
 <script>
@@ -153,6 +169,8 @@
   var canvas = document.getElementById('c');
 
   function fail(text){
+    var b = document.getElementById('boot');
+    if (b && b.parentNode) b.parentNode.removeChild(b);
     var box = document.createElement('div');
     box.className = 'card';
     box.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);' +
@@ -166,9 +184,13 @@
          'интернете или используйте автономный файл, где библиотека внутри.');
     return;
   }
+  var boot = document.getElementById('boot');
+  function bootDone(){ if (boot && boot.parentNode) boot.parentNode.removeChild(boot); }
+
   var renderer;
   try {
     renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+    bootDone();
   } catch (err){
     fail('Браузер не смог запустить 3D (WebGL). Попробуйте открыть ссылку в ' +
          'Safari или Chrome, а не во встроенном браузере мессенджера, ' +
@@ -178,6 +200,11 @@
   var MOBILE = Math.min(innerWidth || 1200, innerHeight || 800) < 760 ||
                /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2));
+  canvas.addEventListener('webglcontextlost', function(e){
+    e.preventDefault();
+    fail('3D остановилось: браузеру не хватило ресурсов. Закройте лишние ' +
+         'вкладки и откройте страницу заново, лучше в Safari или Chrome.');
+  });
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   var scene = new THREE.Scene();
@@ -190,10 +217,22 @@
   // Размеры окна: в iframe на старте они бывают нулевыми, поэтому берём
   // первое ненулевое значение и никогда не отдаём ноль — иначе пропорция
   // выходит NaN и камера уезжает в никуда.
-  function vw(){ return innerWidth || document.documentElement.clientWidth ||
-                        canvas.clientWidth || 1; }
-  function vh(){ return innerHeight || document.documentElement.clientHeight ||
-                        canvas.clientHeight || 1; }
+  // iOS в приложениях-браузерах даёт разметочное окно выше видимого, поэтому
+  // размер берём у visualViewport и прибиваем контейнер к нему: иначе сцена
+  // центрируется в невидимой части и на экране остаётся пустой фон.
+  var app = document.getElementById('app');
+  function sizeApp(){
+    var vv = window.visualViewport;
+    var w = Math.round((vv && vv.width) || innerWidth ||
+                       document.documentElement.clientWidth || 1);
+    var h = Math.round((vv && vv.height) || innerHeight ||
+                       document.documentElement.clientHeight || 1);
+    app.style.width = w + 'px';
+    app.style.height = h + 'px';
+    return {w: Math.max(1, w), h: Math.max(1, h)};
+  }
+  function vw(){ return Math.max(1, app.clientWidth || innerWidth || 1); }
+  function vh(){ return Math.max(1, app.clientHeight || innerHeight || 1); }
 
   // на узком экране камера отходит дальше, чтобы участок помещался целиком
   function fitK(){
@@ -688,7 +727,8 @@
 
   var BASE_R = sph.r;
   function resize(){
-    var w = vw(), h = vh();
+    var box = sizeApp();
+    var w = box.w, h = box.h;
     renderer.setSize(w, h, false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
     var k = fitK();
@@ -702,6 +742,11 @@
   if (typeof ResizeObserver !== 'undefined')
     new ResizeObserver(resize).observe(document.documentElement);
   addEventListener('resize', resize);
+  addEventListener('orientationchange', resize);
+  if (window.visualViewport){
+    visualViewport.addEventListener('resize', resize);
+    visualViewport.addEventListener('scroll', resize);
+  }
   sph.r = BASE_R * lastK; resize(); setVariant('A');
   // некоторые мобильные браузеры сообщают размер окна не сразу
   [60, 250, 700, 1500].forEach(function(ms){ setTimeout(resize, ms); });

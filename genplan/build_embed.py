@@ -21,6 +21,12 @@ HTML = '''<!-- Просмотрщик генплана «БОР 495». Вста�
 <div id="bor495">
   <div class="bor-stage"><canvas class="bor-canvas"></canvas></div>
 
+  <div class="bor-boot bor-card">
+    <b>Загрузка 3D…</b>
+    <span>Если сообщение осталось, браузер не выполнил скрипт или не дал WebGL.
+    Откройте страницу в Safari или Chrome.</span>
+  </div>
+
   <section class="bor-title bor-card">
     <h1>БОР&nbsp;495 — генеральный план</h1>
     <div class="bor-sub bor-variant-name">Загородный банный комплекс. Вариант 1</div>
@@ -157,6 +163,12 @@ CSS = '''/* Просмотрщик генплана «БОР 495».
                  font-variant-numeric:tabular-nums;}
 #bor495 .bor-tep div b{color:var(--ink); font-weight:600;}
 
+#bor495 .bor-boot{position:absolute; left:50%; top:50%;
+                  transform:translate(-50%,-50%); z-index:8; padding:16px 20px;
+                  width:min(360px, calc(100% - 32px)); text-align:center;
+                  display:grid; gap:8px; font-size:12.5px; line-height:1.5;
+                  color:var(--ink-soft);}
+#bor495 .bor-boot b{font-size:14px; color:var(--ink);}
 #bor495 .bor-compass{position:absolute; left:50%; transform:translateX(-50%);
                      top:16px; z-index:5; padding:4px 4px 0; line-height:0;}
 #bor495 .bor-readout{position:absolute; left:50%; transform:translateX(-50%);
@@ -321,6 +333,24 @@ README = '''# Просмотрщик генплана «БОР 495» — вст�
 '''
 
 
+_APP_SIZER = """  // iOS в приложениях-браузерах даёт разметочное окно выше видимого, поэтому
+  // размер берём у visualViewport и прибиваем контейнер к нему: иначе сцена
+  // центрируется в невидимой части и на экране остаётся пустой фон.
+  var app = document.getElementById('app');
+  function sizeApp(){
+    var vv = window.visualViewport;
+    var w = Math.round((vv && vv.width) || innerWidth ||
+                       document.documentElement.clientWidth || 1);
+    var h = Math.round((vv && vv.height) || innerHeight ||
+                       document.documentElement.clientHeight || 1);
+    app.style.width = w + 'px';
+    app.style.height = h + 'px';
+    return {w: Math.max(1, w), h: Math.max(1, h)};
+  }
+  function vw(){ return Math.max(1, app.clientWidth || innerWidth || 1); }
+  function vh(){ return Math.max(1, app.clientHeight || innerHeight || 1); }"""
+
+
 def extract(html):
     """Достаёт тело основного скрипта из шаблона просмотрщика."""
     m = re.search(r'<script>\n(.*)\n</script>\s*$', html, re.S)
@@ -340,21 +370,25 @@ def adapt(js):
          "  var boxH = function(){ return Math.max(1, root.clientHeight); };"),
         ("Math.min(innerWidth || 1200, innerHeight || 800) < 760",
          "Math.min(boxW(), boxH()) < 760"),
-        ("""  function vw(){ return innerWidth || document.documentElement.clientWidth ||
-                        canvas.clientWidth || 1; }
-  function vh(){ return innerHeight || document.documentElement.clientHeight ||
-                        canvas.clientHeight || 1; }""",
-         "  function vw(){ return boxW(); }\n  function vh(){ return boxH(); }"),
+        (_APP_SIZER, "  function sizeApp(){ return {w: boxW(), h: boxH()}; }\n"
+                     "  function vw(){ return boxW(); }\n"
+                     "  function vh(){ return boxH(); }"),
         
         ("new ResizeObserver(resize).observe(document.documentElement);",
          "new ResizeObserver(resize).observe(root);"),
+        ("""  addEventListener('orientationchange', resize);
+  if (window.visualViewport){
+    visualViewport.addEventListener('resize', resize);
+    visualViewport.addEventListener('scroll', resize);
+  }""", "  addEventListener('orientationchange', resize);"),
         ("document.querySelectorAll('#variants button')", "root.querySelectorAll('.bor-variants button')"),
         ("document.getElementById('variantName')", "root.querySelector('.bor-variant-name')"),
     ]
     for a, b in rules:
         assert a in js, 'не найдено в шаблоне: ' + a[:60]
         js = js.replace(a, b)
-    for name in ('expl', 'tep', 'stalls', 'variants', 'layers', 'views', 'readout'):
+    for name in ('expl', 'tep', 'stalls', 'variants', 'layers', 'views',
+                 'readout', 'boot'):
         js = js.replace("document.getElementById('%s')" % name,
                         "root.querySelector('.bor-%s')" % name)
     js = js.replace("document.getElementById('needleLabel')",

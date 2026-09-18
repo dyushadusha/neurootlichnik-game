@@ -15,6 +15,8 @@
     var boxH = function(){ return Math.max(1, root.clientHeight); };
 
     function fail(text){
+      var b = root.querySelector('.bor-boot');
+      if (b && b.parentNode) b.parentNode.removeChild(b);
       var box = document.createElement('div');
       box.className = 'card';
       box.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);' +
@@ -28,9 +30,13 @@
            'интернете или используйте автономный файл, где библиотека внутри.');
       return;
     }
+    var boot = root.querySelector('.bor-boot');
+    function bootDone(){ if (boot && boot.parentNode) boot.parentNode.removeChild(boot); }
+
     var renderer;
     try {
       renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+      bootDone();
     } catch (err){
       fail('Браузер не смог запустить 3D (WebGL). Попробуйте открыть ссылку в ' +
            'Safari или Chrome, а не во встроенном браузере мессенджера, ' +
@@ -40,6 +46,11 @@
     var MOBILE = Math.min(boxW(), boxH()) < 760 ||
                  /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2));
+    canvas.addEventListener('webglcontextlost', function(e){
+      e.preventDefault();
+      fail('3D остановилось: браузеру не хватило ресурсов. Закройте лишние ' +
+           'вкладки и откройте страницу заново, лучше в Safari или Chrome.');
+    });
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     var scene = new THREE.Scene();
@@ -52,6 +63,7 @@
     // Размеры окна: в iframe на старте они бывают нулевыми, поэтому берём
     // первое ненулевое значение и никогда не отдаём ноль — иначе пропорция
     // выходит NaN и камера уезжает в никуда.
+    function sizeApp(){ return {w: boxW(), h: boxH()}; }
     function vw(){ return boxW(); }
     function vh(){ return boxH(); }
 
@@ -548,7 +560,8 @@
 
     var BASE_R = sph.r;
     function resize(){
-      var w = vw(), h = vh();
+      var box = sizeApp();
+      var w = box.w, h = box.h;
       renderer.setSize(w, h, false);
       camera.aspect = w / h; camera.updateProjectionMatrix();
       var k = fitK();
@@ -562,6 +575,7 @@
     if (typeof ResizeObserver !== 'undefined')
       new ResizeObserver(resize).observe(root);
     addEventListener('resize', resize);
+    addEventListener('orientationchange', resize);
     sph.r = BASE_R * lastK; resize(); setVariant('A');
     // некоторые мобильные браузеры сообщают размер окна не сразу
     [60, 250, 700, 1500].forEach(function(ms){ setTimeout(resize, ms); });
