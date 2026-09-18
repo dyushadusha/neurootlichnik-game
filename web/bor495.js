@@ -10,12 +10,33 @@
   "use strict";
 
   function boot(root, DATA){
-      var css = function(n){ return getComputedStyle(root).getPropertyValue(n).trim(); };
-
-    var canvas = root.querySelector('.bor-canvas');
+      var canvas = root.querySelector('.bor-canvas');
     var boxW = function(){ return Math.max(1, root.clientWidth); };
     var boxH = function(){ return Math.max(1, root.clientHeight); };
-    var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+
+    function fail(text){
+      var box = document.createElement('div');
+      box.className = 'card';
+      box.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);' +
+        'z-index:9;padding:18px 22px;max-width:min(420px,calc(100vw - 32px));' +
+        'font-size:13px;line-height:1.5;text-align:center;';
+      box.textContent = text;
+      document.body.appendChild(box);
+    }
+    if (typeof THREE === 'undefined'){
+      fail('Не загрузилась библиотека three.js. Откройте страницу при включённом ' +
+           'интернете или используйте автономный файл, где библиотека внутри.');
+      return;
+    }
+    var renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+    } catch (err){
+      fail('Браузер не смог запустить 3D (WebGL). Попробуйте открыть ссылку в ' +
+           'Safari или Chrome, а не во встроенном браузере мессенджера, ' +
+           'и включите аппаратное ускорение.');
+      return;
+    }
     var MOBILE = Math.min(boxW(), boxH()) < 760 ||
                  /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2));
@@ -344,12 +365,11 @@
     ground.rotation.x = -Math.PI/2; ground.position.y = -0.45;
     ground.receiveShadow = true; scene.add(ground);
 
-    function paintTheme(){
-      scene.background = new THREE.Color(css('--sky') || '#cfd8d0');
-      scene.fog = new THREE.Fog(scene.background.getHex(), 700, 1800);
-    }
-    paintTheme();
-    if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintTheme);
+    // Небо и туман заданы жёстко: сцена — дневная панорама участка и не должна
+    // темнеть вслед за интерфейсом браузера (встроенные браузеры мессенджеров
+    // включают тёмную тему принудительно).
+    scene.background = new THREE.Color(0xcfd8d0);
+    scene.fog = new THREE.Fog(0xcfd8d0, 700, 1800);
 
     // --------------------------------------------------------------- интерфейс --
     var current = 'A';
@@ -543,6 +563,8 @@
       new ResizeObserver(resize).observe(root);
     addEventListener('resize', resize);
     sph.r = BASE_R * lastK; resize(); setVariant('A');
+    // некоторые мобильные браузеры сообщают размер окна не сразу
+    [60, 250, 700, 1500].forEach(function(ms){ setTimeout(resize, ms); });
 
     (function loop(now){
       requestAnimationFrame(loop);

@@ -87,6 +87,7 @@ CSS = '''/* Просмотрщик генплана «БОР 495».
    Высота задаётся переменной --bor-height (по умолчанию 78vh, минимум 460px). */
 
 #bor495{
+  color-scheme:light;               /* сцена дневная, тёмную тему не включаем */
   --bor-height:78vh;
   --ink:#20231c; --ink-soft:#5c6152; --line:#d6d8c8; --panel:#fbfaf4;
   --panel-2:#f2f1e6; --accent:#b4761f; --accent-soft:#e8d7b6;
@@ -96,21 +97,8 @@ CSS = '''/* Просмотрщик генплана «БОР 495».
   height:max(var(--bor-height), 460px);
   background:var(--sky); color:var(--ink);
   font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:14px; line-height:1.4;
+  font-size:14px; line-height:1.4; -webkit-text-size-adjust:100%;
 }
-@media (prefers-color-scheme: dark){
-  #bor495:not([data-theme="light"]){
-    --ink:#eceade; --ink-soft:#a2a894; --line:#3a3f33; --panel:#20241d;
-    --panel-2:#272c22; --accent:#e0a54a; --accent-soft:#4a3f26;
-    --sky:#161a15; --shadow:0 10px 34px rgba(0,0,0,.5);
-  }
-}
-#bor495[data-theme="dark"]{
-  --ink:#eceade; --ink-soft:#a2a894; --line:#3a3f33; --panel:#20241d;
-  --panel-2:#272c22; --accent:#e0a54a; --accent-soft:#4a3f26;
-  --sky:#161a15; --shadow:0 10px 34px rgba(0,0,0,.5);
-}
-
 #bor495 *{box-sizing:border-box;}
 #bor495 .bor-stage{position:absolute; inset:0;}
 #bor495 .bor-canvas{display:block; width:100%; height:100%; touch-action:none;}
@@ -254,6 +242,7 @@ DEMO = '''<!doctype html>
 <title>БОР 495 — генеральный план</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="bor495.css">
+<meta name="color-scheme" content="light">
 <style>body{margin:0;background:#f3f2ea;} #bor495{--bor-height:100vh;}</style>
 </head>
 <body>
@@ -315,8 +304,9 @@ README = '''# Просмотрщик генплана «БОР 495» — вст�
 
 * **Высота.** По умолчанию `78vh`, но не меньше 460 px. Меняется переменной:
   `#bor495{ --bor-height: 600px; }`
-* **Тема.** Светлая и тёмная переключаются по системной настройке.
-  Принудительно: `<div id="bor495" data-theme="dark">` или `data-theme="light"`.
+* **Тема.** Просмотрщик всегда светлый: сцена — дневная панорама участка,
+  и во встроенных браузерах мессенджеров (Telegram и т. п.), которые
+  принудительно включают тёмный режим, она не темнеет.
 * **Шрифты.** Spectral и IBM Plex Sans подключаются с Google Fonts. Без них
   просмотрщик работает, подставится системный шрифт.
 
@@ -344,8 +334,6 @@ def adapt(js):
     """Переводит скрипт с работы по всей странице на работу внутри контейнера."""
     rules = [
         ("var DATA = JSON.parse(document.getElementById('sceneData').textContent);\n", ''),
-        ("var css = function(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };",
-         "var css = function(n){ return getComputedStyle(root).getPropertyValue(n).trim(); };"),
         ("var canvas = document.getElementById('c');",
          "var canvas = root.querySelector('.bor-canvas');\n"
          "  var boxW = function(){ return Math.max(1, root.clientWidth); };\n"
