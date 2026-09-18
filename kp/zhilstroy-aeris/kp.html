@@ -1,0 +1,620 @@
+<title>Аэрис. Дом 2</title>
+<style>
+  @font-face { font-family:'Kica'; src:url('fonts/KicaBold.ttf') format('truetype'); font-weight:700; font-display:swap; }
+  @font-face { font-family:'KicaLight'; src:url('fonts/KicaLight.ttf') format('truetype'); font-weight:300; font-display:swap; }
+  @font-face { font-family:'Persho'; src:url('fonts/Pershotravneva55.ttf') format('truetype'); font-weight:400; font-display:swap; }
+  @font-face { font-family:'InterTight'; src:url('fonts/InterTightSemiBold.ttf') format('truetype'); font-weight:600; font-display:swap; }
+
+  :root{
+    --paper:#ffffff;
+    --paper-2:#f4f4ec;
+    --paper-3:#ecece0;
+    --ink:#2a2a2a;
+    --ink-70:#6b6b66;
+    --ink-45:#9a9a94;
+    --lime:#dbfc3b;
+    --lime-soft:#f0ffb0;
+    --on-lime:#2a2a2a;
+    --line:#2a2a2a;
+    --bw:3px;
+    --shadow:5px 5px 0 var(--line);
+    --shadow-sm:3px 3px 0 var(--line);
+    --r:18px;
+    --r-sm:10px;
+    --doodle-invert:0;
+    --font-body:'InterTight',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-display:'Persho','InterTight',-apple-system,sans-serif;
+    --font-num:'Kica','InterTight',-apple-system,sans-serif;
+    --font-light:'KicaLight','InterTight',-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#232321; --paper-2:#2c2c29; --paper-3:#383834;
+      --ink:#f5f5f0; --ink-70:#b9b9b1; --ink-45:#85857e;
+      --line:#f5f5f0; --lime:#dbfc3b; --lime-soft:#4b5a12; --on-lime:#232321;
+      --doodle-invert:1;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#232321; --paper-2:#2c2c29; --paper-3:#383834;
+    --ink:#f5f5f0; --ink-70:#b9b9b1; --ink-45:#85857e;
+    --line:#f5f5f0; --lime:#dbfc3b; --lime-soft:#4b5a12; --on-lime:#232321;
+    --doodle-invert:1;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--font-body); font-size:16.5px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding-inline:20px; padding-block:0;}
+  .narrow{max-width:760px;}
+  h1,h2,h3{font-family:var(--font-display); font-weight:400; line-height:1.08; text-wrap:balance; margin:0;}
+  h1{font-size:clamp(34px,6.4vw,66px); letter-spacing:-.01em;}
+  h2{font-size:clamp(27px,4.4vw,42px);}
+  h3{font-size:clamp(20px,2.6vw,25px);}
+  p{margin:0; color:var(--ink);}
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+
+  .eyebrow{
+    font-family:var(--font-num); font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-70);
+  }
+  .hl{ background-image:linear-gradient(transparent 58%, var(--lime) 58%); padding-inline:.06em; }
+  .lead{font-size:clamp(17px,2.1vw,20px); color:var(--ink-70); line-height:1.5;}
+  .muted{color:var(--ink-70);}
+  .tiny{font-size:13.5px; line-height:1.45; color:var(--ink-70);}
+  .num{font-family:var(--font-num); font-variant-numeric:tabular-nums;}
+  .nowrap{white-space:nowrap;}
+
+  section{padding-block:clamp(44px,6vw,86px);}
+  .band{background:var(--paper-2);}
+  .sec-head{display:flex; flex-direction:column; gap:12px; margin-bottom:clamp(24px,3.4vw,40px);}
+
+  /* ---------- header ---------- */
+  .topbar{
+    background:var(--ink); color:var(--paper);
+    border-bottom:var(--bw) solid var(--line);
+  }
+  :root[data-theme="dark"] .topbar, :root:not([data-theme="light"]) .topbar{}
+  .topbar-in{display:flex; align-items:center; justify-content:space-between; gap:16px; padding-block:14px; flex-wrap:wrap;}
+  .logo{width:clamp(140px,20vw,190px); color:var(--lime);}
+  .logo svg{width:100%; height:auto; display:block;}
+  .topbar .tag{font-family:var(--font-num); font-size:11.5px; letter-spacing:.13em; text-transform:uppercase; color:#f5f5f0; opacity:.75;}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative; padding-block:clamp(40px,6vw,76px) clamp(36px,5vw,64px); overflow:hidden;}
+  .hero-grid{display:grid; grid-template-columns:1.15fr .85fr; gap:clamp(24px,4vw,52px); align-items:end;}
+  @media (max-width:860px){ .hero-grid{grid-template-columns:1fr; align-items:start;} }
+  .kicker{
+    display:inline-flex; align-items:center; gap:9px;
+    border:var(--bw) solid var(--line); border-radius:999px;
+    padding:6px 15px 6px 12px; background:var(--paper);
+    font-family:var(--font-num); font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    box-shadow:var(--shadow-sm);
+  }
+  .kicker b{color:var(--ink);}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--lime);border:1.5px solid var(--line);}
+  .hero h1{margin-top:20px;}
+  .hero-sub{margin-top:20px; max-width:34ch;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:26px;}
+  .chip{
+    border:2px solid var(--line); border-radius:999px; padding:5px 13px;
+    font-family:var(--font-num); font-size:12.5px; background:var(--paper);
+  }
+  .chip--lime{background:var(--lime); color:var(--on-lime); border-color:#2a2a2a;}
+  .hero-card{
+    border:var(--bw) solid var(--line); border-radius:var(--r); background:var(--paper);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .hero-card img{width:100%; aspect-ratio:6/5; object-fit:cover;}
+  .hero-card .cap{
+    padding:12px 16px; border-top:var(--bw) solid var(--line); background:var(--paper-2);
+    font-family:var(--font-num); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-70);
+  }
+  .doodle{position:absolute; opacity:.5; pointer-events:none; filter:invert(var(--doodle-invert));}
+
+  /* ---------- brief ---------- */
+  .brief{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px;}
+  .brief-item{border-top:var(--bw) solid var(--line); padding-top:14px;}
+  .brief-item .n{font-family:var(--font-num); font-size:12px; letter-spacing:.14em; color:var(--ink-45);}
+  .brief-item p{margin-top:6px; font-size:15.5px;}
+
+  /* ---------- diagnosis ---------- */
+  .diag{display:grid; grid-template-columns:1.25fr 1fr; gap:clamp(22px,3.4vw,44px); align-items:start;}
+  @media (max-width:880px){ .diag{grid-template-columns:1fr;} }
+  .shot{position:relative; border:var(--bw) solid var(--line); border-radius:var(--r); overflow:hidden; box-shadow:var(--shadow); background:var(--paper);}
+  .shot img{width:100%;}
+  .shot .stamp{
+    position:absolute; top:14px; left:14px; z-index:3;
+    background:var(--paper); border:2px solid #2a2a2a; color:#2a2a2a; border-radius:999px;
+    font-family:var(--font-num); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:5px 12px;
+  }
+  .pin{
+    position:absolute; z-index:2; width:28px; height:28px; border-radius:50%;
+    background:var(--lime); color:#2a2a2a; border:2.5px solid #2a2a2a;
+    font-family:var(--font-num); font-size:14px; display:grid; place-items:center;
+    box-shadow:0 2px 0 #2a2a2a;
+  }
+  @media (max-width:560px){ .pin{display:none;} }
+  .findings{display:flex; flex-direction:column; gap:14px;}
+  .finding{display:grid; grid-template-columns:30px 1fr; gap:12px; align-items:start;}
+  .finding .b{
+    width:26px; height:26px; border-radius:50%; background:var(--lime); color:#2a2a2a;
+    border:2.5px solid #2a2a2a; font-family:var(--font-num); font-size:13.5px; display:grid; place-items:center;
+  }
+  .finding b{display:block; font-family:var(--font-num); font-size:15.5px;}
+  .finding span{font-size:15px; color:var(--ink-70);}
+  .verdict{
+    margin-top:26px; border:var(--bw) solid var(--line); border-radius:var(--r);
+    background:var(--lime); color:var(--on-lime); padding:18px 20px; box-shadow:var(--shadow);
+  }
+  .verdict p{color:var(--on-lime); font-size:16.5px;}
+  .verdict .sign{font-family:var(--font-display); font-size:22px; margin-top:8px; display:block;}
+
+  /* ---------- options ---------- */
+  .opts{display:grid; grid-template-columns:repeat(3,1fr); gap:20px; align-items:stretch;}
+  @media (max-width:980px){ .opts{grid-template-columns:1fr; max-width:560px; margin-inline:auto;} }
+  .opt{
+    position:relative; display:flex; flex-direction:column;
+    border:var(--bw) solid var(--line); border-radius:var(--r); background:var(--paper);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .opt-top{padding:20px 20px 18px; border-bottom:var(--bw) solid var(--line);}
+  .opt--pick .opt-top{background:var(--lime); color:var(--on-lime);}
+  .opt--pick .opt-top .eyebrow{color:#2a2a2a; opacity:.7;}
+  .opt h3{margin-top:6px;}
+  .opt--pick h3{color:var(--on-lime);}
+  .price{font-family:var(--font-num); font-size:clamp(28px,3.6vw,36px); line-height:1.1; margin-top:14px; font-variant-numeric:tabular-nums;}
+  .price small{display:block; font-family:var(--font-body); font-size:13px; font-weight:600; color:var(--ink-70); margin-top:5px; letter-spacing:0;}
+  .opt--pick .price small{color:#3c3c2a;}
+  .opt-body{padding:18px 20px 22px; display:flex; flex-direction:column; gap:14px; flex:1;}
+  .ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px;}
+  .ul li{position:relative; padding-left:24px; font-size:15px; color:var(--ink);}
+  .ul li::before{
+    content:""; position:absolute; left:0; top:.55em; width:11px; height:11px;
+    background:var(--lime); border:2px solid var(--line); border-radius:3px;
+  }
+  .calc{border:2px dashed var(--ink-45); border-radius:var(--r-sm); padding:12px 14px; background:var(--paper-2);}
+  .calc div{display:flex; justify-content:space-between; gap:12px; font-size:14px; padding-block:3px;}
+  .calc div span:last-child{font-family:var(--font-num); white-space:nowrap;}
+  .calc .tot{border-top:2px solid var(--line); margin-top:7px; padding-top:7px; font-family:var(--font-num); font-size:15px;}
+  .caveat{font-size:13.5px; color:var(--ink-70); border-left:3px solid var(--lime); padding-left:11px;}
+  .flag{
+    position:absolute; top:-14px; right:14px; z-index:4;
+    background:#2a2a2a; color:var(--lime); border:2.5px solid #2a2a2a; border-radius:999px;
+    font-family:var(--font-num); font-size:11.5px; letter-spacing:.11em; text-transform:uppercase;
+    padding:6px 13px; transform:rotate(-3deg);
+  }
+
+  /* ---------- table ---------- */
+  .tablewrap{overflow-x:auto; border:var(--bw) solid var(--line); border-radius:var(--r); background:var(--paper); box-shadow:var(--shadow);}
+  table{border-collapse:collapse; width:100%; min-width:620px; font-size:14.5px;}
+  th,td{text-align:left; padding:13px 16px; border-bottom:2px solid var(--paper-3); vertical-align:top;}
+  thead th{
+    font-family:var(--font-num); font-size:12px; letter-spacing:.09em; text-transform:uppercase;
+    background:var(--paper-2); border-bottom:var(--bw) solid var(--line); color:var(--ink);
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  td:first-child, th:first-child{font-family:var(--font-num); font-size:13px; letter-spacing:.04em; color:var(--ink-70); width:24%;}
+  .cell-pick{background:var(--lime-soft);}
+  :root[data-theme="dark"] .cell-pick, :root:not([data-theme="light"]) .cell-pick{background:var(--lime-soft);}
+
+  /* ---------- shots list ---------- */
+  .shots{display:grid; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); gap:14px;}
+  .shot-item{
+    border:2.5px solid var(--line); border-radius:var(--r-sm); background:var(--paper);
+    padding:14px 15px; display:flex; flex-direction:column; gap:7px;
+  }
+  .shot-item .hd{display:flex; align-items:center; gap:10px;}
+  .shot-item .idx{font-family:var(--font-num); font-size:20px; color:var(--ink-45); font-variant-numeric:tabular-nums;}
+  .shot-item .ttl{font-family:var(--font-num); font-size:15px; line-height:1.2;}
+  .shot-item p{font-size:14px; color:var(--ink-70);}
+  .tagrow{display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; padding-top:6px;}
+  .tag{
+    font-family:var(--font-num); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+    border:2px solid var(--line); border-radius:999px; padding:2px 9px;
+  }
+  .tag--3d{background:var(--lime); color:var(--on-lime); border-color:#2a2a2a;}
+
+  /* ---------- video ---------- */
+  .market{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:26px;}
+  .mkt{border:2.5px solid var(--line); border-radius:var(--r-sm); padding:14px 16px; background:var(--paper);}
+  .mkt .v{font-family:var(--font-num); font-size:24px; font-variant-numeric:tabular-nums;}
+  .mkt .k{font-size:13.5px; color:var(--ink-70); margin-top:3px;}
+  .tiers{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  @media (max-width:980px){ .tiers{grid-template-columns:1fr; max-width:560px; margin-inline:auto;} }
+  .tier{border:var(--bw) solid var(--line); border-radius:var(--r); background:var(--paper); box-shadow:var(--shadow); padding:20px; display:flex; flex-direction:column; gap:12px;}
+  .tier--top{background:var(--ink); color:var(--paper); border-color:var(--line);}
+  .tier--top .price, .tier--top h3{color:var(--paper);}
+  .tier--top .ul li{color:var(--paper);}
+  .tier--top .eyebrow{color:var(--ink-45);}
+  .tier--top .price small{color:var(--ink-45);}
+  .factors{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:16px; margin-top:28px;}
+  .factor{border-top:var(--bw) solid var(--line); padding-top:12px;}
+  .factor b{font-family:var(--font-num); font-size:15px; display:block;}
+  .factor span{font-size:14px; color:var(--ink-70);}
+  .ask{
+    margin-top:28px; border:var(--bw) solid var(--line); border-radius:var(--r);
+    padding:20px 22px; background:var(--paper); box-shadow:var(--shadow);
+  }
+  .ask ol{margin:12px 0 0; padding-left:20px; display:flex; flex-direction:column; gap:7px;}
+  .ask li{font-size:15px;}
+  .ask li::marker{font-family:var(--font-num); color:var(--ink-45);}
+
+  /* ---------- process ---------- */
+  .steps{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;}
+  .step{position:relative; border:2.5px solid var(--line); border-radius:var(--r-sm); background:var(--paper); padding:16px;}
+  .step .s{
+    font-family:var(--font-num); font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-45);
+  }
+  .step b{display:block; font-family:var(--font-num); font-size:16px; margin-top:5px;}
+  .step p{font-size:14px; color:var(--ink-70); margin-top:5px;}
+
+  /* ---------- recommendation / cta ---------- */
+  .rec{display:grid; grid-template-columns:1fr 250px; gap:clamp(20px,3vw,40px); align-items:center;}
+  @media (max-width:760px){ .rec{grid-template-columns:1fr;} .rec .mascot{display:none;} }
+  .rec-card{border:var(--bw) solid var(--line); border-radius:var(--r); background:var(--lime); color:var(--on-lime); padding:clamp(22px,3vw,34px); box-shadow:var(--shadow);}
+  .rec-card h2{color:var(--on-lime);}
+  .rec-card p{color:#33331f;}
+  .cta{
+    display:inline-flex; align-items:center; gap:10px; margin-top:20px;
+    background:#2a2a2a; color:#dbfc3b; border:var(--bw) solid #2a2a2a; border-radius:999px;
+    font-family:var(--font-num); font-size:16px; padding:13px 26px; text-decoration:none;
+    box-shadow:4px 4px 0 rgba(42,42,42,.35);
+  }
+  .cta:focus-visible{outline:3px solid #2a2a2a; outline-offset:3px;}
+  @media (hover:hover){ .cta:hover{transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(42,42,42,.35);} }
+  .cta{transition:transform .12s ease, box-shadow .12s ease;}
+
+  footer{border-top:var(--bw) solid var(--line); background:var(--paper-2);}
+  .foot-in{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap; padding-block:24px; align-items:center;}
+  .foot-in a{font-family:var(--font-num); text-decoration:underline; text-decoration-color:var(--lime); text-decoration-thickness:3px; text-underline-offset:4px;}
+
+  @media (prefers-reduced-motion:no-preference){
+    .hero h1 .hl{background-size:100% 100%; }
+  }
+</style>
+
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <div class="logo" aria-label="Нейро Отличник">
+<svg width="3308" height="303" viewBox="0 0 3308 303" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M241.597 22.9331V242.707H202.785V151.618H38.8238V242.707H0V22.9331H38.8238V114.022H202.785V22.9331H241.597Z" fill="currentColor"/>
+<path d="M528.855 177.452C528.855 154.367 522.378 135.182 509.549 120.358C496.896 105.71 480.015 94.9989 459.297 88.4497C438.966 82.0129 415.934 78.7383 390.876 78.7383C365.819 78.7383 342.212 82.4254 321.393 89.6995C300.437 96.9987 283.644 107.172 271.453 119.883C258.937 132.907 252.598 147.518 252.598 163.291C252.598 179.064 259.387 193.125 272.766 206.186C285.72 218.834 303.025 228.958 324.157 236.27C345.113 243.544 367.582 247.231 390.889 247.231C415.396 247.231 436.765 244.094 454.445 237.932C472.088 231.795 488.843 222.846 504.223 211.373L509.737 207.273L473.789 188.7L471.613 190.288C462.448 196.974 450.894 202.274 437.253 206.036C423.536 209.86 407.919 211.785 390.889 211.785C376.797 211.785 362.968 210.135 349.802 206.923C336.698 203.724 325.257 199.274 315.816 193.662C309.752 190.075 304.926 186.188 301.45 182.089L528.868 181.776V177.464L528.855 177.452ZM390.876 113.297C413.483 113.297 433.552 116.946 450.432 124.12C463.536 129.67 473.738 136.519 480.866 144.481L300.912 144.206C304.363 139.869 309.114 135.732 315.179 131.945C324.281 126.195 335.51 121.608 348.614 118.296C361.78 114.984 376.022 113.297 390.876 113.297Z" fill="currentColor"/>
+<path d="M700.53 0.0125107L699.905 4.89944C697.529 22.6099 690.327 36.5957 678.461 46.5196C666.67 56.4059 651.09 61.4053 632.235 61.4053C613.379 61.4053 597.875 56.4059 586.146 46.5196C574.43 36.6332 567.153 22.6099 564.602 4.93694L563.877 0.0125107H600.488L601.175 3.5246C602.788 12.0361 606.277 18.4479 611.754 23.0223C617.268 27.6343 623.957 29.884 632.222 29.884C640.487 29.884 647.214 27.6468 652.691 23.0223C658.243 18.4104 661.794 11.9986 663.619 3.41212L664.344 0H700.505L700.53 0.0125107Z" fill="currentColor"/>
+<path d="M724.699 83.251V242.982H685.887V121.434L590.309 242.982H539.844V83.251H578.618V199.087L669.682 83.251H724.699Z" fill="currentColor"/>
+<path d="M1000.45 119.983C987.974 107.41 970.982 97.2736 949.963 89.837C929.069 82.4629 906.15 78.7383 881.818 78.7383C861.036 78.7383 841.118 81.488 822.675 86.8998C807.308 91.4118 793.691 97.4111 782.038 104.785V83.2503H743.264V303H782.038V221.797C793.691 229.133 807.308 235.132 822.675 239.644C841.118 245.094 860.999 247.806 881.818 247.806C906.15 247.806 929.069 244.081 949.963 236.707C970.994 229.296 987.987 219.097 1000.45 206.423C1013.31 193.362 1019.82 178.752 1019.82 162.978C1019.82 147.205 1013.31 132.932 1000.45 119.983ZM881.805 212.348C864.813 212.348 848.508 210.148 833.378 205.736C818.449 201.399 806.358 195.325 797.43 187.613C788.877 180.276 784.751 172.315 784.751 163.291C784.751 154.267 788.89 146.305 797.43 138.931C806.358 131.245 818.461 125.145 833.378 120.808C848.508 116.434 864.813 114.197 881.805 114.197C898.798 114.197 915.065 116.434 930.094 120.808C944.911 125.145 956.94 131.245 965.905 138.931C974.458 146.305 978.584 154.267 978.584 163.291C978.584 172.315 974.445 180.239 965.905 187.613C956.978 195.325 944.911 201.424 930.094 205.736C915.065 210.148 898.835 212.348 881.805 212.348Z" fill="currentColor"/>
+<path d="M1228.08 116.062L1228.02 116.614H1229.4C1228.98 116.438 1228.53 116.238 1228.08 116.062Z" fill="currentColor"/>
+<path d="M1917.19 87.937V126.707H1814.58V247.356H1775.8V126.707H1671.98V87.937H1917.19Z" fill="currentColor"/>
+<path d="M2209.28 87.626V247.357H2170.51V126.696H2003.13C2003.17 128.696 2003.21 131.071 2003.21 133.858C2003.21 150.119 2001.66 167.179 1998.62 184.502C1995.52 202.138 1989.9 217.711 1981.9 230.809C1973.35 244.795 1961.5 251.857 1946.7 251.857C1940.54 251.857 1934.26 250.644 1927.95 248.27L1925.16 247.207V207.824L1931.02 210.062C1934.75 211.474 1937.78 212.199 1940.05 212.199C1943.39 212.199 1953.59 212.199 1958.97 191.151C1962.97 175.366 1965 154.556 1965 129.346C1965 123.009 1964.78 114.148 1964.41 102.337L1963.96 87.9384L2209.27 87.626H2209.28Z" fill="currentColor"/>
+<path d="M2412.67 87.937V247.356H2373.87V126.083L2278.28 247.356H2227.83V87.937H2266.64V203.773L2357.71 87.937H2412.67Z" fill="currentColor"/>
+<path d="M2579.84 87.3269V247.371H2541.03V185.903C2529.32 190.865 2516.07 193.377 2501.6 193.377C2490.53 193.377 2479.95 191.79 2470.12 188.653C2460.2 185.478 2451.54 181.103 2444.34 175.592C2430.59 164.468 2423.66 152.369 2423.66 139.583V87.3145H2462.43V131.209C2463.36 139.583 2466.85 145.958 2473.09 150.645C2479.54 155.469 2489.12 157.919 2501.6 157.919C2514.07 157.919 2524.61 155.194 2531.34 149.82C2537.86 144.583 2541.03 137.696 2541.03 128.735V87.3269H2579.84Z" fill="currentColor"/>
+<path d="M2843.56 87.937V247.668H2804.79V186.438H2637.16V247.356H2598.39V87.937H2637.16V148.855H2804.79V87.937H2843.56Z" fill="currentColor"/>
+<path d="M3046.96 87.937V247.356H3008.15V126.083L2912.57 247.356H2862.1V87.937H2900.88V203.773L2991.94 87.937H3046.96Z" fill="currentColor"/>
+<path d="M3307.95 125.847L3119.72 168.492L3307.95 210.05V249.12L3104.27 200.539V247.671H3065.46V88.2517H3104.27V136.521L3307.95 86.7769V125.847Z" fill="currentColor"/>
+<path d="M1228.08 116.062L1228.02 116.612H1229.39C1228.98 116.437 1228.53 116.237 1228.08 116.062ZM1364.61 116.262C1364.53 116.362 1364.51 116.499 1364.47 116.612H1364.65L1364.61 116.262Z" fill="currentColor"/>
+<path d="M1228.08 116.062L1228.02 116.614H1229.4C1228.98 116.438 1228.53 116.238 1228.08 116.062Z" fill="currentColor"/>
+<path d="M1228.08 116.062L1228.02 116.614H1229.4C1228.98 116.438 1228.53 116.238 1228.08 116.062ZM1228.08 116.062L1228.02 116.614H1229.4C1228.98 116.438 1228.53 116.238 1228.08 116.062ZM1228.08 116.062L1228.02 116.614H1229.4C1228.98 116.438 1228.53 116.238 1228.08 116.062ZM1228.08 116.062L1228.02 116.614H1229.4C1228.98 116.438 1228.53 116.238 1228.08 116.062ZM1228.08 116.062L1228.02 116.614H1229.4C1228.98 116.438 1228.53 116.238 1228.08 116.062Z" fill="currentColor"/>
+<path d="M1638.13 80.1155C1623.11 62.805 1602.68 48.9191 1577.37 38.8328C1552.15 28.8215 1524.39 23.7471 1494.86 23.7471C1465.32 23.7471 1437.52 28.8215 1412.21 38.8328C1386.78 48.8941 1366.29 62.8175 1351.27 80.1155C1351.19 80.228 1351.08 80.328 1351 80.4405C1348.34 76.7534 1345.25 73.4413 1341.76 70.4791C1330.17 60.7053 1314.87 55.7433 1296.16 55.7433C1277.46 55.7433 1262.1 60.7053 1250.43 70.4791C1243.88 75.9535 1238.79 82.7152 1235.14 90.6892C1233.49 90.0518 1231.82 89.4394 1230.08 88.8145C1209.22 81.4403 1186.34 77.7033 1162.06 77.7033C1137.78 77.7033 1114.59 81.4403 1093.78 88.8145C1072.79 96.2386 1055.88 106.412 1043.46 119.073C1043.27 119.261 1043.09 119.473 1042.9 119.661C1042.71 119.848 1042.55 120.011 1042.36 120.198C1029.66 133.122 1023.24 147.595 1023.24 163.193C1023.24 178.791 1029.66 192.965 1042.36 205.888C1054.78 218.574 1071.71 228.698 1092.68 236.01C1113.51 243.271 1136.49 246.959 1160.96 246.959C1185.43 246.959 1208.12 243.221 1228.98 235.847C1249.93 228.423 1266.88 218.299 1279.26 205.751C1279.47 205.538 1279.68 205.301 1279.89 205.088L1280.34 204.638C1293.05 191.815 1299.46 177.479 1299.46 162.068C1299.46 146.658 1293.05 131.997 1280.34 119.073C1275.96 114.586 1270.99 110.424 1265.48 106.575C1267.58 100.813 1270.78 96.1386 1274.95 92.5765C1280.66 87.8021 1287.58 85.4774 1296.12 85.4774C1304.66 85.4774 1311.6 87.8021 1317.29 92.5765C1322.92 97.301 1326.62 104.113 1328.27 112.824L1328.86 118.524C1328.73 125.535 1328.32 130.21 1328.32 137.846C1328.32 158.619 1336.02 177.979 1351.23 195.427C1358.74 204.051 1367.63 211.8 1377.81 218.687C1387.99 225.548 1399.47 231.535 1412.17 236.547C1437.44 246.584 1465.25 251.658 1494.82 251.658C1524.39 251.658 1552.11 246.584 1577.33 236.547C1602.6 226.486 1623.06 212.65 1638.09 195.427C1653.29 177.992 1661 158.631 1661 137.846C1661 117.061 1653.29 97.6509 1638.09 80.1155H1638.13ZM1250.47 183.803C1250.31 183.991 1250.16 184.153 1249.97 184.341C1249.07 185.253 1248.11 186.128 1247.1 187.015C1238.02 194.865 1225.79 201.064 1210.8 205.463C1195.64 209.9 1179.26 212.138 1162.08 212.138C1144.9 212.138 1128.47 209.9 1113.24 205.463C1098.11 201.051 1085.86 194.865 1076.78 187.015C1067.99 179.429 1063.73 171.18 1063.73 161.781C1063.73 154.144 1066.56 147.258 1072.31 140.871L1072.81 140.358C1073.71 139.421 1074.67 138.546 1075.68 137.659C1084.76 129.81 1097.04 123.61 1112.14 119.211C1127.37 114.774 1143.84 112.512 1160.98 112.512C1178.13 112.512 1194.54 114.786 1209.7 119.211C1224.69 123.623 1236.92 129.81 1246 137.659C1254.79 145.245 1259.08 153.494 1259.08 162.893C1259.08 170.505 1256.25 177.392 1250.47 183.803ZM1494.86 215.237C1472.11 215.237 1450.72 211.825 1431.31 205.088C1412.03 198.439 1396.5 189.015 1385.1 177.104C1373.97 165.493 1368.32 152.27 1368.32 137.846C1368.32 123.423 1373.97 110.212 1385.1 98.5883C1396.5 86.6772 1412.02 77.2033 1431.34 70.4416C1450.76 63.6049 1472.14 60.1303 1494.86 60.1303C1515.76 60.1303 1536.27 63.6049 1555.83 70.4416C1575.22 77.2283 1591.2 86.7022 1603.32 98.6383C1615.12 110.287 1621.08 123.473 1621.08 137.846C1621.08 152.22 1615.12 165.106 1603.32 176.729C1591.2 188.69 1575.22 198.177 1555.83 204.951C1536.28 211.763 1515.76 215.237 1494.86 215.237Z" fill="currentColor"/>
+<path d="M1478.88 193.423C1498.95 189.587 1513.23 176.04 1510.77 163.165C1508.31 150.29 1490.04 142.962 1469.96 146.797C1449.88 150.633 1435.6 164.18 1438.06 177.055C1440.53 189.93 1458.8 197.258 1478.88 193.423Z" fill="currentColor"/>
+</svg>
+    </div>
+    <div class="tag">Студия нейровизуализации · neurootlichnik.ru</div>
+  </div>
+</header>
+
+<section class="hero">
+  <img class="doodle" src="img/d-spiral-a.svg" alt="" style="top:6%;right:4%;width:74px;" />
+  <img class="doodle" src="img/d-sparkle.svg" alt="" style="bottom:12%;left:1%;width:52px;" />
+  <div class="wrap hero-grid">
+    <div>
+      <span class="kicker"><span class="dot"></span> Коммерческое предложение&nbsp;— <b>ЖилСтрой&nbsp;Девелопмент</b></span>
+      <h1>Квартал «Аэрис», дом&nbsp;2:<br />10 кадров, которые <span class="hl">продают</span>, и ролик</h1>
+      <p class="lead hero-sub">Айдар, спасибо за задачу и за диск с материалами. Ниже — три рабочих сценария по вашему ТЗ на 10 визуализаций и отдельный расчёт по видеоролику.</p>
+      <div class="chips">
+        <span class="chip chip--lime">10 кадров по ТЗ</span>
+        <span class="chip">Пенза</span>
+        <span class="chip">3D-модель ваша</span>
+        <span class="chip">ИИ в пайплайне</span>
+        <span class="chip">Видеоролик</span>
+      </div>
+    </div>
+    <div class="hero-card">
+      <img src="img/render-current.jpg" alt="Текущий рендер второго дома квартала Аэрис" />
+      <div class="cap">Ваш текущий рендер от проектировщика</div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Задача, как мы её услышали</span>
+      <h2>Геометрия у вас уже есть. Нет <span class="hl">желания</span> купить</h2>
+    </div>
+    <div class="brief">
+      <div class="brief-item"><div class="n">01</div><p>3D-модель квартала и рендеры проектировщика готовы — переделывать проект с нуля не нужно.</p></div>
+      <div class="brief-item"><div class="n">02</div><p>Текущие кадры технически корректны, но не вызывают эмоции и не отрабатывают аргументы покупки.</p></div>
+      <div class="brief-item"><div class="n">03</div><p>Нужно 10 кадров строго по вашему ТЗ: две птички, фасады, входная группа, коммерция, двор, вечер, детская зона.</p></div>
+      <div class="brief-item"><div class="n">04</div><p>Отдельный интерес — нейросети в пайплайне и рекламный ролик по примерам из вашей папки с референсами.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Разбор текущего кадра</span>
+      <h2>Что мы увидели на вашем рендере</h2>
+    </div>
+    <div class="diag">
+      <div class="shot">
+        <span class="stamp">Как есть сейчас</span>
+        <span class="pin" style="top:16%;left:12%;">1</span>
+        <span class="pin" style="top:42%;left:46%;">2</span>
+        <span class="pin" style="top:73%;left:26%;">3</span>
+        <span class="pin" style="top:84%;left:64%;">4</span>
+        <span class="pin" style="top:58%;left:80%;">5</span>
+        <img src="img/render-current.jpg" alt="Текущий рендер: дневной вид на дом со стороны улицы" />
+      </div>
+      <div>
+        <div class="findings">
+          <div class="finding"><span class="b">1</span><div><b>Плоский полуденный свет</b><span>Солнце в зените, тени короткие, фасад без объёма. Самый «дешёвый» свет из возможных.</span></div></div>
+          <div class="finding"><span class="b">2</span><div><b>Фасад читается как чертёж</b><span>Материалы, откосы, остекление не отличаются по фактуре — качество дома не видно.</span></div></div>
+          <div class="finding"><span class="b">3</span><div><b>Нет сценария жизни</b><span>Пара силуэтов и стоковые машины. Покупатель не видит себя в этом кадре.</span></div></div>
+          <div class="finding"><span class="b">4</span><div><b>Двор не показан как продукт</b><span>Главный аргумент покупки остался за кадром — видна только проезжая часть.</span></div></div>
+          <div class="finding"><span class="b">5</span><div><b>Среда «из библиотеки»</b><span>Деревья, небо и газон — дефолтные ассеты. Нет сезона, погоды, настроения, узнаваемой Пензы.</span></div></div>
+        </div>
+        <div class="verdict">
+          <p>Это нормальный проектный рендер: он честно объясняет, что построено. Но маркетингу нужен другой кадр — тот, где человек хочет там жить.</p>
+          <span class="sign">Это и есть наша работа.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Статичные визуализации · 3 варианта</span>
+      <h2>Три сценария — от быстрого апгрейда до полной пересборки</h2>
+      <p class="lead">Варианты отличаются не «качеством», а глубиной вмешательства: где мы только меняем атмосферу, а где строим кадр заново в 3D.</p>
+    </div>
+    <div class="opts">
+
+      <div class="opt">
+        <div class="opt-top">
+          <span class="eyebrow">Вариант 1</span>
+          <h3>Нейро-апгрейд</h3>
+          <div class="price">5 000 ₽<small>за кадр · 50 000 ₽ за все 10</small></div>
+        </div>
+        <div class="opt-body">
+          <p class="tiny">Берём ваши готовые рендеры и полностью прогоняем через нейросети.</p>
+          <ul class="ul">
+            <li>Свет, время суток, погода и сезон — под настроение бренда</li>
+            <li>Детализация окружения: зелень, фактуры, отражения, небо</li>
+            <li>Люди и сценарии жизни в кадре</li>
+            <li>Стартуем с одного кадра: делаем 2–3 варианта стилистики, вы выбираете — остальные девять собираем в утверждённой атмосфере</li>
+          </ul>
+          <div class="calc">
+            <div><span>10 кадров × 5 000 ₽</span><span>50 000 ₽</span></div>
+            <div class="tot"><span>Итого</span><span>50 000 ₽</span></div>
+          </div>
+          <p class="caveat">Ограничение честно: геометрия, ракурсы и планировка остаются как в исходнике. То, чего в кадре нет — проработанного двора, новых точек съёмки — нейросеть не придумает достоверно.</p>
+        </div>
+      </div>
+
+      <div class="opt opt--pick">
+        <span class="flag">Рекомендуем</span>
+        <div class="opt-top">
+          <span class="eyebrow">Вариант 2</span>
+          <h3>Гибрид</h3>
+          <div class="price">от 96 000 ₽<small>3D там, где важно + нейро на остальном</small></div>
+        </div>
+        <div class="opt-body">
+          <p class="tiny">Ключевые кадры строим в полном пайплайне, остальные подводим под их стилистику.</p>
+          <ul class="ul">
+            <li><b>Птичка на весь квартал</b> в полном пайплайне, с нужной атмосферой — 50 000 ₽</li>
+            <li><b>Внутренний двор</b> прорабатываем в 3D как главный аргумент покупки — 30 000–35 000 ₽ за кадр</li>
+            <li>Остальные кадры доводим до новой атмосферы — 2 000 ₽ за кадр</li>
+            <li>Единая стилистика: эталонные кадры задают свет и настроение для всей серии</li>
+          </ul>
+          <div class="calc">
+            <div><span>Птичка (3D + нейро)</span><span>50 000 ₽</span></div>
+            <div><span>Двор в 3D</span><span>30 000 ₽</span></div>
+            <div><span>8 кадров × 2 000 ₽</span><span>16 000 ₽</span></div>
+            <div class="tot"><span>Базовая сборка</span><span>96 000 ₽</span></div>
+            <div><span>С двумя доп. 3D-кадрами</span><span>≈ 129 000 ₽</span></div>
+          </div>
+          <p class="caveat">Оптимум по соотношению «вложения / прирост продающей силы»: двор и птичка — те два кадра, по которым решают, ехать ли в офис продаж.</p>
+        </div>
+      </div>
+
+      <div class="opt">
+        <div class="opt-top">
+          <span class="eyebrow">Вариант 3</span>
+          <h3>Полная пересборка</h3>
+          <div class="price">275 000 ₽<small>все 10 кадров с нуля по ТЗ</small></div>
+        </div>
+        <div class="opt-body">
+          <p class="tiny">Каждый кадр строим заново — ровно так, как написано в вашем ТЗ.</p>
+          <ul class="ul">
+            <li>Птичка на весь ЖК — 50 000 ₽</li>
+            <li>Остальные 9 кадров — 25 000 ₽ за кадр (цена снижена за счёт объёма серии)</li>
+            <li>Полный контроль: ракурс, время суток, сезон, благоустройство, витрины коммерции, сценарии людей</li>
+            <li>Любые правки по композиции — не «что получилось у нейросети», а что нужно вам</li>
+          </ul>
+          <div class="calc">
+            <div><span>Птичка на весь ЖК</span><span>50 000 ₽</span></div>
+            <div><span>9 кадров × 25 000 ₽</span><span>225 000 ₽</span></div>
+            <div class="tot"><span>Итого</span><span>275 000 ₽</span></div>
+          </div>
+          <p class="caveat">Вариант для флагманской кампании: билборды, крупные форматы, сайт и презентации на несколько лет вперёд.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Сравнение</span>
+      <h2>Что вы получаете в каждом варианте</h2>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th></th><th>1 · Нейро-апгрейд</th><th>2 · Гибрид</th><th>3 · Пересборка</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Основа кадра</td><td>Ваши рендеры</td><td class="cell-pick">Новые 3D + ваши рендеры</td><td>Всё новое 3D</td></tr>
+          <tr><td>Атмосфера и свет</td><td>Да, полностью новая</td><td class="cell-pick">Да, задаётся эталонными кадрами</td><td>Да, точно по ТЗ</td></tr>
+          <tr><td>Новые ракурсы</td><td>Нет</td><td class="cell-pick">На ключевых кадрах</td><td>На всех кадрах</td></tr>
+          <tr><td>Проработка двора</td><td>Косметическая</td><td class="cell-pick">Полная, в 3D</td><td>Полная, в 3D</td></tr>
+          <tr><td>Контроль деталей</td><td>Ограниченный</td><td class="cell-pick">Высокий на главном</td><td>Максимальный</td></tr>
+          <tr><td>Под крупные форматы</td><td>Ограниченно</td><td class="cell-pick">Ключевые кадры — да</td><td>Все кадры — да</td></tr>
+          <tr><td>Стоимость за 10 кадров</td><td><span class="num">50 000 ₽</span></td><td class="cell-pick"><span class="num">от 96 000 ₽</span></td><td><span class="num">275 000 ₽</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tiny" style="margin-top:14px;">Состав кадров и итоговую сумму фиксируем в смете после того, как вы выберете вариант.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Состав работ</span>
+      <h2>10 кадров из вашего ТЗ</h2>
+      <p class="lead">Метки показывают, как кадр собирается в рекомендованном Варианте&nbsp;2.</p>
+    </div>
+    <div class="shots">
+      <div class="shot-item"><div class="hd"><span class="idx">01</span><span class="ttl">Птичка на квартал</span></div><p>Весь квартал сверху с акцентом на второй дом.</p><div class="tagrow"><span class="tag tag--3d">3D + нейро</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">02</span><span class="ttl">Главный уличный вид</span></div><p>Фасад дома с улицы — визитная карточка дома.</p><div class="tagrow"><span class="tag">Нейро-доводка</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">03</span><span class="ttl">Благоустройство двора</span></div><p>Зелень, маршруты, люди, безопасное пространство, фасад второго дома на заднем плане.</p><div class="tagrow"><span class="tag tag--3d">3D + нейро</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">04</span><span class="ttl">Входная группа</span></div><p>Вход во второй дом: сценарий «прихожу домой».</p><div class="tagrow"><span class="tag">Нейро-доводка</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">05</span><span class="ttl">Коммерция и стилобат</span></div><p>Витрины, тёплый свет, пешеходный сценарий, без случайных брендов.</p><div class="tagrow"><span class="tag">Нейро-доводка</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">06</span><span class="ttl">Вечерний двор</span></div><p>Тёплые окна, спокойная подсветка дорожек, жизнь после заката.</p><div class="tagrow"><span class="tag tag--3d">3D + нейро</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">07</span><span class="ttl">Игровая и семейная зона</span></div><p>Детская площадка на фоне второго дома.</p><div class="tagrow"><span class="tag">Нейро-доводка</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">08</span><span class="ttl">Фасад со стороны улицы</span></div><p>Второй ракурс фасада, уличная перспектива.</p><div class="tagrow"><span class="tag">Нейро-доводка</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">09</span><span class="ttl">Фасад крупно</span></div><p>Материалы: окна, откосы, тёмный первый этаж, светлые жилые уровни, техника без визуального шума.</p><div class="tagrow"><span class="tag">Нейро-доводка</span></div></div>
+      <div class="shot-item"><div class="hd"><span class="idx">10</span><span class="ttl">Пешеходная ось квартала</span></div><p>Вид изнутри квартала по маршруту ко второму дому: перспектива, зелень, повседневная жизнь.</p><div class="tagrow"><span class="tag">Нейро-доводка</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Видеоролик</span>
+      <h2>Ролик: честный разговор про <span class="hl">цену и качество</span></h2>
+      <p class="lead">Видео нельзя посчитать «за ролик» вслепую — цена собирается из хронометража, сценария и того, на каких моделях мы генерируем. Поэтому ниже — рыночные ориентиры и три уровня продакшена.</p>
+    </div>
+
+    <div class="market">
+      <div class="mkt"><div class="v">от 1 000 ₽</div><div class="k">средняя цена за секунду по рынку</div></div>
+      <div class="mkt"><div class="v">1 500–2 000 ₽</div><div class="k">за секунду — студийный уровень</div></div>
+      <div class="mkt"><div class="v">от 2 500 ₽</div><div class="k">за секунду — топовые креаторы на Seedance 2.5</div></div>
+    </div>
+
+    <div class="tiers">
+      <div class="tier">
+        <span class="eyebrow">Уровень 1 · Базовый</span>
+        <h3>Оживить готовое</h3>
+        <div class="price">120 000 ₽<small>за минуту готового ролика</small></div>
+        <ul class="ul">
+          <li>Анимация уже готовых кадров и интерьеров</li>
+          <li>Бюджетные модели генерации</li>
+          <li>Монтаж, музыка из библиотеки, титры</li>
+          <li>Без придуманных с нуля имиджевых сцен</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <span class="eyebrow">Уровень 2 · Оптимальный</span>
+        <h3>Ролик с характером</h3>
+        <div class="price">150 000 ₽<small>за минуту готового ролика</small></div>
+        <ul class="ul">
+          <li>Микс анимации кадров и генеративных сцен</li>
+          <li>Отбор дублей: несколько генераций на каждый кадр</li>
+          <li>1080p на ключевых сценах</li>
+          <li>Сценарий и раскадровка на нашей стороне</li>
+        </ul>
+      </div>
+      <div class="tier tier--top">
+        <span class="eyebrow">Уровень 3 · Премиум</span>
+        <h3>Имиджевый продакшен</h3>
+        <div class="price">200 000 ₽<small>за минуту готового ролика</small></div>
+        <ul class="ul">
+          <li>Seedance 2.5, 1080p по всему ролику</li>
+          <li>Имиджевые кадры, придуманные под бренд, — как в ваших референсах</li>
+          <li>Полный цикл: сценарий, раскадровка, звук, графика</li>
+          <li>~30–40 тыс ₽ внутри бюджета уходит на токены генераций — это честная себестоимость качества</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="factors">
+      <div class="factor"><b>Сценарий</b><span>Есть ли готовый сценарий, раскадровка и текст — или их пишем мы.</span></div>
+      <div class="factor"><b>Хронометраж</b><span>15, 30, 60 секунд или больше — и под какие площадки.</span></div>
+      <div class="factor"><b>Модель и качество</b><span>Старый Kling дешевле, Seedance 2.5 дороже и заметно лучше. Рендер в 1080 — отдельная строка.</span></div>
+      <div class="factor"><b>Тип кадров</b><span>Анимировать готовые интерьеры — одна задача. Придумать имиджевые сцены с нуля — совсем другая.</span></div>
+      <div class="factor"><b>Звук</b><span>Музыка, озвучка, саунд-дизайн, титры и графика.</span></div>
+    </div>
+
+    <div class="ask">
+      <h3>Что нужно от вас, чтобы дать точную смету</h3>
+      <ol>
+        <li>Хронометраж и площадки размещения: сайт, соцсети, экраны в офисе продаж, ТВ.</li>
+        <li>Есть ли сценарий, раскадровка и текст — или это тоже на нас.</li>
+        <li>Какие из роликов в вашей папке с референсами — целевой ориентир по уровню.</li>
+        <li>Нужны ли имиджевые сцены с нуля или достаточно оживить визуализации квартала.</li>
+        <li>Дедлайн по кампании.</li>
+      </ol>
+      <p class="tiny" style="margin-top:14px;">Ориентир для рекламного продакшена на нейросетях — <b>120 000–200 000 ₽ за минуту</b>. Точную цифру назовём в день получения вводных по ролику.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Процесс</span>
+      <h2>Как идёт работа</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="s">Шаг 1</div><b>Фиксируем вариант</b><p>Выбираете сценарий и состав кадров, мы даём смету и сроки.</p></div>
+      <div class="step"><div class="s">Шаг 2</div><b>Пилотный кадр</b><p>Берём один кадр и показываем 2–3 стилистики на выбор.</p></div>
+      <div class="step"><div class="s">Шаг 3</div><b>Утверждаем атмосферу</b><p>Вы выбираете направление — оно становится эталоном для всей серии.</p></div>
+      <div class="step"><div class="s">Шаг 4</div><b>Собираем серию</b><p>Остальные кадры делаем в утверждённом свете и настроении.</p></div>
+      <div class="step"><div class="s">Шаг 5</div><b>Правки и сдача</b><p>Отдаём файлы в нужном разрешении и форматах под сайт, печать и наружную рекламу.</p></div>
+    </div>
+    <p class="tiny" style="margin-top:16px;">Сроки по каждому этапу зафиксируем вместе со сметой — они зависят от выбранного варианта и количества 3D-кадров.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap rec">
+    <div class="rec-card">
+      <span class="eyebrow">Наша рекомендация</span>
+      <h2>Начните с Варианта 2</h2>
+      <p>Птичка и двор — те два кадра, на которых покупатель принимает решение. Сделаем их в полном пайплайне, зададим ими стилистику всего квартала, а остальные восемь кадров подтянем под ту же атмосферу. Если после пилотного кадра захотите больше 3D — просто добавим кадры в смету, без переделки всего проекта.</p>
+      <a class="cta" href="https://neurootlichnik.ru/" target="_blank" rel="noopener">Обсудить проект →</a>
+    </div>
+    <img class="mascot" src="img/mascot.webp" alt="" />
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div class="tiny">Нейро Отличник · нейровизуализация для девелопмента<br />КП подготовлено для ЖилСтрой Девелопмент, квартал «Аэрис», дом 2, Пенза</div>
+    <a href="https://neurootlichnik.ru/" target="_blank" rel="noopener">neurootlichnik.ru</a>
+  </div>
+</footer>
