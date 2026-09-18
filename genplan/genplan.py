@@ -708,17 +708,21 @@ def build(frame, variant='A'):
                 continue
             ex, ey = it['entrance']
             cx, cy = it['center']
-            vx, vy = ex - cx, ey - cy
+            if ring_axis is None:
+                continue
+            # карман — уширение проезжей части у самой кромки кольца,
+            # развёрнутое к дому: объезда вокруг стоянки нет.
+            q, _ = nearest_points(ring_axis, Point(ex, ey))
+            vx, vy = ex - q.x, ey - q.y
             nv = math.hypot(vx, vy) or 1.0
             ux, uy = vx / nv, vy / nv
-            px, py = ex + ux * cp['off'], ey + uy * cp['off']
+            off = min(cp['off'], nv - 3.8)    # карман не наезжает на дом
+            px, py = q.x + ux * off, q.y + uy * off
             specs.append(dict(name='Стоянка гостевого дома', xy=(px, py),
-                              ang=it['angle'], cols=cp['cols'], rows=1,
-                              aisle=False, fixed=True, quiet=True))
-            if ring_axis is not None:     # съезд от кольца прямо к карману
-                q, _ = nearest_points(ring_axis, Point(px, py))
-                roads.append(band([(q.x, q.y), (px, py)], C.DRIVE_W))
-            rows.setdefault(round(ux, 1) > 0, []).append((ex, ey))
+                              ang=math.degrees(math.atan2(uy, ux)) - 90.0,
+                              cols=cp['cols'], rows=1, aisle=False,
+                              fixed=True, pocket=True, quiet=True))
+            rows.setdefault(round(ex - cx, 1) > 0, []).append((ex, ey))
         for side, pts in rows.items():    # аллея вдоль ряда домов
             pts.sort(key=lambda t: t[1])
             off = cp['walk'] * (1.0 if side else -1.0)
@@ -742,7 +746,8 @@ def build(frame, variant='A'):
     kppg = [i['poly'] for i in items if i['n'] == 1]
     blobs = [g.buffer(C.PAVED_AROUND['drive']) for g in entry_polys]
     blobs += [g.buffer(C.PAVED_AROUND['kpp']) for g in kppg]
-    blobs += [l.buffer(C.PAVED_AROUND['parking']) for l in lots]
+    blobs += [l.buffer(C.PAVED_AROUND['parking'])
+              for l, sp in zip(lots, specs) if not sp.get('pocket')]
     apron = unary_union(blobs).buffer(1.2).buffer(-1.2).intersection(
         site.buffer(-C.SETBACK + 3.0))
     for g in kppg:
