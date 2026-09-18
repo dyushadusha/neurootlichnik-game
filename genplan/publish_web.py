@@ -8,6 +8,8 @@
 """
 import json
 import os
+
+import fallback
 import shutil
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -38,7 +40,7 @@ HEAD = '''<meta charset="utf-8">
 def main():
     html = open(os.path.join(HERE, 'viewer_template.html'), encoding='utf-8').read()
     scene = open(os.path.join(HERE, 'scene.json'), encoding='utf-8').read()
-    html = html.replace('/*__SCENE__*/', scene)
+    html = fallback.strip(html.replace('/*__SCENE__*/', scene))
     # three.js берём локально, чтобы страница не зависела от CDN
     html = html.replace(
         '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>',

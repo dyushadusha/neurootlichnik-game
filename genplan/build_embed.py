@@ -50,6 +50,12 @@ HTML = '''<!-- Просмотрщик генплана «БОР 495». Вста�
         <button type="button" data-view="orbit" aria-pressed="false">Облёт</button>
       </div>
     </div>
+    <div class="bor-group bor-card bor-list-group">
+      <h2>Объекты</h2>
+      <div class="bor-row">
+        <button type="button" class="bor-expl-btn" aria-expanded="false">Экспликация</button>
+      </div>
+    </div>
     <div class="bor-group bor-card">
       <h2>Слои</h2>
       <div class="bor-row bor-layers">
@@ -61,7 +67,8 @@ HTML = '''<!-- Просмотрщик генплана «БОР 495». Вста�
   </nav>
 
   <aside class="bor-legend bor-card">
-    <header><h2>Экспликация</h2><span class="bor-s bor-stalls"></span></header>
+    <header><h2>Экспликация</h2><span class="bor-s bor-stalls"></span>
+      <button type="button" class="bor-expl-close" aria-label="Закрыть">✕</button></header>
     <div class="bor-expl"></div>
     <div class="bor-tep"></div>
   </aside>
@@ -141,9 +148,11 @@ CSS = '''/* Просмотрщик генплана «БОР 495».
 #bor495 .bor-legend{position:absolute; left:16px; bottom:16px; z-index:5;
                     width:min(330px, calc(100% - 32px)); max-height:60%;
                     display:flex; flex-direction:column;}
-#bor495 .bor-legend header{display:flex; align-items:center;
-                    justify-content:space-between; padding:10px 14px;
-                    border-bottom:1px solid var(--line);}
+#bor495 .bor-legend header{display:flex; align-items:center; gap:10px;
+                    padding:10px 14px; border-bottom:1px solid var(--line);}
+#bor495 .bor-legend header h2{flex:1;}
+#bor495 .bor-expl-close{display:none; padding:2px 8px; font-size:14px; line-height:1.2;}
+#bor495 .bor-list-group{display:none;}
 #bor495 .bor-legend h2{font-size:10px; letter-spacing:.12em; text-transform:uppercase;
                     margin:0; color:var(--ink-soft); font-weight:600;}
 #bor495 .bor-expl{overflow:auto; padding:6px 6px 10px;}
@@ -181,8 +190,18 @@ CSS = '''/* Просмотрщик генплана «БОР 495».
 
 @media (max-width:760px){
   #bor495{--bor-height:88vh;}
-  #bor495 .bor-legend, #bor495 .bor-hint{display:none;}
-  #bor495 .bor-compass{top:78px;}
+  #bor495 .bor-hint{display:none;}
+  #bor495 .bor-list-group{display:block;}
+  #bor495 .bor-expl-close{display:block;}
+  #bor495 .bor-legend{display:flex; left:8px; right:8px; bottom:8px; width:auto;
+                      max-height:min(72%, 560px); z-index:7;
+                      transform:translateY(calc(100% + 16px));
+                      transition:transform .22s ease;}
+  #bor495.expl-open .bor-legend{transform:none;}
+  #bor495.expl-open .bor-tools{opacity:0; pointer-events:none;}
+  #bor495 .bor-tools{transition:opacity .18s;}
+  #bor495 .bor-item{padding:8px; font-size:13px;}
+  #bor495 .bor-compass{top:74px;}
   #bor495 .bor-title{left:8px; right:8px; max-width:none; padding:9px 12px;}
   #bor495 .bor-title h1{font-size:15px;}
   #bor495 .bor-sub{display:none;}
@@ -370,7 +389,8 @@ def adapt(js):
          "  var boxH = function(){ return Math.max(1, root.clientHeight); };"),
         ("Math.min(innerWidth || 1200, innerHeight || 800) < 760",
          "Math.min(boxW(), boxH()) < 760"),
-        (_APP_SIZER, "  function sizeApp(){ return {w: boxW(), h: boxH()}; }\n"
+        (_APP_SIZER, "  var app = root;                       // контейнер виджета\n"
+                     "  function sizeApp(){ return {w: boxW(), h: boxH()}; }\n"
                      "  function vw(){ return boxW(); }\n"
                      "  function vh(){ return boxH(); }"),
         
@@ -391,6 +411,10 @@ def adapt(js):
                  'readout', 'boot'):
         js = js.replace("document.getElementById('%s')" % name,
                         "root.querySelector('.bor-%s')" % name)
+    js = js.replace("document.getElementById('explBtn')",
+                    "root.querySelector('.bor-expl-btn')")
+    js = js.replace("document.getElementById('explClose')",
+                    "root.querySelector('.bor-expl-close')")
     js = js.replace("document.getElementById('needleLabel')",
                     "root.querySelector('.bor-needle-label')")
     js = js.replace("document.getElementById('needle')",

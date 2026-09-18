@@ -63,6 +63,7 @@
     // Размеры окна: в iframe на старте они бывают нулевыми, поэтому берём
     // первое ненулевое значение и никогда не отдаём ноль — иначе пропорция
     // выходит NaN и камера уезжает в никуда.
+    var app = root;                       // контейнер виджета
     function sizeApp(){ return {w: boxW(), h: boxH()}; }
     function vw(){ return boxW(); }
     function vh(){ return boxH(); }
@@ -405,7 +406,7 @@
         b.innerHTML = '<span class="bor-n">'+r[0]+'</span><span>'+r[1]+
                       (r[3]>1 ? ' <span class="s">×'+r[3]+'</span>' : '')+
                       '</span><span class="bor-s">'+r[2].toLocaleString('ru-RU')+' м²</span>';
-        b.addEventListener('click', function(){ flyTo(r[0]); });
+        b.addEventListener('click', function(){ setExpl(false); flyTo(r[0]); });
         box.appendChild(b);
       });
       var tep = root.querySelector('.bor-tep');
@@ -426,6 +427,19 @@
       p.labels.visible = layers.labels;
       p.paving.visible = layers.paving;
     }
+    var explBtn = root.querySelector('.bor-expl-btn');
+    function setExpl(open){
+      app.classList.toggle('expl-open', open);
+      explBtn.setAttribute('aria-expanded', String(open));
+      explBtn.setAttribute('aria-pressed', String(open));
+    }
+    explBtn.addEventListener('click', function(){
+      setExpl(!app.classList.contains('expl-open'));
+    });
+    root.querySelector('.bor-expl-close').addEventListener('click', function(){
+      setExpl(false);
+    });
+
     root.querySelector('.bor-variants').addEventListener('click', function(e){
       var b = e.target.closest('button'); if (b) setVariant(b.dataset.v);
     });

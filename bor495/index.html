@@ -24,7 +24,8 @@
        -webkit-text-size-adjust:100%;
        font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
        overflow:hidden;}
-  #app{position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden;}
+  #app{position:fixed;left:0;top:0;width:100%;height:100vh;height:100dvh;
+       overflow:hidden;}
   #stage{position:absolute;inset:0;}
   canvas{display:block;width:100%;height:100%;touch-action:none;}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:4px;
@@ -54,8 +55,11 @@
   #legend{position:absolute;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
           z-index:5;width:min(330px,calc(100vw - 32px));max-height:52vh;
           display:flex;flex-direction:column;}
-  #legend header{display:flex;align-items:center;justify-content:space-between;
+  #legend header{display:flex;align-items:center;gap:10px;
                  padding:10px 14px;border-bottom:1px solid var(--line);}
+  #legend header h2{flex:1;}
+  #explClose{display:none;padding:2px 8px;font-size:14px;line-height:1.2;}
+  #listGroup{display:none;}
   #legend h2{font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin:0;
              color:var(--ink-soft);font-weight:600;}
   #expl{overflow:auto;padding:6px 6px 10px;}
@@ -73,9 +77,11 @@
            top:calc(16px + env(safe-area-inset-top,0px));z-index:5;
            padding:4px 4px 0;line-height:0;}
   #boot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
-        padding:16px 20px;width:min(360px,calc(100vw - 32px));text-align:center;
+        padding:16px 20px;width:min(560px,calc(100vw - 24px));
+        max-height:calc(100vh - 24px);overflow:auto;text-align:center;
         display:grid;gap:8px;font-size:12.5px;line-height:1.5;color:var(--ink-soft);}
   #boot b{font-size:14px;color:var(--ink);}
+  #boot img{width:100%;height:auto;border-radius:3px;border:1px solid var(--line);}
   #readout{position:absolute;left:50%;transform:translateX(-50%);
            bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;
            padding:8px 14px;font-size:12.5px;pointer-events:none;opacity:0;
@@ -85,7 +91,18 @@
         z-index:5;padding:8px 12px;font-size:11px;color:var(--ink-soft);
         max-width:min(220px,calc(100vw - 32px));line-height:1.5;}
   @media (max-width:760px){
-    #legend{display:none;} #hint{display:none;}
+    #hint{display:none;}
+    #listGroup{display:block;}
+    #explClose{display:block;}
+    /* экспликация — выдвижная шторка снизу */
+    #legend{display:flex;left:8px;right:8px;bottom:8px;width:auto;
+            max-height:min(72%,560px);z-index:7;
+            transform:translateY(calc(100% + 16px));
+            transition:transform .22s ease;}
+    #app.expl-open #legend{transform:none;}
+    #app.expl-open #tools{opacity:0;pointer-events:none;}
+    #tools{transition:opacity .18s;}
+    .item{padding:8px;font-size:13px;}
     #compass{top:calc(74px + env(safe-area-inset-top,0px));}
     #title{left:8px;right:8px;max-width:none;padding:9px 12px;
            top:calc(8px + env(safe-area-inset-top,0px));}
@@ -107,9 +124,10 @@
 
 <div id="boot" class="card">
   <b>Загрузка 3D…</b>
-  <span>Если это сообщение осталось, страница открыта в просмотрщике файлов
-  без поддержки скриптов. Откройте её в Safari или Chrome — или нажмите
-  «Поделиться» → «Открыть в Safari».</span>
+  
+  <span>Если осталось это сообщение, страница открыта в просмотрщике файлов —
+  он не выполняет скрипты, поэтому 3D не запустилось. Нажмите «Поделиться»
+  → «Открыть в Safari», либо откройте присланную ссылку вместо файла.</span>
 </div>
 
 <section id="title" class="card">
@@ -135,6 +153,12 @@
       <button data-view="orbit" aria-pressed="false">Облёт</button>
     </div>
   </div>
+  <div class="group card" id="listGroup">
+    <h2>Объекты</h2>
+    <div class="row">
+      <button id="explBtn" aria-expanded="false">Экспликация</button>
+    </div>
+  </div>
   <div class="group card">
     <h2>Слои</h2>
     <div class="row" id="layers">
@@ -146,7 +170,8 @@
 </nav>
 
 <aside id="legend" class="card">
-  <header><h2>Экспликация</h2><span class="s" id="stalls"></span></header>
+  <header><h2>Экспликация</h2><span class="s" id="stalls"></span>
+    <button id="explClose" aria-label="Закрыть">✕</button></header>
   <div id="expl"></div>
   <div id="tep"></div>
 </aside>
@@ -583,7 +608,7 @@
       b.innerHTML = '<span class="n">'+r[0]+'</span><span>'+r[1]+
                     (r[3]>1 ? ' <span class="s">×'+r[3]+'</span>' : '')+
                     '</span><span class="s">'+r[2].toLocaleString('ru-RU')+' м²</span>';
-      b.addEventListener('click', function(){ flyTo(r[0]); });
+      b.addEventListener('click', function(){ setExpl(false); flyTo(r[0]); });
       box.appendChild(b);
     });
     var tep = document.getElementById('tep');
@@ -604,6 +629,19 @@
     p.labels.visible = layers.labels;
     p.paving.visible = layers.paving;
   }
+  var explBtn = document.getElementById('explBtn');
+  function setExpl(open){
+    app.classList.toggle('expl-open', open);
+    explBtn.setAttribute('aria-expanded', String(open));
+    explBtn.setAttribute('aria-pressed', String(open));
+  }
+  explBtn.addEventListener('click', function(){
+    setExpl(!app.classList.contains('expl-open'));
+  });
+  document.getElementById('explClose').addEventListener('click', function(){
+    setExpl(false);
+  });
+
   document.getElementById('variants').addEventListener('click', function(e){
     var b = e.target.closest('button'); if (b) setVariant(b.dataset.v);
   });
