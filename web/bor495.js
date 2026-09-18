@@ -193,17 +193,26 @@
       var grp = new THREE.Group(); grp.add(mk(crown,M.crown)); grp.add(mk(trunk,M.trunk));
       return grp;
     }
-    function labelSprite(text){
-      var cv = document.createElement('canvas'), s = 128;
-      cv.width = cv.height = s;
-      var g = cv.getContext('2d');
-      g.fillStyle = '#20231c'; g.beginPath(); g.arc(s/2,s/2,s*0.36,0,7); g.fill();
-      g.fillStyle = '#fbfaf4'; g.font = '600 56px "IBM Plex Sans", sans-serif';
+    var BADGES = [];
+    function drawBadge(cv, text){
+      var s = cv.width, g = cv.getContext('2d');
+      g.clearRect(0, 0, s, s);
+      g.fillStyle = '#2A2A2A'; g.beginPath(); g.arc(s/2,s/2,s*0.36,0,7); g.fill();
+      g.fillStyle = '#ffffff'; g.font = '600 56px "Inter Tight", system-ui, sans-serif';
       g.textAlign='center'; g.textBaseline='middle'; g.fillText(text, s/2, s/2+2);
+    }
+    function labelSprite(text){
+      var cv = document.createElement('canvas');
+      cv.width = cv.height = 128;
+      drawBadge(cv, text);
       var tex = new THREE.CanvasTexture(cv);
       var sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
       sp.scale.set(9,9,1);
+      BADGES.push({cv:cv, tex:tex, text:text});
       return sp;
+    }
+    function refreshBadges(){      // перерисовать номера вшитым шрифтом
+      BADGES.forEach(function(b){ drawBadge(b.cv, b.text); b.tex.needsUpdate = true; });
     }
 
     // ------------------------------------------------------------- построение --
@@ -265,7 +274,7 @@
         for (var i=0;i<pts.length-1;i++){
           var a = pts[i], b = pts[i+1];
           var len = Math.hypot(b[0]-a[0], b[1]-a[1]);
-          var ang = Math.atan2(-(b[1]-a[1]), b[0]-a[0]);
+          var ang = Math.atan2(b[1]-a[1], b[0]-a[0]);
           [h-0.06, h*0.55].forEach(function(z){
             var g = new THREE.BoxGeometry(len, 0.07, 0.1);
             var m = new THREE.Mesh(g, M.rail);
@@ -309,7 +318,7 @@
           leg.position.set(dx,0.22,0); g.add(leg);
         });
         g.position.set(bn[0], 0, -bn[1]);
-        g.rotation.y = -bn[2]*Math.PI/180;
+        g.rotation.y = bn[2]*Math.PI/180;
         parts.build.add(g);
       });
 
@@ -327,7 +336,7 @@
       (d.barrels||[]).forEach(function(b){
         var geo = new THREE.CylinderGeometry(b[2], b[2], b[3], 22);
         geo.rotateZ(Math.PI/2);                       // ось цилиндра вдоль X
-        geo.rotateY(-b[4]*Math.PI/180);               // разворот по плану
+        geo.rotateY(b[4]*Math.PI/180);                // разворот по плану
         var m = new THREE.Mesh(geo, M.tub);
         m.position.set(b[0], b[5]+b[2], -b[1]);       // низ ровно на земле
         m.castShadow = true; m.receiveShadow = true;
@@ -591,6 +600,10 @@
     addEventListener('resize', resize);
     addEventListener('orientationchange', resize);
     sph.r = BASE_R * lastK; resize(); setVariant('A');
+    // номера домов рисуются на canvas, поэтому ждём загрузки вшитого шрифта
+    if (document.fonts && document.fonts.ready){
+      document.fonts.ready.then(refreshBadges);
+    }
     // некоторые мобильные браузеры сообщают размер окна не сразу
     [60, 250, 700, 1500].forEach(function(ms){ setTimeout(resize, ms); });
 

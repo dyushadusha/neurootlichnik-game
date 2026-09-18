@@ -1155,7 +1155,7 @@ def to_png(frame, m, path, title):
         c = it['poly'].centroid
         ax.text(c.x, c.y, str(it['n']), ha='center', va='center', fontsize=8.5,
                 color='white', zorder=12,
-                bbox=dict(boxstyle='circle,pad=0.22', fc='#222222', ec='none'))
+                bbox=dict(boxstyle='circle,pad=0.22', fc='#2A2A2A', ec='none'))
 
     minx, miny, maxx, maxy = frame.poly.bounds
     pad = 14
