@@ -543,11 +543,14 @@ def build(frame, variant='A'):
         for row in g['rows']:
             for col in g['cols']:
                 k += 1
-                # все дома развёрнуты главным входом к аллее посередине
+                # дома параллельны западной границе, вход — к проезду
                 rot = 90.0 if col < 0.5 else 270.0
                 it = C.B(16, 'Гостевой дом', (col, row), C.COTTAGE_SIZE, C.COTTAGE_H,
                          'V', shape='cottage', wall=3.2, roof='gable',
                          area=C.COTTAGE_AREA, rot=rot)
+                it['fix_angle'] = (C.COTTAGE_ANGLE_W if col < 0.5
+                                   else C.COTTAGE_ANGLE_E)
+                it['no_align'] = True
                 it['group'] = 'Гостевые дома'
                 it['frame'] = east
                 items.append(it)
