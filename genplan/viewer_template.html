@@ -76,8 +76,16 @@
         max-width:min(220px,calc(100vw - 32px));line-height:1.5;}
   @media (max-width:760px){
     #legend{display:none;} #hint{display:none;}
-    #title{padding:10px 12px;} #title h1{font-size:16px;}
-    #tools{gap:6px;} .group{padding:8px 10px;}
+    #title{left:8px;right:8px;max-width:none;padding:9px 12px;}
+    #title h1{font-size:15px;} #title .sub{display:none;}
+    #title .cad{margin-top:6px;padding-top:6px;font-size:10.5px;}
+    #tools{left:8px;right:8px;top:auto;max-width:none;
+           bottom:calc(8px + env(safe-area-inset-bottom,0px));
+           flex-direction:row;flex-wrap:wrap;gap:6px;}
+    .group{flex:1 1 150px;padding:7px 9px;}
+    .group h2{margin-bottom:6px;}
+    .row{gap:5px;}
+    button{padding:5px 9px;font-size:11.5px;}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
@@ -146,6 +154,13 @@
   var SITE = {x:145, z:120};                      // центр участка в координатах сцены
   var target = new THREE.Vector3(SITE.x, 0, SITE.z);
   var sph = {r:350, theta:-0.9, phi:0.92};        // сферические координаты камеры
+
+  // на узком экране камера отходит дальше, чтобы участок помещался целиком
+  function fitK(){
+    var a = innerWidth / innerHeight;
+    return a >= 1.7 ? 1.0 : Math.min(2.4, 1.7 / Math.max(a, 0.35));
+  }
+  var lastK = fitK();
 
   function applyCam(){
     var r = sph.r, p = Math.max(0.12, Math.min(1.53, sph.phi));
@@ -524,7 +539,7 @@
     }
     var v = VIEWS[b.dataset.view];
     target.set(SITE.x, 0, SITE.z);
-    tween(v);
+    tween({r: v.r * fitK(), theta: v.theta, phi: v.phi});
   });
   var anim = null;
   function tween(to){
@@ -606,9 +621,11 @@
     var w = innerWidth, h = innerHeight;
     renderer.setSize(w,h,false);
     camera.aspect = w/h; camera.updateProjectionMatrix();
+    var k = fitK();
+    if (Math.abs(k - lastK) > 0.01){ sph.r *= k / lastK; lastK = k; applyCam(); }
   }
   addEventListener('resize', resize);
-  resize(); setVariant('A');
+  sph.r *= lastK; resize(); setVariant('A');
 
   (function loop(now){
     requestAnimationFrame(loop);
