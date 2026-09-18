@@ -174,9 +174,9 @@
 
   var canvas = document.getElementById('c');
   var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
-  var MOBILE = Math.min(innerWidth, innerHeight) < 760 ||
+  var MOBILE = Math.min(innerWidth || 1200, innerHeight || 800) < 760 ||
                /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, MOBILE ? 1.5 : 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   var scene = new THREE.Scene();
@@ -186,9 +186,18 @@
   var target = new THREE.Vector3(SITE.x, 0, SITE.z);
   var sph = {r:350, theta:-0.9, phi:0.92};        // сферические координаты камеры
 
+  // Размеры окна: в iframe на старте они бывают нулевыми, поэтому берём
+  // первое ненулевое значение и никогда не отдаём ноль — иначе пропорция
+  // выходит NaN и камера уезжает в никуда.
+  function vw(){ return innerWidth || document.documentElement.clientWidth ||
+                        canvas.clientWidth || 1; }
+  function vh(){ return innerHeight || document.documentElement.clientHeight ||
+                        canvas.clientHeight || 1; }
+
   // на узком экране камера отходит дальше, чтобы участок помещался целиком
   function fitK(){
-    var a = innerWidth / innerHeight;
+    var a = vw() / vh();
+    if (!isFinite(a) || a <= 0) return 1.0;
     return a >= 1.7 ? 1.0 : Math.min(2.4, 1.7 / Math.max(a, 0.35));
   }
   var lastK = fitK();
@@ -677,15 +686,23 @@
     if (best !== null) flyTo(Number(best));
   }
 
+  var BASE_R = sph.r;
   function resize(){
-    var w = innerWidth, h = innerHeight;
-    renderer.setSize(w,h,false);
-    camera.aspect = w/h; camera.updateProjectionMatrix();
+    var w = vw(), h = vh();
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
     var k = fitK();
-    if (Math.abs(k - lastK) > 0.01){ sph.r *= k / lastK; lastK = k; applyCam(); }
+    if (isFinite(k) && isFinite(lastK) && Math.abs(k - lastK) > 0.01){
+      sph.r *= k / lastK; lastK = k;
+    }
+    if (!isFinite(sph.r) || sph.r <= 0) sph.r = BASE_R * (isFinite(k) ? k : 1);
+    applyCam();
   }
+  // окно может получить размер позже (iframe, скрытая вкладка) — следим за этим
+  if (typeof ResizeObserver !== 'undefined')
+    new ResizeObserver(resize).observe(document.documentElement);
   addEventListener('resize', resize);
-  sph.r *= lastK; resize(); setVariant('A');
+  sph.r = BASE_R * lastK; resize(); setVariant('A');
 
   (function loop(now){
     requestAnimationFrame(loop);

@@ -350,12 +350,16 @@ def adapt(js):
          "var canvas = root.querySelector('.bor-canvas');\n"
          "  var boxW = function(){ return Math.max(1, root.clientWidth); };\n"
          "  var boxH = function(){ return Math.max(1, root.clientHeight); };"),
-        ("Math.min(innerWidth, innerHeight) < 760", "Math.min(boxW(), boxH()) < 760"),
-        ("var a = innerWidth / innerHeight;", "var a = boxW() / boxH();"),
-        ("var w = innerWidth, h = innerHeight;", "var w = boxW(), h = boxH();"),
-        ("addEventListener('resize', resize);",
-         "if (typeof ResizeObserver !== 'undefined') new ResizeObserver(resize).observe(root);\n"
-         "  addEventListener('resize', resize);"),
+        ("Math.min(innerWidth || 1200, innerHeight || 800) < 760",
+         "Math.min(boxW(), boxH()) < 760"),
+        ("""  function vw(){ return innerWidth || document.documentElement.clientWidth ||
+                        canvas.clientWidth || 1; }
+  function vh(){ return innerHeight || document.documentElement.clientHeight ||
+                        canvas.clientHeight || 1; }""",
+         "  function vw(){ return boxW(); }\n  function vh(){ return boxH(); }"),
+        
+        ("new ResizeObserver(resize).observe(document.documentElement);",
+         "new ResizeObserver(resize).observe(root);"),
         ("document.querySelectorAll('#variants button')", "root.querySelectorAll('.bor-variants button')"),
         ("document.getElementById('variantName')", "root.querySelector('.bor-variant-name')"),
     ]
