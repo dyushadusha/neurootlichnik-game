@@ -168,7 +168,7 @@ def restaurant(w, d):
         door(w * 0.06, fy + 0.12, 2.6),
         ('deck', dict(poly=_box(w * 0.92, d * 0.14, 0.0, fy - 2.2))),
         steps(w * 0.20, fy - 4.2),
-        ('water', dict(poly=_oval(w * 0.56, d * 0.16, 0.0, d * 0.52), rim=0.9)),
+        # бассейн за рестораном убран по правке клиента
         ENT(w * 0.06, fy),
     ]
 

@@ -467,6 +467,10 @@ def path_network(frame, items, ctx):
             axes.append(LineString([
                 (c.x + ray['r0'] * math.cos(a), c.y + ray['r0'] * math.sin(a)),
                 (c.x + ray['r1'] * math.cos(a), c.y + ray['r1'] * math.sin(a))]))
+    for ln in getattr(C, 'PATH_EXTRA_XY', []):   # прогулочные связи-аллеи
+        axes.append(LineString(smooth(ln)))
+    for ln in ctx.get('extra_axes', []):
+        axes.append(ln)
     trunk = unary_union(axes + [ctx['lane'], ctx['apron']])
 
     for it in items:                      # отвод от сети ко входу
@@ -692,7 +696,34 @@ def build(frame, variant='A'):
     # парковки комплекса не выходят за свою половину участка
     park_bound = site.buffer(-1.0)
     obst = [i['poly'] for i in items if i['kind'] == 'building'] + list(roads)
-    for spec in C.PARKING:
+    specs = list(C.PARKING)
+    walks = []
+    cp = getattr(C, 'COTTAGE_PARK', None)
+    if variant == 'B' and cp:
+        # У каждого гостевого дома свой карман на 2 м/м и съезд с кольцевой.
+        ring_axis = LineString(smooth(ring_xy, closed=True)) if ring_xy else None
+        rows = {}
+        for it in items:
+            if it['n'] != 16:
+                continue
+            ex, ey = it['entrance']
+            cx, cy = it['center']
+            vx, vy = ex - cx, ey - cy
+            nv = math.hypot(vx, vy) or 1.0
+            ux, uy = vx / nv, vy / nv
+            px, py = ex + ux * cp['off'], ey + uy * cp['off']
+            specs.append(dict(name='Стоянка гостевого дома', xy=(px, py),
+                              ang=it['angle'], cols=cp['cols'], rows=1,
+                              aisle=False, fixed=True, quiet=True))
+            if ring_axis is not None:     # съезд от кольца прямо к карману
+                q, _ = nearest_points(ring_axis, Point(px, py))
+                roads.append(band([(q.x, q.y), (px, py)], C.DRIVE_W))
+            rows.setdefault(round(ux, 1) > 0, []).append((ex, ey))
+        for side, pts in rows.items():    # аллея вдоль ряда домов
+            pts.sort(key=lambda t: t[1])
+            off = cp['walk'] * (1.0 if side else -1.0)
+            walks.append(LineString([(x + off, y) for x, y in pts]))
+    for spec in specs:
         if spec.get('along'):
             res = parking_along(west, spec, items)
             if res is None:
@@ -718,7 +749,7 @@ def build(frame, variant='A'):
         apron = apron.difference(g)
     roads.append(apron)
 
-    ctx = dict(lane=lane, apron=apron, loop=None,
+    ctx = dict(lane=lane, apron=apron, loop=None, extra_axes=walks,
                rings=[ring_line(west, uv, r) for uv, r in C.RINGS])
     paths, path_axes = path_network(west, items, ctx)
 
@@ -760,7 +791,8 @@ def build(frame, variant='A'):
     built = unary_union([i['whole'] for i in items]).buffer(6.0)
     green = site.buffer(-2.0).difference(
         unary_union(roads + paths + lots).buffer(2.5)).difference(built)
-    return dict(items=items, roads=roads, paths=paths, lots=lots, stalls=stalls,
+    return dict(park_specs=specs, items=items, roads=roads, paths=paths,
+                lots=lots, stalls=stalls,
                 nstall=nstall, green=green, hard=hard, inner=inner, furn=furn,
                 trails=trails, fence=fence,
                 west=west, east=east, variant=variant)
@@ -847,7 +879,7 @@ def checks(frame, m):
             sb = setback_of(it)
             if not site.buffer(-sb + 0.05).contains(it['poly']):
                 msgs.append('Отступ от границы < %.0f м: %s' % (sb, it['name']))
-    for lot, spec in zip(m['lots'], C.PARKING):
+    for lot, spec in zip(m['lots'], m.get('park_specs', C.PARKING)):
         for it in m['items']:
             if it['kind'] == 'building' and lot.intersects(it['poly'].buffer(-0.1)):
                 msgs.append('Парковка «%s» накладывается на %s' % (spec['name'], it['name']))
@@ -1152,7 +1184,6 @@ def to_png(frame, m, path, title):
             ('Здания', K['bld'], K['bld_e'], 1.0),
             ('Навесы', K['canopy'], '#a08d6d', 1.0),
             ('Террасы, настилы', K['terr'], '#9a7748', 1.0),
-            ('Бассейны, купели', K['water'], '#3f7fa5', 1.0),
             ('Площадки', K['plat'], '#8a9a72', 1.0),
             ('Корты', K['court'], '#25503a', 1.0),
             ('Проезды', K['road'], 'none', 0),
