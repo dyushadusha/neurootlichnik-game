@@ -97,7 +97,9 @@ def main():
         m = G.build(frame, v)
         m['trees'] = []                              # свои деревья ставим ниже
         s = export_scene.scene(frame, m, titles[v])
-        s['trees'] = (trees_json(scatter(m['green'], TREES_IN, RMIN_IN, 12), *H_IN, seed=5) +
+        s['trees'] = (trees_json(G.grove_points(m['green'],
+                                 scatter(m['green'], TREES_IN, RMIN_IN, 12)),
+                                 *H_IN, seed=5) +
                       trees_json(out_pts, *H_OUT, seed=9))
         for r in roads:
             s['slabs'] += [dict(p=p, t='road') for p in export_scene.poly_json(r, 0.4)]

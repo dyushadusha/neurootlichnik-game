@@ -752,6 +752,7 @@ def build(frame, variant='A'):
         site.buffer(-C.SETBACK + 3.0))
     for g in kppg:
         apron = apron.difference(g)
+    carriage = unary_union(roads)      # только проезжая часть, без площадок
     roads.append(apron)
 
     ctx = dict(lane=lane, apron=apron, loop=None, extra_axes=walks,
@@ -796,7 +797,8 @@ def build(frame, variant='A'):
     built = unary_union([i['whole'] for i in items]).buffer(6.0)
     green = site.buffer(-2.0).difference(
         unary_union(roads + paths + lots).buffer(2.5)).difference(built)
-    return dict(park_specs=specs, items=items, roads=roads, paths=paths,
+    return dict(park_specs=specs, carriage=carriage,
+                items=items, roads=roads, paths=paths,
                 lots=lots, stalls=stalls,
                 nstall=nstall, green=green, hard=hard, inner=inner, furn=furn,
                 trails=trails, fence=fence,
@@ -884,6 +886,11 @@ def checks(frame, m):
             sb = setback_of(it)
             if not site.buffer(-sb + 0.05).contains(it['poly']):
                 msgs.append('Отступ от границы < %.0f м: %s' % (sb, it['name']))
+    ways = m.get('carriage')
+    for it in m['items']:                 # корпус не должен лежать на проезде
+        if (ways is not None and it['kind'] == 'building'
+                and it['poly'].intersects(ways.buffer(-0.1))):
+            msgs.append('Здание на проезде: %s' % it['name'])
     for lot, spec in zip(m['lots'], m.get('park_specs', C.PARKING)):
         for it in m['items']:
             if it['kind'] == 'building' and lot.intersects(it['poly'].buffer(-0.1)):
@@ -1310,7 +1317,30 @@ def scatter_trees(green, count=300, seed=12, rmin=6.0):
         if any((x - a) ** 2 + (y - b) ** 2 < rmin ** 2 for a, b in pts):
             continue
         pts.append((x, y))
-    return pts
+    return grove_points(green, pts)
+
+
+def grove_points(green, pts, seed=31):
+    """Уплотнение посадок в заданных конфигом рощах: напротив панорамного
+    ресторана вид из зала должен упираться в лес, а не в поляну."""
+    rnd = random.Random(seed)
+    out = list(pts)
+    for g in getattr(C, 'GROVES', []):
+        cx, cy = g['xy']
+        rad, rmin, need = g['r'], g.get('rmin', 3.6), g['count']
+        got = tries = 0
+        while got < need and tries < need * 160:
+            tries += 1
+            a = rnd.uniform(0.0, 2.0 * math.pi)
+            rr = rad * math.sqrt(rnd.random())
+            x, y = cx + rr * math.cos(a), cy + rr * math.sin(a)
+            if not green.contains(Point(x, y)):
+                continue
+            if any((x - px) ** 2 + (y - py) ** 2 < rmin ** 2 for px, py in out):
+                continue
+            out.append((x, y))
+            got += 1
+    return out
 
 
 def main():
