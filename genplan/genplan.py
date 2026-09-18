@@ -334,7 +334,8 @@ def settle(frame, items, iters=600):
     заданной композицией точке. Так замысел сохраняется, а коллизии уходят."""
     movable = [i for i in items if not i.get('fixed')]
     for it in movable:
-        it['anchor'] = it.get('place_xy') or it['frame'].xy(*it['uv'])
+        it['anchor'] = (it.get('place_xy') or it.get('anchor_xy')
+                        or it['frame'].xy(*it['uv']))
     for step_i in range(iters):
         k = 1.0 - step_i / float(iters)
         moved = 0.0
@@ -456,6 +457,16 @@ def path_network(frame, items, ctx):
             continue
         c = host['whole'].centroid
         axes.append(Point(c.x, c.y).buffer(rad, 64).exterior)
+    for ray in getattr(C, 'PATH_RAYS', []):   # дорожки-лучи от центра композиции
+        host = next((i for i in items if i['n'] == ray['n']), None)
+        if host is None:
+            continue
+        c = host['whole'].centroid
+        for j in range(ray['count']):
+            a = math.radians(ray.get('phase', 0.0) + 360.0 * j / ray['count'])
+            axes.append(LineString([
+                (c.x + ray['r0'] * math.cos(a), c.y + ray['r0'] * math.sin(a)),
+                (c.x + ray['r1'] * math.cos(a), c.y + ray['r1'] * math.sin(a))]))
     trunk = unary_union(axes + [ctx['lane'], ctx['apron']])
 
     for it in items:                      # отвод от сети ко входу
@@ -567,13 +578,25 @@ def build(frame, variant='A'):
             it['center'] = (x, y)
             it['angle'] = ang
             it['place_xy'] = (x, y)
-            it['leash'] = 8.0          # от точки схемы объект отходит не дальше
+            # от точки схемы объект отходит не дальше поводка
+            it['leash'] = getattr(C, 'PLACE_LEASH', {}).get(it['n'], 8.0)
             it['no_align'] = True      # разворот задан схемой
         else:
             it['center'] = f.xy(*it['uv'])
             it['angle'] = (it['fix_angle'] if it.get('fix_angle') is not None
                            else f.angle(*it['uv']) + it.get('rot', 0.0))
         materialize(f, it)
+
+    sh = getattr(C, 'COTTAGE_SHIFT_XY', None)
+    if variant == 'B' and sh:             # ряды домиков сдвинуты как единое целое
+        for it in items:
+            if it['n'] != 16:
+                continue
+            cx, cy = it['center']
+            it['center'] = (cx + sh[0], cy + sh[1])
+            it['anchor_xy'] = it['center']
+            it['leash'] = 12.0
+            materialize(it['frame'], it)
 
     # Главная дорога — замкнутое кольцо вокруг всей застройки,
     # с юга к нему подходят два въезда. Контур задан в метрах по схеме.
