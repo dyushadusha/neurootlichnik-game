@@ -807,6 +807,9 @@ def build(frame, variant='A'):
     built = unary_union([i['whole'] for i in items]).buffer(6.0)
     green = site.buffer(-2.0).difference(
         unary_union(roads + paths + lots).buffer(2.5)).difference(built)
+    lawns = [Polygon(r) for r in getattr(C, 'NO_TREES', []) if len(r) > 2]
+    if lawns:                             # открытые газоны: деревьев нет
+        green = green.difference(unary_union(lawns))
     return dict(park_specs=specs, carriage=carriage,
                 items=items, roads=roads, paths=paths,
                 lots=lots, stalls=stalls,
