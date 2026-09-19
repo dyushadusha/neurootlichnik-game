@@ -237,6 +237,13 @@
     const style = STYLE_PRESETS.find((s) => s.id === meta.styleId);
     const room = ROOM_TYPES.find((r) => r.id === meta.roomId);
     $('resultMeta').textContent = `${room ? room.label : ''} · стиль «${style ? style.label : ''}»`;
+
+    // Пометка нужна только тем, кто понесёт кадр на площадку объявлений.
+    const mode = OUTPUT_MODES.find((m) => m.id === (meta.modeId || state.modeId));
+    const disclosure = mode && mode.disclosure;
+    $('disclosureBox').hidden = !disclosure;
+    if (disclosure) $('disclosureText').textContent = disclosure;
+
     show('resultScreen');
   }
 
@@ -385,6 +392,14 @@
     $('downloadBtn').addEventListener('click', downloadResult);
     $('shareBtn').addEventListener('click', shareResult);
     $('retryStyleBtn').addEventListener('click', () => { refreshBalanceHint(); show('setupScreen'); });
+    $('copyDisclosureBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText($('disclosureText').textContent);
+        toast('Текст скопирован');
+      } catch {
+        toast('Скопируйте текст вручную');
+      }
+    });
     $('managerBtn').addEventListener('click', () => window.open(cfg.MANAGER_URL, '_blank'));
 
     document.querySelectorAll('[data-back]').forEach((btn) => {

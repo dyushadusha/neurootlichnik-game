@@ -106,6 +106,14 @@
 
     <p class="result-meta" id="resultMeta"></p>
 
+    <!-- Для режима "для объявления": готовая пометка, которую риелтор
+         вставляет в описание. Надписи поверх фото площадки не пропускают. -->
+    <div class="disclosure" id="disclosureBox" hidden>
+      <span class="disclosure__label">Вставьте в описание объявления</span>
+      <p class="disclosure__text" id="disclosureText"></p>
+      <button class="btn btn--outline btn--block" id="copyDisclosureBtn">Скопировать текст</button>
+    </div>
+
     <div class="result-actions">
       <button class="btn btn--primary btn--block" id="downloadBtn">Скачать кадр</button>
       <button class="btn btn--outline btn--block" id="shareBtn">Поделиться</button>
