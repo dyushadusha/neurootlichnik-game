@@ -760,8 +760,9 @@ def build(frame, variant='A'):
     paths, path_axes = path_network(west, items, ctx)
 
     trails = []
-    trail_src = (getattr(C, 'FOREST_TRAILS_B_XY', []) if variant == 'B'
-                 else getattr(C, 'FOREST_TRAILS_XY', []))
+    trail_src = list(getattr(C, 'FOREST_TRAILS_B_XY', []) if variant == 'B'
+                     else getattr(C, 'FOREST_TRAILS_XY', []))
+    trail_src += getattr(C, 'FOREST_TRAILS_DRAWN', [])   # нарисованное в редакторе
     # тропа не ложится на проезды, парковки, дорожки и здания
     hard_for_trails = unary_union(list(roads) + list(lots) + list(paths) +
                                   [i['whole'] for i in items]).buffer(1.2)

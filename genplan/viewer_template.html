@@ -112,6 +112,12 @@
               paint-order:stroke;pointer-events:none;}
   #edsvg .numbg{fill:#2A2A2A;pointer-events:none;}
   #edsvg .handle{fill:var(--accent);stroke:#222;stroke-width:.5;cursor:alias;}
+  #edsvg.pen{cursor:crosshair;}
+  #edsvg.pen .obj{cursor:crosshair;}
+  #edsvg .draw{fill:none;stroke:#8a6a3a;stroke-width:2.4;stroke-linecap:round;
+               stroke-linejoin:round;}
+  #edsvg .draw.trail{stroke:#6f5a3a;stroke-width:1.6;stroke-dasharray:3 2.4;}
+  #edsvg .draw.live{stroke:var(--accent);}
   #edsvg .axis{stroke:var(--accent);stroke-width:.6;stroke-dasharray:2 2;}
   #edpanel{position:absolute;right:16px;bottom:16px;z-index:6;width:min(320px,calc(100% - 32px));
            padding:12px 14px;display:grid;gap:9px;max-height:calc(100% - 32px);overflow:auto;}
@@ -184,6 +190,13 @@
       <button type="button" id="edrotl">⟲ 5°</button>
       <button type="button" id="edrotr">⟳ 5°</button>
       <button type="button" id="edreset">Сбросить объект</button>
+    </div>
+    <h2>Дорожки от руки</h2>
+    <div class="row">
+      <button type="button" id="edpen" aria-pressed="false">Рисовать</button>
+      <button type="button" id="edpentype">Дорожка</button>
+      <button type="button" id="edundo">Отменить линию</button>
+      <button type="button" id="edclear">Стереть все</button>
     </div>
     <div class="row">
       <button type="button" id="edcopy">Скопировать PLACE</button>
@@ -913,7 +926,9 @@
     var SLAB = {road:'#9a9a9f', parking:'#b9b9c0', path:'#cfc4ab', trail:'#a98f6a'};
     var state = null;          // {v, base:{n:{x,y,a}}, cur:{...}, nodes:{n:g}}
     var sel = null, view = null, built = null;
+    var pen = false, penType = 'path', lines = [], live = null, liveEl = null;
 
+    function r1(v){ return Math.round(v * 2) / 2; }
     function pad(v, n, right){        // без padStart — работает и в старых браузерах
       var t = String(v);
       while (t.length < n) t = right ? t + ' ' : ' ' + t;
@@ -979,6 +994,8 @@
         svg.appendChild(g);
         place(o.n);
       });
+      drawLayer = el('g', {id: 'eddraw'}); svg.appendChild(drawLayer);
+      redraw();
       var hg = el('g', {id: 'edhandle'}); hg.style.display = 'none';
       hg.appendChild(el('line', {'class': 'axis', x1: 0, y1: 0, x2: 0, y2: 0}));
       hg.appendChild(el('circle', {'class': 'handle', cx: 0, cy: 0, r: 3.2}));
@@ -986,6 +1003,22 @@
       refreshPanel();
     }
 
+    var drawLayer = null;
+    function redraw(){                  // перерисовать нарисованные линии
+      if (!drawLayer) return;
+      while (drawLayer.firstChild) drawLayer.removeChild(drawLayer.firstChild);
+      lines.forEach(function(ln){
+        drawLayer.appendChild(el('polyline', {
+          'class': 'draw' + (ln.t === 'trail' ? ' trail' : ''),
+          points: ring(ln.p)}));
+      });
+      if (live && live.p.length > 1){
+        liveEl = el('polyline', {'class': 'draw live' +
+                    (penType === 'trail' ? ' trail' : ''), points: ring(live.p)});
+        drawLayer.appendChild(liveEl);
+      }
+      if (drawLayer.parentNode) svg.appendChild(drawLayer);
+    }
     function applyView(){
       svg.setAttribute('viewBox', view.x + ' ' + view.y + ' ' + view.w + ' ' + view.h);
       fz.value = String(Math.round(100 * (1 - view.w / view.w0)));
@@ -1047,10 +1080,11 @@
         var a = state.cur[k], b = state.base[k];
         if (Math.abs(a.x-b.x) > .05 || Math.abs(a.y-b.y) > .05 || Math.abs(a.a-b.a) > .05) n++;
       }
-      stat.textContent = n ? ('Передвинуто объектов: ' + n +
+      var ln = lines.length ? ('  Нарисовано линий: ' + lines.length + '.') : '';
+      stat.textContent = ln + (n ? ('Передвинуто объектов: ' + n +
         '. Нажмите «Скопировать PLACE» и пришлите блок — я пересоберу генплан.')
         : 'Тянуть объект — перенос, жёлтый кружок — поворот. Стрелки — на 1 м ' +
-          '(с Shift — 0.2 м), клавиши [ и ] — поворот на 1°.';
+          '(с Shift — 0.2 м), клавиши [ и ] — поворот на 1°.');
     }
     function setPos(n, x, y, a){
       var c = state.cur[n];
@@ -1075,6 +1109,11 @@
       if (!state) return;
       var p = toPlan(ev);
       svg.setPointerCapture(ev.pointerId);
+      if (pen){
+        live = {t: penType, p: [[r1(p.x), r1(p.y)]]};
+        drag = {mode: 'pen'};
+        return;
+      }
       if (ev.target.classList.contains('handle')){
         drag = {mode: 'rot', n: sel};
         return;
@@ -1092,6 +1131,14 @@
     });
     svg.addEventListener('pointermove', function(ev){
       if (!drag) return;
+      if (drag.mode === 'pen'){
+        var q = toPlan(ev), last = live.p[live.p.length - 1];
+        if (Math.hypot(q.x - last[0], q.y - last[1]) >= 3.0){
+          live.p.push([r1(q.x), r1(q.y)]);
+          redraw();
+        }
+        return;
+      }
       if (drag.mode === 'pan'){
         var r = svg.getBoundingClientRect();
         var k = Math.max(view.w / r.width, view.h / r.height);
@@ -1107,6 +1154,10 @@
     });
     function endDrag(ev){
       if (!drag) return;
+      if (drag.mode === 'pen'){
+        if (live && live.p.length > 1) lines.push(live);
+        live = null; redraw(); refreshPanel();
+      }
       drag = null; svg.classList.remove('drag');
       try { svg.releasePointerCapture(ev.pointerId); } catch (e) {}
     }
@@ -1172,19 +1223,51 @@
       if (done) ev.preventDefault();
     });
 
+    var penBtn = document.getElementById('edpen'),
+        typeBtn = document.getElementById('edpentype');
+    penBtn.addEventListener('click', function(){
+      pen = !pen;
+      penBtn.setAttribute('aria-pressed', String(pen));
+      svg.classList.toggle('pen', pen);
+      if (pen) select(null);
+    });
+    typeBtn.addEventListener('click', function(){
+      penType = penType === 'path' ? 'trail' : 'path';
+      typeBtn.textContent = penType === 'path' ? 'Дорожка' : 'Лесная тропа';
+    });
+    document.getElementById('edundo').addEventListener('click', function(){
+      lines.pop(); redraw(); refreshPanel();
+    });
+    document.getElementById('edclear').addEventListener('click', function(){
+      lines = []; redraw(); refreshPanel();
+    });
     document.getElementById('edcopy').addEventListener('click', function(){
-      var lines = ['PLACE = {'];
+      var rows = ['PLACE = {'];
       (DATA[state.v].edit || []).forEach(function(o){
         var c = state.cur[o.n];
         var b = state.base[o.n];
         var mark = (Math.abs(c.x-b.x) > .05 || Math.abs(c.y-b.y) > .05 ||
                     Math.abs(c.a-b.a) > .05) ? '   # <- передвинуто' : '';
-        lines.push('    ' + pad(o.n + ':', 4, 1) + ' (' +
+        rows.push('    ' + pad(o.n + ':', 4, 1) + ' (' +
                    pad(c.x.toFixed(1), 6) + ', ' + pad(c.y.toFixed(1), 7) + ', ' +
                    pad(c.a.toFixed(1), 6) + '),   # ' + o.name + mark);
       });
-      lines.push('}');
-      var txt = lines.join('\n');
+      rows.push('}');
+      function block(name, kind){
+        var got = lines.filter(function(l){ return l.t === kind; });
+        if (!got.length) return [];
+        var r = [name + ' = ['];
+        got.forEach(function(l){
+          r.push('    [' + l.p.map(function(q){
+            return '(' + q[0].toFixed(1) + ', ' + q[1].toFixed(1) + ')';
+          }).join(', ') + '],');
+        });
+        r.push(']');
+        return [''].concat(r);
+      }
+      rows = rows.concat(block('PATH_EXTRA_XY', 'path'))
+                 .concat(block('FOREST_TRAILS_DRAWN', 'trail'));
+      var txt = rows.join('\n');
       out.value = txt; out.style.display = 'block';
       out.focus(); out.select();
       var ok = function(){ showReadout('Блок PLACE скопирован'); };
