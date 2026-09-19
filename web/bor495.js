@@ -584,9 +584,12 @@
     }
 
     var BASE_R = sph.r;
+    var lastW = 0, lastH = 0;
     function resize(){
       var box = sizeApp();
       var w = box.w, h = box.h;
+      if (w === lastW && h === lastH) return;   // размер тот же — буфер не трогаем
+      lastW = w; lastH = h;
       renderer.setSize(w, h, false);
       camera.aspect = w / h; camera.updateProjectionMatrix();
       var k = fitK();

@@ -787,11 +787,20 @@ def build(frame, variant='A'):
     fence = [model3d.fence_wall(ring, gaps)]
 
     occupied = unary_union([i['whole'] for i in items] + lots).buffer(1.0)
-    furn = furniture(road_axes, path_axes, occupied, site.buffer(-2.0))
+    paved = unary_union(list(roads) + list(paths) + list(lots))
+    furn = furniture(road_axes, path_axes, occupied, site.buffer(-2.0), paved)
     for lot in lots:                          # освещение парковочных зон
-        b = lot.bounds
-        for px, py in [(b[0], b[1]), (b[2], b[1]), (b[0], b[3]), (b[2], b[3])]:
-            furn.append(('lamp', dict(pt=(px, py), h=6.5, kind='road')))
+        if lot.is_empty or lot.area < 20.0:   # карманы на 2-4 м/м не обставляем
+            continue
+        c = lot.centroid
+        for px, py in list(lot.minimum_rotated_rectangle.exterior.coords)[:-1]:
+            vx, vy = px - c.x, py - c.y
+            n = math.hypot(vx, vy) or 1.0
+            for extra in (1.6, 2.6, 3.8):     # опора встаёт за кромкой покрытия
+                q = Point(px + vx / n * extra, py + vy / n * extra)
+                if paved.distance(q) >= 0.7 and not occupied.contains(q):
+                    furn.append(('lamp', dict(pt=(q.x, q.y), h=6.5, kind='road')))
+                    break
 
     hard = unary_union(roads + paths + trails + lots + [i['whole'] for i in items])
     # деревья не подходят к зданиям ближе 6 м и к покрытиям ближе 2.5 м
@@ -806,10 +815,31 @@ def build(frame, variant='A'):
                 west=west, east=east, variant=variant)
 
 
-def furniture(axes_roads, axes_paths, blocked, site):
+def furniture(axes_roads, axes_paths, blocked, site, paved=None):
     """Освещение и МАФ: высокие опоры вдоль проездов, низкие столбики на
-    дорожках, скамьи на прогулочных маршрутах."""
+    дорожках, скамьи на прогулочных маршрутах.
+
+    Опора и скамья не должны стоять на покрытии: точка отодвигается от оси
+    ступенями, пока не сойдёт с асфальта и плитки, и отбрасывается, если
+    свободного места рядом нет."""
     out = []
+    CLEAR = 0.7                       # просвет от кромки покрытия, м
+    STEPS = (0.0, 1.0, 2.0, 3.2, 4.6)
+
+    def free(x, y):
+        pt = Point(x, y)
+        if not site.contains(pt) or blocked.contains(pt):
+            return False
+        return paved is None or paved.distance(pt) >= CLEAR
+
+    def beside(p, ux, uy, off, side):
+        """Точка сбоку от оси: сдвигаемся дальше, пока не уйдём с покрытия."""
+        for extra in STEPS:
+            x = p.x - uy * (off + extra) * side
+            y = p.y + ux * (off + extra) * side
+            if free(x, y):
+                return x, y
+        return None
 
     def put(line, step, off, kind, h, bench_every=None):
         d = step * 0.5
@@ -819,27 +849,27 @@ def furniture(axes_roads, axes_paths, blocked, site):
             q = line.interpolate(min(d + 1.0, line.length))
             dx, dy = q.x - p.x, q.y - p.y
             n = math.hypot(dx, dy) or 1.0
+            ux, uy = dx / n, dy / n
             side = 1 if (k % 2 == 0 or kind == 'path') else -1
-            x = p.x - dy / n * off * side
-            y = p.y + dx / n * off * side
-            pt = Point(x, y)
-            if site.contains(pt) and not blocked.contains(pt):
-                out.append(('lamp', dict(pt=(x, y), h=h, kind=kind)))
+            spot = beside(p, ux, uy, off, side)
+            if spot is None and kind == 'path':
+                spot = beside(p, ux, uy, off, -side)      # пробуем другую сторону
+            if spot:
+                out.append(('lamp', dict(pt=spot, h=h, kind=kind)))
                 if bench_every and k % bench_every == 0:
-                    bx = p.x + dy / n * (C.PATH_W / 2.0 + 1.0) * side
-                    by = p.y - dx / n * (C.PATH_W / 2.0 + 1.0) * side
-                    if site.contains(Point(bx, by)) and not blocked.contains(Point(bx, by)):
-                        out.append(('bench', dict(pt=(bx, by),
+                    b = beside(p, ux, uy, C.PATH_W / 2.0 + 1.2, -side)
+                    if b:
+                        out.append(('bench', dict(pt=b,
                                                   ang=math.degrees(math.atan2(dy, dx)))))
             d += step
             k += 1
 
     for ln in axes_roads:
-        put(ln, 26.0, 4.6, 'road', 6.5)
+        put(ln, 26.0, 4.8, 'road', 6.5)
     for ln in axes_paths:
         if ln.length < 25.0:              # короткие отводы не обставляем
             continue
-        put(ln, 20.0, 2.0, 'path', 1.05, bench_every=4 if ln.length > 60 else None)
+        put(ln, 20.0, 2.6, 'path', 1.05, bench_every=4 if ln.length > 60 else None)
     return out
 
 
