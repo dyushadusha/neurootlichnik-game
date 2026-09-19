@@ -102,11 +102,11 @@
   }
 
   // Сохраняем пару "было/стало" + подписи к ней.
-  async function saveJob({ id, beforeBlob, afterBlob, styleId, roomId, modeId }) {
+  async function saveJob({ id, beforeBlob, afterBlob, styleId, roomId, modeId, area, height }) {
     await idbPut(id + ':before', beforeBlob);
     await idbPut(id + ':after', afterBlob);
     const meta = readMeta();
-    meta.unshift({ id, styleId, roomId, modeId, createdAt: Date.now() });
+    meta.unshift({ id, styleId, roomId, modeId, area, height, createdAt: Date.now() });
     writeMeta(meta);
   }
 

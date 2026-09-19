@@ -187,6 +187,46 @@ body {
 
 .sticky-bar { position: sticky; bottom: 0; padding-top: 16px; margin-top: 20px; background: linear-gradient(to top, var(--bg-primary) 72%, transparent); }
 
+/* ---------------- Площадь и потолки ---------------- */
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.metric { display: flex; flex-direction: column; gap: 6px; }
+.metric__label { font-size: 13px; color: var(--text-secondary); }
+.metric__input {
+  font-family: var(--font-display); font-size: 20px;
+  padding: 12px 14px; width: 100%;
+  border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md);
+  background: var(--bg-primary); color: var(--text-primary);
+}
+.metric__input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---------------- Смета ---------------- */
+.estimate {
+  margin-top: 18px; padding: 16px;
+  border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md);
+  box-shadow: var(--doodle-shadow-sm);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.estimate__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.estimate__title { font-family: var(--font-display); font-size: 18px; }
+.estimate__segment {
+  font-size: 12px; font-family: var(--font-display);
+  background: var(--accent); color: var(--accent-contrast);
+  padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+}
+.estimate__lines { display: flex; flex-direction: column; gap: 8px; }
+.estimate-line { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; line-height: 1.35; }
+.estimate-line__name { color: var(--text-secondary); }
+.estimate-line__qty { color: var(--text-muted); font-size: 12.5px; display: block; }
+.estimate-line__sum { font-family: var(--font-display); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.estimate__total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-top: var(--border-width) solid var(--border-color); padding-top: 12px;
+}
+.estimate__total-label { font-family: var(--font-display); font-size: 16px; }
+.estimate__total-value { font-family: var(--font-display); font-size: 24px; font-variant-numeric: tabular-nums; }
+.estimate__range { font-size: 13.5px; color: var(--text-secondary); }
+.estimate__note { font-family: var(--font-light); font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+
 /* ---------------- Обработка ---------------- */
 .process__mascot { width: 130px; margin-bottom: 18px; }
 .process__stage { font-family: var(--font-display); font-size: 19px; margin-bottom: 14px; }

@@ -27,10 +27,11 @@
   <!-- ================= ЭКРАН 1 — ГЛАВНАЯ ================= -->
   <section id="homeScreen" class="screen">
     <div class="hero">
-      <h1 class="hero__title">Ремонт по фото<br />за пару минут</h1>
+      <h1 class="hero__title">Ремонт по фото<br />и смета к нему</h1>
       <p class="hero__text">
-        Загрузите снимок комнаты с телефона — вернём тот же ракурс с ремонтом,
-        мебелью и светом. Стены, окна и метраж останутся на своих местах.
+        Загрузите снимок комнаты с телефона — вернём тот же ракурс с ремонтом
+        и предварительную смету на эти работы. Картинку клиент понимает сразу,
+        цифру — спрашивает следующим вопросом.
       </p>
     </div>
 
@@ -42,8 +43,8 @@
     </div>
 
     <ul class="usp">
-      <li><b>2–5 минут</b> вместо недели на дизайнера</li>
-      <li><b>От 40 ₽</b> за кадр против 15 000 ₽ за физический стейджинг</li>
+      <li><b>Картинка и смета сразу</b> — клиент видит результат и его цену в одном ответе</li>
+      <li><b>2–5 минут</b> вместо двух дней на замерщика и сметчика</li>
       <li><b>Геометрия не плывёт</b> — это не «нарисуй красиво», а ваша комната</li>
     </ul>
 
@@ -62,6 +63,19 @@
 
     <h2 class="section-title">Что на фото?</h2>
     <div class="chips" id="roomChips"></div>
+
+    <h2 class="section-title">Площадь и потолки</h2>
+    <div class="metrics">
+      <label class="metric">
+        <span class="metric__label">Площадь, м²</span>
+        <input type="number" id="areaInput" class="metric__input" min="2" max="200" step="0.5" inputmode="decimal" />
+      </label>
+      <label class="metric">
+        <span class="metric__label">Высота, м</span>
+        <input type="number" id="heightInput" class="metric__input" min="2" max="6" step="0.05" inputmode="decimal" />
+      </label>
+    </div>
+    <p class="hint">Подставили типовые значения — поправьте, если знаете точные.</p>
 
     <h2 class="section-title">Стиль ремонта</h2>
     <div class="styles" id="styleCards"></div>
@@ -114,6 +128,21 @@
       <button class="btn btn--outline btn--block" id="copyDisclosureBtn">Скопировать текст</button>
     </div>
 
+    <div class="estimate" id="estimateBox">
+      <div class="estimate__head">
+        <span class="estimate__title">Предварительная смета</span>
+        <span class="estimate__segment" id="estimateSegment"></span>
+      </div>
+      <div class="estimate__lines" id="estimateLines"></div>
+      <div class="estimate__total">
+        <span class="estimate__total-label">Итого</span>
+        <span class="estimate__total-value" id="estimateTotal"></span>
+      </div>
+      <p class="estimate__range" id="estimateRange"></p>
+      <p class="estimate__note" id="estimateNote"></p>
+      <button class="btn btn--outline btn--block" id="copyEstimateBtn">Скопировать смету</button>
+    </div>
+
     <div class="result-actions">
       <button class="btn btn--primary btn--block" id="downloadBtn">Скачать кадр</button>
       <button class="btn btn--outline btn--block" id="shareBtn">Поделиться</button>
@@ -146,6 +175,8 @@
 
   <script src="src/config.js?v=1"></script>
   <script src="src/presets.js?v=1"></script>
+  <script src="src/pricing.js?v=1"></script>
+  <script src="src/estimate.js?v=1"></script>
   <script src="src/store.js?v=1"></script>
   <script src="src/pipeline.js?v=1"></script>
   <script src="src/app.js?v=1"></script>

@@ -21,6 +21,8 @@
     afterBlob: null,
     afterUrl: null,
     roomId: ROOM_TYPES[0].id,
+    area: window.NS_PRICING.defaultArea[ROOM_TYPES[0].id],
+    height: window.NS_PRICING.defaultHeight,
     styleId: STYLE_PRESETS[0].id,
     modeId: OUTPUT_MODES[0].id,
     lastJobId: null,
@@ -76,6 +78,9 @@
       b.setAttribute('aria-pressed', String(room.id === state.roomId));
       b.addEventListener('click', () => {
         state.roomId = room.id;
+        // Типовая площадь для выбранного помещения — чтобы не вводить руками.
+        state.area = window.NS_PRICING.defaultArea[room.id] || state.area;
+        $('areaInput').value = state.area;
         haptic();
         buildRoomChips();
       });
@@ -146,6 +151,12 @@
     state.beforeBlob = blob;
     state.beforeUrl = URL.createObjectURL(blob);
     $('setupPreview').src = state.beforeUrl;
+    // Новое фото — новый объект: подставляем типовую площадь того
+    // помещения, которое выбрано сейчас, иначе смета посчитается
+    // по площади от предыдущего кадра.
+    state.area = window.NS_PRICING.defaultArea[state.roomId] || state.area;
+    $('areaInput').value = state.area;
+    $('heightInput').value = state.height;
     buildRoomChips();
     buildStyleCards();
     buildModeSegmented();
@@ -208,10 +219,14 @@
       state.lastJobId = jobId;
       await store.saveJob({
         id: jobId, beforeBlob: before, afterBlob: after,
-        styleId: state.styleId, roomId: state.roomId, modeId: state.modeId
+        styleId: state.styleId, roomId: state.roomId, modeId: state.modeId,
+        area: state.area, height: state.height
       });
 
-      showResult(before, after, { styleId: state.styleId, roomId: state.roomId });
+      showResult(before, after, {
+        styleId: state.styleId, roomId: state.roomId, modeId: state.modeId,
+        area: state.area, height: state.height
+      });
       haptic('heavy');
     } catch (err) {
       console.error(err);
@@ -238,6 +253,8 @@
     const room = ROOM_TYPES.find((r) => r.id === meta.roomId);
     $('resultMeta').textContent = `${room ? room.label : ''} · стиль «${style ? style.label : ''}»`;
 
+    renderEstimate(meta);
+
     // Пометка нужна только тем, кто понесёт кадр на площадку объявлений.
     const mode = OUTPUT_MODES.find((m) => m.id === (meta.modeId || state.modeId));
     const disclosure = mode && mode.disclosure;
@@ -245,6 +262,55 @@
     if (disclosure) $('disclosureText').textContent = disclosure;
 
     show('resultScreen');
+  }
+
+  // Смета считается из площади, высоты и уровня отделки (его задаёт стиль).
+  function renderEstimate(meta) {
+    const area = Number(meta.area || state.area);
+    const height = Number(meta.height || state.height);
+    const roomId = meta.roomId || state.roomId;
+    const styleId = meta.styleId || state.styleId;
+
+    const est = window.NS_Estimate.calculate({ roomId, styleId, area, height });
+    state.lastEstimate = est;
+
+    $('estimateSegment').textContent = est.segmentLabel;
+    const box = $('estimateLines');
+    box.innerHTML = '';
+    est.lines.forEach((line) => {
+      const row = document.createElement('div');
+      row.className = 'estimate-line';
+      row.innerHTML = `
+        <span class="estimate-line__name">${line.label}
+          ${line.qty ? `<span class="estimate-line__qty">${line.qty} ${line.unit}</span>` : ''}
+        </span>
+        <span class="estimate-line__sum">${line.sumText}</span>`;
+      box.appendChild(row);
+    });
+
+    const overhead = document.createElement('div');
+    overhead.className = 'estimate-line';
+    overhead.innerHTML = `
+      <span class="estimate-line__name">Вывоз мусора и расходники
+        <span class="estimate-line__qty">${est.overheadPercent}% от работ</span>
+      </span>
+      <span class="estimate-line__sum">${est.overheadText}</span>`;
+    box.appendChild(overhead);
+
+    $('estimateTotal').textContent = est.totalText;
+    $('estimateRange').textContent = `${est.perSquareText} · вилка после замера: ${est.rangeText} · срок ≈ ${est.days} дней`;
+    $('estimateNote').textContent = `Расчёт предварительный: по фото и заявленной площади, по прайсу «${est.region}». Точная смета — после замера.`;
+  }
+
+  function estimateAsText() {
+    if (!state.lastEstimate) return '';
+    const room = ROOM_TYPES.find((r) => r.id === state.roomId);
+    const style = STYLE_PRESETS.find((s) => s.id === state.styleId);
+    return window.NS_Estimate.asText(state.lastEstimate, {
+      roomLabel: room ? room.label : 'Помещение',
+      styleLabel: style ? style.label : '',
+      area: state.area
+    });
   }
 
   function setCompare(percent) {
@@ -392,6 +458,22 @@
     $('downloadBtn').addEventListener('click', downloadResult);
     $('shareBtn').addEventListener('click', shareResult);
     $('retryStyleBtn').addEventListener('click', () => { refreshBalanceHint(); show('setupScreen'); });
+    $('areaInput').addEventListener('input', (e) => {
+      const v = parseFloat(e.target.value);
+      if (Number.isFinite(v) && v > 0) state.area = v;
+    });
+    $('heightInput').addEventListener('input', (e) => {
+      const v = parseFloat(e.target.value);
+      if (Number.isFinite(v) && v > 0) state.height = v;
+    });
+    $('copyEstimateBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(estimateAsText());
+        toast('Смета скопирована — вставьте в КП');
+      } catch {
+        toast('Не удалось скопировать — выделите текст вручную');
+      }
+    });
     $('copyDisclosureBtn').addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText($('disclosureText').textContent);
