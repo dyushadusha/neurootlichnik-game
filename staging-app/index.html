@@ -27,11 +27,11 @@
   <!-- ================= ЭКРАН 1 — ГЛАВНАЯ ================= -->
   <section id="homeScreen" class="screen">
     <div class="hero">
-      <h1 class="hero__title">Ремонт по фото<br />и смета к нему</h1>
+      <h1 class="hero__title">Сколько стоит<br />эта квартира<br />на самом деле</h1>
       <p class="hero__text">
-        Загрузите снимок комнаты с телефона — вернём тот же ракурс с ремонтом
-        и предварительную смету на эти работы. Картинку клиент понимает сразу,
-        цифру — спрашивает следующим вопросом.
+        Цена в объявлении — половина правды. Загрузите фото комнат из объявления:
+        покажем, как квартира будет выглядеть после ремонта, и посчитаем цену входа —
+        квартиру вместе с ремонтом.
       </p>
     </div>
 
@@ -39,13 +39,14 @@
       <label class="btn btn--primary btn--block" for="photoInput">Загрузить фото</label>
       <input type="file" id="photoInput" accept="image/*" hidden />
       <button class="btn btn--outline btn--block" id="demoBtn">Посмотреть на примере</button>
-      <button class="text-link" id="openHistoryBtn">Мои кадры</button>
+      <button class="btn btn--outline btn--block" id="openProjectBtn" hidden>Мой объект</button>
+      <button class="text-link" id="openHistoryBtn">Все кадры</button>
     </div>
 
     <ul class="usp">
-      <li><b>Картинка и смета сразу</b> — клиент видит результат и его цену в одном ответе</li>
-      <li><b>2–5 минут</b> вместо двух дней на замерщика и сметчика</li>
-      <li><b>Геометрия не плывёт</b> — это не «нарисуй красиво», а ваша комната</li>
+      <li><b>Цена входа</b> — квартира плюс ремонт одной цифрой, её не даёт никто</li>
+      <li><b>2 минуты</b> вместо недели ожидания замерщика</li>
+      <li><b>Геометрия не плывёт</b> — это не «нарисуй красиво», а та самая комната</li>
     </ul>
 
     <p class="demo-note">
@@ -148,11 +149,54 @@
     </div>
 
     <div class="result-actions">
-      <button class="btn btn--primary btn--block" id="openQuoteBtn">Ответ клиенту</button>
+      <button class="btn btn--primary btn--block" id="toProjectBtn">К объекту и цене входа</button>
+      <button class="btn btn--outline btn--block" id="openQuoteBtn">Ответ клиенту</button>
       <button class="btn btn--outline btn--block" id="downloadBtn">Скачать кадр</button>
       <button class="btn btn--outline btn--block" id="shareBtn">Поделиться</button>
       <button class="btn btn--outline btn--block" id="retryStyleBtn">Другой стиль</button>
     </div>
+  </section>
+
+  <!-- ================= ЭКРАН 4а — ОБЪЕКТ ================= -->
+  <section id="projectScreen" class="screen" hidden>
+    <button class="back-link" data-back="homeScreen">← На главную</button>
+    <h2 class="section-title section-title--first">Мой объект</h2>
+
+    <label class="metric metric--wide">
+      <span class="metric__label">Цена квартиры по объявлению, ₽</span>
+      <input type="number" id="listingPriceInput" class="metric__input" min="0" step="100000"
+             inputmode="numeric" placeholder="например, 9 200 000" />
+    </label>
+    <p class="hint">Без неё посчитаем только ремонт. С ней — цену входа.</p>
+
+    <div class="rooms" id="roomsList"></div>
+
+    <div class="totals" id="totalsBox">
+      <div class="totals__row" id="totalsListingRow">
+        <span>Квартира</span><b id="totalsListing"></b>
+      </div>
+      <div class="totals__row">
+        <span id="totalsRenovationLabel">Ремонт</span><b id="totalsRenovation"></b>
+      </div>
+      <div class="totals__entry" id="totalsEntryBox">
+        <span class="totals__entry-label">Цена входа</span>
+        <b class="totals__entry-value" id="totalsEntry"></b>
+        <span class="totals__entry-note" id="totalsShare"></span>
+      </div>
+      <p class="totals__days" id="totalsDays"></p>
+    </div>
+
+    <div class="result-actions">
+      <label class="btn btn--primary btn--block" for="photoInputProject">Добавить комнату</label>
+      <input type="file" id="photoInputProject" accept="image/*" hidden />
+      <button class="btn btn--outline btn--block" id="shareCardBtn">Поделиться карточкой</button>
+      <button class="btn btn--outline btn--block" id="quoteFromProjectBtn">Ответ клиенту (для подрядчика)</button>
+      <button class="text-link" id="resetProjectBtn">Начать новый объект</button>
+    </div>
+
+    <p class="demo-note">
+      Расчёт предварительный: по фото и заявленным площадям. Точная смета — после замера.
+    </p>
   </section>
 
   <!-- ================= ЭКРАН 4б — ОТВЕТ КЛИЕНТУ ================= -->
@@ -208,6 +252,8 @@
   <script src="src/presets.js?v=1"></script>
   <script src="src/pricing.js?v=1"></script>
   <script src="src/estimate.js?v=1"></script>
+  <script src="src/project.js?v=1"></script>
+  <script src="src/sharecard.js?v=1"></script>
   <script src="src/store.js?v=1"></script>
   <script src="src/pipeline.js?v=1"></script>
   <script src="src/app.js?v=1"></script>

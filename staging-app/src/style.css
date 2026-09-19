@@ -198,6 +198,49 @@ body {
   background: var(--bg-primary); color: var(--text-primary);
 }
 .metric__input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.metric--wide { margin-top: 4px; }
+
+/* ---------------- Объект: комнаты и итоги ---------------- */
+.rooms { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.room-card {
+  display: flex; align-items: center; gap: 12px;
+  border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md);
+  padding: 10px; background: var(--bg-primary);
+}
+.room-card img { width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); border: 2px solid var(--ink); flex: none; }
+.room-card__body { flex: 1; min-width: 0; }
+.room-card__name { font-family: var(--font-display); font-size: 15px; }
+.room-card__meta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+.room-card__sum { font-family: var(--font-display); font-size: 15px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.room-card__remove {
+  flex: none; width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid var(--border-color); background: var(--bg-primary);
+  color: var(--text-secondary); font-size: 16px; cursor: pointer; line-height: 1;
+}
+.rooms-empty { font-size: 14px; color: var(--text-muted); line-height: 1.45; }
+
+.totals {
+  border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md);
+  box-shadow: var(--doodle-shadow-sm); padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.totals__row {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px;
+  font-size: 14px; color: var(--text-secondary);
+}
+.totals__row b {
+  font-family: var(--font-display); font-size: 18px; color: var(--text-primary);
+  margin-left: auto; font-variant-numeric: tabular-nums;
+}
+.totals__entry {
+  background: var(--accent); color: var(--accent-contrast);
+  border-radius: var(--radius-sm); padding: 14px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.totals__entry-label { font-family: var(--font-display); font-size: 14px; }
+.totals__entry-value { font-family: var(--font-display); font-size: 30px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.totals__entry-note { font-size: 13px; }
+.totals__days { font-size: 13px; color: var(--text-muted); }
 
 /* ---------------- Смета ---------------- */
 .estimate {

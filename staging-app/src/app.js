@@ -12,7 +12,7 @@
   const tg = window.Telegram?.WebApp;
 
   const $ = (id) => document.getElementById(id);
-  const screens = ['homeScreen', 'setupScreen', 'processScreen', 'resultScreen', 'quoteScreen', 'plansScreen', 'historyScreen'];
+  const screens = ['homeScreen', 'setupScreen', 'processScreen', 'resultScreen', 'projectScreen', 'quoteScreen', 'plansScreen', 'historyScreen'];
 
   // Текущее состояние: что выбрал пользователь и что получилось.
   const state = {
@@ -245,6 +245,13 @@
         area: state.area, height: state.height, stateId: state.stateId
       });
 
+      // Комната сразу становится частью объекта: продукт считает
+      // квартиру целиком, а не отдельные кадры.
+      window.NS_Project.addRoom({
+        jobId, roomId: state.roomId, styleId: state.styleId,
+        stateId: state.stateId, area: state.area, height: state.height
+      });
+
       showResult(before, after, {
         styleId: state.styleId, roomId: state.roomId, modeId: state.modeId,
         area: state.area, height: state.height, stateId: state.stateId
@@ -387,6 +394,113 @@
       } catch { /* пользователь передумал — это не ошибка */ }
     }
     downloadResult();
+  }
+
+  /* ================= Объект: квартира целиком ================= */
+
+  async function buildProject() {
+    const project = window.NS_Project.read();
+    const t = window.NS_Project.totals();
+    state.lastTotals = t;
+
+    $('listingPriceInput').value = project.listingPrice || '';
+
+    const box = $('roomsList');
+    box.innerHTML = '';
+    if (!t.rooms.length) {
+      const empty = document.createElement('p');
+      empty.className = 'rooms-empty';
+      empty.textContent = 'Пока ни одной комнаты. Добавьте фото — посчитаем ремонт и цену входа.';
+      box.appendChild(empty);
+    }
+
+    for (const room of t.rooms) {
+      const saved = await store.loadJob(room.jobId);
+      const roomType = ROOM_TYPES.find((r) => r.id === room.roomId);
+      const style = STYLE_PRESETS.find((s) => s.id === room.styleId);
+
+      const card = document.createElement('div');
+      card.className = 'room-card';
+      card.innerHTML = `
+        ${saved ? `<img src="${URL.createObjectURL(saved.after)}" alt="" />` : ''}
+        <span class="room-card__body">
+          <span class="room-card__name">${roomType ? roomType.label : 'Комната'}, ${room.area} м²</span>
+          <span class="room-card__meta">${style ? style.label : ''} · ${room.estimate.segmentLabel}</span>
+        </span>
+        <span class="room-card__sum">${room.estimate.totalText}</span>
+        <button class="room-card__remove" type="button" aria-label="Убрать комнату">×</button>`;
+      card.querySelector('.room-card__remove').addEventListener('click', () => {
+        window.NS_Project.removeRoom(room.jobId);
+        haptic();
+        buildProject();
+      });
+      box.appendChild(card);
+    }
+
+    $('totalsListingRow').hidden = !t.listingText;
+    if (t.listingText) $('totalsListing').textContent = t.listingText;
+    $('totalsRenovationLabel').textContent = t.area ? `Ремонт · ${t.area} м²` : 'Ремонт';
+    $('totalsRenovation').textContent = t.renovationText;
+
+    $('totalsEntryBox').hidden = !t.entryText;
+    if (t.entryText) {
+      $('totalsEntry').textContent = t.entryText;
+      $('totalsShare').textContent = t.renovationShare
+        ? `Ремонт — ${t.renovationShare}% от всей суммы` : '';
+    }
+    $('totalsDays').textContent = t.rooms.length
+      ? `Срок работ по объекту ≈ ${t.days} дней${t.perSquareText ? ` · ${t.perSquareText}` : ''}`
+      : '';
+
+    $('shareCardBtn').disabled = !t.rooms.length;
+    $('quoteFromProjectBtn').disabled = !state.lastEstimate;
+    show('projectScreen');
+  }
+
+  // Карточка, которой делятся: ради цифр её отправляют,
+  // ради картинки открывают, а нас находят по подписи внизу.
+  async function shareProjectCard() {
+    const t = window.NS_Project.totals();
+    if (!t.rooms.length) return;
+
+    // Берём самую дорогую комнату — она выглядит убедительнее всего.
+    const lead = t.rooms.slice().sort((a, b) => b.estimate.total - a.estimate.total)[0];
+    const saved = await store.loadJob(lead.jobId);
+    if (!saved) { toast('Кадр не найден — сделайте его заново'); return; }
+
+    toast('Собираем карточку…');
+    let blob;
+    try {
+      blob = await window.NS_ShareCard.build({
+        totals: t, beforeBlob: saved.before, afterBlob: saved.after,
+        isDemo: cfg.MODE === 'mock'
+      });
+    } catch (err) {
+      console.error(err);
+      toast('Не получилось собрать карточку');
+      return;
+    }
+
+    const file = new File([blob], 'cena-vhoda.jpg', { type: 'image/jpeg' });
+    const text = t.entryText
+      ? `Квартира ${t.listingText} + ремонт ${t.renovationText} = ${t.entryText}`
+      : `Ремонт этой квартиры — ${t.renovationText}`;
+
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text });
+        return;
+      } catch { /* передумали */ }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cena-vhoda.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast('Карточка сохранена');
   }
 
   /* ================= Ответ клиенту ================= */
@@ -532,8 +646,15 @@
 
   /* ================= Запуск ================= */
 
+  function refreshProjectButton() {
+    const has = window.NS_Project.read().rooms.length > 0;
+    $('openProjectBtn').hidden = !has;
+  }
+  document.addEventListener('ns:project', refreshProjectButton);
+
   function init() {
     renderCredits();
+    refreshProjectButton();
     initCompareDrag();
 
     $('photoInput').addEventListener('change', async (e) => {
@@ -562,6 +683,33 @@
     $('shareBtn').addEventListener('click', shareResult);
     $('retryStyleBtn').addEventListener('click', () => { refreshBalanceHint(); show('setupScreen'); });
     $('openQuoteBtn').addEventListener('click', openQuote);
+    $('toProjectBtn').addEventListener('click', buildProject);
+    $('openProjectBtn').addEventListener('click', buildProject);
+    $('quoteFromProjectBtn').addEventListener('click', openQuote);
+    $('shareCardBtn').addEventListener('click', shareProjectCard);
+    $('photoInputProject').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      await openSetup(file);
+      e.target.value = '';
+    });
+    $('listingPriceInput').addEventListener('input', (e) => {
+      window.NS_Project.setListingPrice(parseFloat(e.target.value));
+      const t = window.NS_Project.totals();
+      $('totalsListingRow').hidden = !t.listingText;
+      if (t.listingText) $('totalsListing').textContent = t.listingText;
+      $('totalsEntryBox').hidden = !t.entryText;
+      if (t.entryText) {
+        $('totalsEntry').textContent = t.entryText;
+        $('totalsShare').textContent = t.renovationShare
+          ? `Ремонт — ${t.renovationShare}% от всей суммы` : '';
+      }
+    });
+    $('resetProjectBtn').addEventListener('click', () => {
+      window.NS_Project.reset();
+      haptic();
+      buildProject();
+    });
     $('shareQuoteBtn').addEventListener('click', shareQuote);
     $('copyQuoteBtn').addEventListener('click', async () => {
       try {
