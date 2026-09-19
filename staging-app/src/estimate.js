@@ -34,7 +34,8 @@
   }
 
   function formatMoney(value) {
-    return Math.round(value).toLocaleString('ru-RU') + ' ' + P.currency;
+    // Неразрывный пробел: иначе "₽" убегает на следующую строку.
+    return Math.round(value).toLocaleString('ru-RU') + '\u00A0' + P.currency;
   }
 
   function unitLabel(unit) {
@@ -43,7 +44,9 @@
 
   /* Главная функция: на входе — что за комната, какой стиль,
      площадь и высота; на выходе — готовая смета. */
-  function calculate({ roomId, styleId, area, height }) {
+  function calculate({ roomId, styleId, area, height, stateId }) {
+    const stateFactors = (window.NS_PRESETS.OBJECT_STATES
+      .find((s) => s.id === stateId) || {}).factors || {};
     const segmentId = P.styleSegment[styleId] || 'comfort';
     const segment = P.segments[segmentId];
     const geo = geometry(area, height, roomId);
@@ -55,8 +58,13 @@
       // Плитка в санузле заменяет покраску стен.
       if (work.id === 'walls' && roomId === 'bath') continue;
 
+      // Состояние объекта может убрать работу совсем (демонтаж в
+      // новостройке) или урезать её объём (стяжка поверх черновой).
+      const stateFactor = stateFactors[work.id] === undefined ? 1 : stateFactors[work.id];
+      if (stateFactor === 0) continue;
+
       const qty = work.unit === 'fixed' ? 1 : geo[work.unit];
-      const sum = work.rate * segment.factor * qty;
+      const sum = work.rate * segment.factor * qty * stateFactor;
       lines.push({
         label: work.label,
         qty: work.unit === 'fixed' ? '' : Math.round(qty * 10) / 10,

@@ -227,6 +227,47 @@ body {
 .estimate__range { font-size: 13.5px; color: var(--text-secondary); }
 .estimate__note { font-family: var(--font-light); font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
 
+/* ---------------- Ответ клиенту ---------------- */
+.quote {
+  margin-top: 14px;
+  border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md);
+  box-shadow: var(--doodle-shadow-sm);
+  overflow: hidden;
+}
+.quote__brand {
+  background: var(--ink); color: #f5f5f0;
+  font-family: var(--font-display); font-size: 14px;
+  padding: 12px 14px; line-height: 1.35;
+}
+.quote__image { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.quote__numbers { display: flex; flex-direction: column; }
+.quote__row {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px;
+  padding: 12px 14px; font-size: 14px; color: var(--text-secondary);
+  border-bottom: 2px solid color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.quote__row b {
+  font-family: var(--font-display); font-size: 16px; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; margin-left: auto; text-align: right;
+}
+.quote__text { padding: 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); white-space: pre-line; }
+
+/* ---------------- Квалификация перед выездом ---------------- */
+.qualify { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.qualify-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 12px;
+  cursor: pointer; text-align: left; background: var(--bg-primary);
+}
+.qualify-item[aria-pressed='true'] { background: var(--accent); }
+.qualify-item__box {
+  flex: none; width: 22px; height: 22px; border: 2px solid var(--ink); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; font-size: 14px; font-family: var(--font-display);
+}
+.qualify-item__label { font-size: 14px; line-height: 1.35; }
+.qualify-item__bad { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+.qualify-item[aria-pressed='true'] .qualify-item__bad { color: var(--ink); }
+
 /* ---------------- Обработка ---------------- */
 .process__mascot { width: 130px; margin-bottom: 18px; }
 .process__stage { font-family: var(--font-display); font-size: 19px; margin-bottom: 14px; }

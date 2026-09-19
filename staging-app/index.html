@@ -64,6 +64,10 @@
     <h2 class="section-title">Что на фото?</h2>
     <div class="chips" id="roomChips"></div>
 
+    <h2 class="section-title">Состояние объекта</h2>
+    <div class="chips" id="stateChips"></div>
+    <p class="hint" id="stateHint"></p>
+
     <h2 class="section-title">Площадь и потолки</h2>
     <div class="metrics">
       <label class="metric">
@@ -144,10 +148,37 @@
     </div>
 
     <div class="result-actions">
-      <button class="btn btn--primary btn--block" id="downloadBtn">Скачать кадр</button>
+      <button class="btn btn--primary btn--block" id="openQuoteBtn">Ответ клиенту</button>
+      <button class="btn btn--outline btn--block" id="downloadBtn">Скачать кадр</button>
       <button class="btn btn--outline btn--block" id="shareBtn">Поделиться</button>
       <button class="btn btn--outline btn--block" id="retryStyleBtn">Другой стиль</button>
     </div>
+  </section>
+
+  <!-- ================= ЭКРАН 4б — ОТВЕТ КЛИЕНТУ ================= -->
+  <section id="quoteScreen" class="screen" hidden>
+    <button class="back-link" data-back="resultScreen">← К результату</button>
+    <h2 class="section-title section-title--first">Ответ клиенту</h2>
+    <p class="hint">Отправьте это в тот же чат, где пришла заявка. Первый содержательный ответ забирает сделку.</p>
+
+    <div class="quote">
+      <div class="quote__brand" id="quoteBrand"></div>
+      <img class="quote__image" id="quoteImage" alt="Визуализация ремонта" />
+      <div class="quote__numbers">
+        <div class="quote__row"><span>Ориентир</span><b id="quoteRange"></b></div>
+        <div class="quote__row"><span>Срок работ</span><b id="quoteDays"></b></div>
+      </div>
+      <p class="quote__text" id="quoteText"></p>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn--primary btn--block" id="copyQuoteBtn">Скопировать сообщение</button>
+      <button class="btn btn--outline btn--block" id="shareQuoteBtn">Отправить с картинкой</button>
+    </div>
+
+    <h2 class="section-title">Перед выездом уточните</h2>
+    <p class="hint">Замер стоит компании 12–15 тыс ₽. Если два ответа из трёх не сходятся — не выезжайте, договоритесь на созвон.</p>
+    <div class="qualify" id="qualifyList"></div>
   </section>
 
   <!-- ================= ЭКРАН 5 — ТАРИФЫ ================= -->

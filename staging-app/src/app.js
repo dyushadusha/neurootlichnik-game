@@ -6,13 +6,13 @@
    функцией show(), ничего больше про навигацию знать не нужно.
    ========================================================= */
 (function () {
-  const { ROOM_TYPES, STYLE_PRESETS, OUTPUT_MODES } = window.NS_PRESETS;
+  const { ROOM_TYPES, STYLE_PRESETS, OUTPUT_MODES, OBJECT_STATES, QUALIFY_QUESTIONS } = window.NS_PRESETS;
   const cfg = window.NS_CONFIG;
   const store = window.NS_Store;
   const tg = window.Telegram?.WebApp;
 
   const $ = (id) => document.getElementById(id);
-  const screens = ['homeScreen', 'setupScreen', 'processScreen', 'resultScreen', 'plansScreen', 'historyScreen'];
+  const screens = ['homeScreen', 'setupScreen', 'processScreen', 'resultScreen', 'quoteScreen', 'plansScreen', 'historyScreen'];
 
   // Текущее состояние: что выбрал пользователь и что получилось.
   const state = {
@@ -25,6 +25,7 @@
     height: window.NS_PRICING.defaultHeight,
     styleId: STYLE_PRESETS[0].id,
     modeId: OUTPUT_MODES[0].id,
+    stateId: OBJECT_STATES[0].id,
     lastJobId: null,
     screen: 'homeScreen'
   };
@@ -86,6 +87,26 @@
       });
       box.appendChild(b);
     });
+  }
+
+  function buildStateChips() {
+    const box = $('stateChips');
+    box.innerHTML = '';
+    OBJECT_STATES.forEach((st) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.textContent = st.label;
+      b.setAttribute('aria-pressed', String(st.id === state.stateId));
+      b.addEventListener('click', () => {
+        state.stateId = st.id;
+        haptic();
+        buildStateChips();
+      });
+      box.appendChild(b);
+    });
+    const active = OBJECT_STATES.find((st) => st.id === state.stateId);
+    $('stateHint').textContent = active ? active.hint : '';
   }
 
   function buildStyleCards() {
@@ -158,6 +179,7 @@
     $('areaInput').value = state.area;
     $('heightInput').value = state.height;
     buildRoomChips();
+    buildStateChips();
     buildStyleCards();
     buildModeSegmented();
     refreshBalanceHint();
@@ -220,12 +242,12 @@
       await store.saveJob({
         id: jobId, beforeBlob: before, afterBlob: after,
         styleId: state.styleId, roomId: state.roomId, modeId: state.modeId,
-        area: state.area, height: state.height
+        area: state.area, height: state.height, stateId: state.stateId
       });
 
       showResult(before, after, {
         styleId: state.styleId, roomId: state.roomId, modeId: state.modeId,
-        area: state.area, height: state.height
+        area: state.area, height: state.height, stateId: state.stateId
       });
       haptic('heavy');
     } catch (err) {
@@ -271,7 +293,8 @@
     const roomId = meta.roomId || state.roomId;
     const styleId = meta.styleId || state.styleId;
 
-    const est = window.NS_Estimate.calculate({ roomId, styleId, area, height });
+    const stateId = meta.stateId || state.stateId;
+    const est = window.NS_Estimate.calculate({ roomId, styleId, area, height, stateId });
     state.lastEstimate = est;
 
     $('estimateSegment').textContent = est.segmentLabel;
@@ -366,6 +389,86 @@
     downloadResult();
   }
 
+  /* ================= Ответ клиенту ================= */
+
+  // Сообщение, которое менеджер отправляет в тот же чат, где пришла
+  // заявка. Здесь нет деталей сметы: клиенту нужны вилка, срок и
+  // следующий шаг, а разбор позиций — повод для замера.
+  function quoteMessage() {
+    const est = state.lastEstimate;
+    if (!est) return '';
+    const room = ROOM_TYPES.find((r) => r.id === state.roomId);
+    const style = STYLE_PRESETS.find((s) => s.id === state.styleId);
+    const co = cfg.COMPANY;
+    return [
+      `Здравствуйте! Посмотрели ваше фото — вот как эта комната может выглядеть после ремонта.`,
+      ``,
+      `${room ? room.label : 'Помещение'}, ${state.area} м², стиль «${style ? style.label : ''}».`,
+      `Ориентировочная стоимость работ и материалов: ${est.rangeText}.`,
+      `Срок: около ${est.days} дней.`,
+      ``,
+      `Это предварительный расчёт по фотографии. Точная смета — после замера: он бесплатный и занимает около 40 минут. Когда вам удобно?`,
+      ``,
+      `${co.name}, ${co.phone}`
+    ].join('\n');
+  }
+
+  function openQuote() {
+    const est = state.lastEstimate;
+    if (!est) return;
+    const co = cfg.COMPANY;
+    $('quoteBrand').textContent = `${co.name} · ${co.city} · ${co.phone}`;
+    $('quoteImage').src = state.afterUrl;
+    $('quoteRange').textContent = est.rangeText;
+    $('quoteDays').textContent = `≈ ${est.days} дней`;
+    $('quoteText').textContent = quoteMessage();
+    buildQualify();
+    show('quoteScreen');
+  }
+
+  // Чек-лист: три вопроса, которые отсекают выезд к тому,
+  // кто "просто узнавал цену".
+  function buildQualify() {
+    const box = $('qualifyList');
+    box.innerHTML = '';
+    QUALIFY_QUESTIONS.forEach((q) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'qualify-item';
+      item.setAttribute('aria-pressed', 'false');
+      item.innerHTML = `
+        <span class="qualify-item__box" aria-hidden="true"></span>
+        <span class="qualify-item__label">${q.label}
+          <span class="qualify-item__bad">${q.bad}</span>
+        </span>`;
+      item.addEventListener('click', () => {
+        const next = item.getAttribute('aria-pressed') !== 'true';
+        item.setAttribute('aria-pressed', String(next));
+        item.querySelector('.qualify-item__box').textContent = next ? '✓' : '';
+        haptic();
+      });
+      box.appendChild(item);
+    });
+  }
+
+  async function shareQuote() {
+    const text = quoteMessage();
+    if (!state.afterBlob) return;
+    const file = new File([state.afterBlob], 'remont.jpg', { type: 'image/jpeg' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text });
+        return;
+      } catch { /* передумали — не ошибка */ }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Сообщение скопировано — картинку приложите вручную');
+    } catch {
+      toast('Скопируйте текст вручную');
+    }
+  }
+
   /* ================= Тарифы ================= */
 
   function buildPlans() {
@@ -458,6 +561,16 @@
     $('downloadBtn').addEventListener('click', downloadResult);
     $('shareBtn').addEventListener('click', shareResult);
     $('retryStyleBtn').addEventListener('click', () => { refreshBalanceHint(); show('setupScreen'); });
+    $('openQuoteBtn').addEventListener('click', openQuote);
+    $('shareQuoteBtn').addEventListener('click', shareQuote);
+    $('copyQuoteBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(quoteMessage());
+        toast('Сообщение скопировано');
+      } catch {
+        toast('Скопируйте текст вручную');
+      }
+    });
     $('areaInput').addEventListener('input', (e) => {
       const v = parseFloat(e.target.value);
       if (Number.isFinite(v) && v > 0) state.area = v;

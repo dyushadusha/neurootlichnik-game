@@ -9,6 +9,14 @@ window.NS_CONFIG = {
   // Адрес backend'а. Пока пусто — в режиме 'mock' не используется.
   API_BASE: '',
 
+  /* Реквизиты компании — подставляются в ответ клиенту.
+     Подрядчик правит их один раз под себя. */
+  COMPANY: {
+    name: 'Ремонт под ключ «Пример»',
+    phone: '+7 900 000-00-00',
+    city: 'Москва'
+  },
+
   // Телеграм-канал студии и сайт — те же, что в игре.
   TELEGRAM_CHANNEL_URL: 'https://t.me/NeuroOtlichnikArch',
   SITE_URL: 'https://neurootlichnik.ru/',
