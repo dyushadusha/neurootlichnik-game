@@ -395,6 +395,7 @@
 
     // --------------------------------------------------------------- интерфейс --
     var current = 'A';
+    var EDITOR_SYNC = null;
     function setVariant(v){
       current = v;
       groups.A.visible = (v==='A'); groups.B.visible = (v==='B');
@@ -405,6 +406,7 @@
       });
       renderPanel(DATA[v]);
       applyLayers();
+      if (EDITOR_SYNC) EDITOR_SYNC();
     }
     function renderPanel(d){
       var box = root.querySelector('.bor-expl');
@@ -465,7 +467,7 @@
                  plan: {r:400, theta:0.0,  phi:0.14},
                  entry:{r:185, theta:0.0,  phi:1.33, t:{x:114, z:140}, maxFit:1.15}};
     root.querySelector('.bor-views').addEventListener('click', function(e){
-      var b = e.target.closest('button'); if (!b) return;
+      var b = e.target.closest('button'); if (!b || !b.dataset.view) return;
       if (b.dataset.view==='orbit'){
         orbiting = !orbiting; b.setAttribute('aria-pressed', String(orbiting)); return;
       }
@@ -606,6 +608,8 @@
     }
     // некоторые мобильные браузеры сообщают размер окна не сразу
     [60, 250, 700, 1500].forEach(function(ms){ setTimeout(resize, ms); });
+
+  
 
     (function loop(now){
       requestAnimationFrame(loop);

@@ -6,6 +6,8 @@ import os
 import config as C
 import genplan as G
 import model3d
+import shapes
+from shapely.ops import unary_union
 
 
 def poly_json(g, tol=0.25, nd=2):
@@ -131,6 +133,34 @@ def scene(frame, m, title):
         rnd = (abs(hash((round(x), round(y)))) % 1000) / 1000.0
         s['trees'].append([round(x, 1), round(y, 1),
                            round(12.0 + rnd * 8.0, 1), round(1.9 + rnd * 1.5, 1)])
+
+    # --- данные для редактора расстановки ---------------------------------
+    # Контур каждого объекта даётся в его собственных координатах (центр в
+    # нуле, угол 0), поэтому редактор крутит и двигает его сам, а на выходе
+    # отдаёт готовый блок PLACE для config.py.
+    place = getattr(C, 'PLACE', {})
+    s['edit'] = []
+    s['fixedShapes'] = []
+    seen = set()
+    for it in m['items']:
+        parts = shapes.make(it['shape'], it['size'][0], it['size'][1], 0.0, 0.0, 0.0)
+        built = unary_union([sp['poly'] for t, sp in parts if t in G.BUILT])
+        whole = unary_union([sp['poly'] for t, sp in parts if 'poly' in sp])
+        if it['n'] not in place:            # домики и прочее — фон, их не двигаем
+            s['fixedShapes'] += [dict(p=q, n=it['n'])
+                                 for q in poly_json(it['whole'], 0.4)]
+            continue
+        if it['n'] in seen:
+            continue
+        seen.add(it['n'])
+        s['edit'].append(dict(n=it['n'], name=it['name'],
+                              x=round(it['center'][0], 1),
+                              y=round(it['center'][1], 1),
+                              a=round(it['angle'], 1),
+                              fire=it['fire'],
+                              b=poly_json(built, 0.3) if not built.is_empty else [],
+                              w=poly_json(whole, 0.4) if not whole.is_empty else []))
+    s['edit'].sort(key=lambda r: r['n'])
     return s
 
 

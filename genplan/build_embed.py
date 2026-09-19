@@ -415,6 +415,10 @@ def adapt(js):
         ("document.querySelectorAll('#variants button')", "root.querySelectorAll('.bor-variants button')"),
         ("document.getElementById('variantName')", "root.querySelector('.bor-variant-name')"),
     ]
+    a0 = js.find('// __EDITOR_START__')       # редактор плана — только в артефакте
+    a1 = js.find('// __EDITOR_END__')
+    if a0 >= 0 and a1 > a0:
+        js = js[:a0] + js[a1 + len('// __EDITOR_END__'):]
     for a, b in rules:
         assert a in js, 'не найдено в шаблоне: ' + a[:60]
         js = js.replace(a, b)

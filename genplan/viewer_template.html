@@ -95,6 +95,44 @@
   #hint{position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
         z-index:5;padding:8px 12px;font-size:11px;color:var(--ink-soft);
         max-width:min(220px,calc(100vw - 32px));line-height:1.5;}
+  /* ------------------------------- редактор расстановки ------------------ */
+  #editor{position:absolute;inset:0;z-index:4;display:none;background:var(--sky);}
+  #app.edit-on #editor{display:block;}
+  #app.edit-on #stage{visibility:hidden;}
+  #app.edit-on #legend, #app.edit-on #compass, #app.edit-on #hint{display:none;}
+  #edsvg{width:100%;height:100%;touch-action:none;cursor:grab;display:block;}
+  #edsvg.drag{cursor:grabbing;}
+  #edsvg .obj{cursor:move;}
+  #edsvg .obj .ter{fill:#c9a978;fill-opacity:.55;stroke:none;}
+  #edsvg .obj .bld{fill:#a9713a;stroke:#5a3c1c;stroke-width:.5;}
+  #edsvg .obj.sel .bld{fill:var(--accent);stroke:#222;}
+  #edsvg .obj.sel .ter{fill:var(--accent);fill-opacity:.28;}
+  #edsvg .obj.moved .bld{stroke:var(--accent);stroke-width:1.2;}
+  #edsvg .num{font:700 7px "Inter Tight",sans-serif;fill:#fff;
+              paint-order:stroke;pointer-events:none;}
+  #edsvg .numbg{fill:#2A2A2A;pointer-events:none;}
+  #edsvg .handle{fill:var(--accent);stroke:#222;stroke-width:.5;cursor:alias;}
+  #edsvg .axis{stroke:var(--accent);stroke-width:.6;stroke-dasharray:2 2;}
+  #edpanel{position:absolute;right:16px;bottom:16px;z-index:6;width:min(320px,calc(100% - 32px));
+           padding:12px 14px;display:grid;gap:9px;max-height:calc(100% - 32px);overflow:auto;}
+  #edpanel h2{font-family:Kica,system-ui,sans-serif;font-size:11px;letter-spacing:.12em;
+              text-transform:uppercase;color:var(--ink-soft);margin:0;font-weight:300;}
+  .edhead{display:flex;align-items:center;gap:10px;}
+  .edhead h2{flex:1;}
+  #edClose{padding:2px 8px;font-size:14px;line-height:1.2;}
+  #edpanel .who{font-size:13px;}
+  #edpanel .who b{color:var(--accent);}
+  #edfields{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px 8px;
+            align-items:center;font-size:12px;color:var(--ink-soft);}
+  #edfields input{width:100%;min-width:0;font:inherit;font-size:12px;padding:4px 6px;
+                  border-radius:3px;border:1px solid var(--line);
+                  background:var(--panel-2);color:var(--ink);}
+  #edfields input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  #edout{width:100%;height:120px;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;
+         border-radius:3px;border:1px solid var(--line);background:#1e1e1e;
+         color:var(--ink);padding:8px;resize:vertical;display:none;}
+  #edstat{font-size:11.5px;color:var(--ink-soft);line-height:1.45;}
+
   @media (max-width:760px){
     #hint{display:none;}
     #listGroup{display:block;}
@@ -109,6 +147,10 @@
     #tools{transition:opacity .18s;}
     .item{padding:8px;font-size:13px;}
     #compass{top:calc(74px + env(safe-area-inset-top,0px));}
+    /* в редакторе нижняя панель инструментов уступает место плану */
+    #app.edit-on #tools{display:none;}
+    #edpanel{left:8px;right:8px;width:auto;z-index:7;
+             bottom:calc(8px + env(safe-area-inset-bottom,0px));max-height:56%;}
     #title{left:8px;right:8px;max-width:none;padding:9px 12px;
            top:calc(8px + env(safe-area-inset-top,0px));}
     #title h1{font-size:15px;} #title .sub{display:none;}
@@ -126,6 +168,34 @@
 
 <div id="app">
 <div id="stage"><canvas id="c"></canvas></div>
+<div id="editor">
+  <svg id="edsvg" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="edpanel" class="card">
+    <div class="edhead"><h2>Правка расстановки</h2>
+      <button type="button" id="edClose" aria-label="Выйти из редактора">✕</button></div>
+    <div class="who" id="edwho">Выберите здание на плане</div>
+    <div id="edfields">
+      <label for="edx">X, м</label><input id="edx" type="number" step="0.5" disabled>
+      <label for="edy">Y, м</label><input id="edy" type="number" step="0.5" disabled>
+      <label for="eda">Угол°</label><input id="eda" type="number" step="1" disabled>
+      <label for="edz">Масштаб</label><input id="edz" type="range" min="0" max="100" value="0">
+    </div>
+    <div class="row">
+      <button type="button" id="edrotl">⟲ 5°</button>
+      <button type="button" id="edrotr">⟳ 5°</button>
+      <button type="button" id="edreset">Сбросить объект</button>
+    </div>
+    <div class="row">
+      <button type="button" id="edcopy">Скопировать PLACE</button>
+      <button type="button" id="edall">Сбросить всё</button>
+    </div>
+    <textarea id="edout" readonly spellcheck="false"></textarea>
+    <div id="edstat">Тянуть объект — перенос, жёлтый кружок — поворот.
+      Стрелки — на 1 м (с Shift — 0.2 м), клавиши [ и ] — поворот на 1°.
+      Колесо — масштаб, тянуть по пустому месту — панорама.</div>
+  </div>
+</div>
+
 
 <div id="boot" class="card">
   <b>Загрузка 3D…</b>
@@ -156,6 +226,12 @@
       <button data-view="plan">План</button>
       <button data-view="entry">От въезда</button>
       <button data-view="orbit" aria-pressed="false">Облёт</button>
+    </div>
+  </div>
+  <div class="group card">
+    <h2>Правка</h2>
+    <div class="row">
+      <button type="button" id="edBtn" aria-pressed="false">Редактор плана</button>
     </div>
   </div>
   <div class="group card" id="listGroup">
@@ -602,6 +678,7 @@
 
   // --------------------------------------------------------------- интерфейс --
   var current = 'A';
+  var EDITOR_SYNC = null;
   function setVariant(v){
     current = v;
     groups.A.visible = (v==='A'); groups.B.visible = (v==='B');
@@ -612,6 +689,7 @@
     });
     renderPanel(DATA[v]);
     applyLayers();
+    if (EDITOR_SYNC) EDITOR_SYNC();
   }
   function renderPanel(d){
     var box = document.getElementById('expl');
@@ -672,7 +750,7 @@
                plan: {r:400, theta:0.0,  phi:0.14},
                entry:{r:185, theta:0.0,  phi:1.33, t:{x:114, z:140}, maxFit:1.15}};
   document.getElementById('views').addEventListener('click', function(e){
-    var b = e.target.closest('button'); if (!b) return;
+    var b = e.target.closest('button'); if (!b || !b.dataset.view) return;
     if (b.dataset.view==='orbit'){
       orbiting = !orbiting; b.setAttribute('aria-pressed', String(orbiting)); return;
     }
@@ -817,6 +895,317 @@
   }
   // некоторые мобильные браузеры сообщают размер окна не сразу
   [60, 250, 700, 1500].forEach(function(ms){ setTimeout(resize, ms); });
+
+  // __EDITOR_START__ (во встраиваемую сборку не попадает)
+  // ------------------------------------------------- редактор расстановки ---
+  // План сверху в координатах участка: X на восток, Y на север (юг < 0).
+  // В SVG ось Y смотрит вниз, поэтому точка (x, y) рисуется как (x, -y),
+  // а поворот на угол A плана — это rotate(-A) в SVG.
+  (function(){
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.getElementById('edsvg');
+    var edBtn = document.getElementById('edBtn');
+    var fx = document.getElementById('edx'), fy = document.getElementById('edy'),
+        fa = document.getElementById('eda'), fz = document.getElementById('edz');
+    var out = document.getElementById('edout'), who = document.getElementById('edwho'),
+        stat = document.getElementById('edstat');
+    if (!svg || !edBtn) return;        // во встраиваемой сборке редактора нет
+    var SLAB = {road:'#9a9a9f', parking:'#b9b9c0', path:'#cfc4ab', trail:'#a98f6a'};
+    var state = null;          // {v, base:{n:{x,y,a}}, cur:{...}, nodes:{n:g}}
+    var sel = null, view = null, built = null;
+
+    function pad(v, n, right){        // без padStart — работает и в старых браузерах
+      var t = String(v);
+      while (t.length < n) t = right ? t + ' ' : ' ' + t;
+      return t;
+    }
+    function el(tag, attrs){
+      var e = document.createElementNS(NS, tag);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      return e;
+    }
+    function ring(pts){                    // [[x,y],...] плана -> "x,-y ..."
+      return pts.map(function(p){ return p[0] + ',' + (-p[1]); }).join(' ');
+    }
+    function pathOf(polys){                // список {e,h} -> один <path>
+      var d = '';
+      polys.forEach(function(q){
+        d += 'M' + ring(q.e).replace(/ /g, 'L') + 'Z';
+        (q.h || []).forEach(function(h){ d += 'M' + ring(h).replace(/ /g, 'L') + 'Z'; });
+      });
+      return d;
+    }
+
+    function build(v){
+      var d = DATA[v];
+      built = v;
+      sel = null;
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var bb = {x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9};
+      d.site.forEach(function(q){ q.e.forEach(function(p){
+        bb.x0 = Math.min(bb.x0, p[0]); bb.x1 = Math.max(bb.x1, p[0]);
+        bb.y0 = Math.min(bb.y0, -p[1]); bb.y1 = Math.max(bb.y1, -p[1]);
+      }); });
+      var pad = 18;
+      view = {x: bb.x0 - pad, y: bb.y0 - pad,
+              w: bb.x1 - bb.x0 + pad * 2, h: bb.y1 - bb.y0 + pad * 2};
+      view.w0 = view.w;
+      applyView();
+
+      svg.appendChild(el('path', {d: pathOf(d.site), fill: '#e7ece0',
+                                  stroke: '#cc2222', 'stroke-width': 1.2}));
+      var slab = el('g', {}); svg.appendChild(slab);
+      (d.slabs || []).forEach(function(sp){
+        slab.appendChild(el('path', {d: pathOf([sp.p]), fill: SLAB[sp.t] || '#bbb',
+                                     stroke: 'none'}));
+      });
+      (d.fixedShapes || []).forEach(function(f){
+        svg.appendChild(el('path', {d: pathOf([f.p]), fill: '#b98f63',
+                                    'fill-opacity': .5, stroke: '#7a5a34',
+                                    'stroke-width': .4}));
+      });
+
+      state = {v: v, base: {}, cur: {}, nodes: {}};
+      (d.edit || []).forEach(function(o){
+        state.base[o.n] = {x: o.x, y: o.y, a: o.a};
+        state.cur[o.n] = {x: o.x, y: o.y, a: o.a};
+        var g = el('g', {'class': 'obj', 'data-n': o.n});
+        if (o.w.length) g.appendChild(el('path', {'class': 'ter', d: pathOf(o.w)}));
+        if (o.b.length) g.appendChild(el('path', {'class': 'bld', d: pathOf(o.b)}));
+        g.appendChild(el('circle', {'class': 'numbg', cx: 0, cy: 0, r: 5.2}));
+        var t = el('text', {'class': 'num', x: 0, y: 2.5, 'text-anchor': 'middle'});
+        t.textContent = o.n; g.appendChild(t);
+        g._info = o; state.nodes[o.n] = g;
+        svg.appendChild(g);
+        place(o.n);
+      });
+      var hg = el('g', {id: 'edhandle'}); hg.style.display = 'none';
+      hg.appendChild(el('line', {'class': 'axis', x1: 0, y1: 0, x2: 0, y2: 0}));
+      hg.appendChild(el('circle', {'class': 'handle', cx: 0, cy: 0, r: 3.2}));
+      svg.appendChild(hg);
+      refreshPanel();
+    }
+
+    function applyView(){
+      svg.setAttribute('viewBox', view.x + ' ' + view.y + ' ' + view.w + ' ' + view.h);
+      fz.value = String(Math.round(100 * (1 - view.w / view.w0)));
+    }
+    function place(n){
+      var c = state.cur[n], g = state.nodes[n];
+      g.setAttribute('transform',
+        'translate(' + c.x + ',' + (-c.y) + ') rotate(' + (-c.a) + ')');
+      var b = state.base[n];
+      var moved = Math.abs(c.x - b.x) > .05 || Math.abs(c.y - b.y) > .05 ||
+                  Math.abs(c.a - b.a) > .05;
+      g.classList.toggle('moved', moved);
+      // цифра не должна вращаться вместе с домом
+      g.querySelector('.num').setAttribute('transform', 'rotate(' + c.a + ')');
+      if (sel === n) placeHandle();
+    }
+    function placeHandle(){
+      var hg = document.getElementById('edhandle');
+      if (sel === null){ hg.style.display = 'none'; return; }
+      var c = state.cur[sel], o = state.nodes[sel]._info;
+      var r = 0, pts = (o.b.length ? o.b : o.w);
+      pts.forEach(function(q){ q.e.forEach(function(p){
+        r = Math.max(r, Math.hypot(p[0], p[1]));
+      }); });
+      r += 7;
+      var a = c.a * Math.PI / 180;
+      var hx = c.x + r * Math.cos(a), hy = -(c.y + r * Math.sin(a));
+      hg.style.display = '';
+      var ln = hg.querySelector('line'), ci = hg.querySelector('circle');
+      ln.setAttribute('x1', c.x); ln.setAttribute('y1', -c.y);
+      ln.setAttribute('x2', hx); ln.setAttribute('y2', hy);
+      ci.setAttribute('cx', hx); ci.setAttribute('cy', hy);
+      hg.appendChild(ln); hg.appendChild(ci);
+    }
+    function select(n){
+      if (sel !== null && state.nodes[sel]) state.nodes[sel].classList.remove('sel');
+      sel = n;
+      if (n !== null){
+        state.nodes[n].classList.add('sel');
+        svg.appendChild(state.nodes[n]);          // выбранный — поверх остальных
+        svg.appendChild(document.getElementById('edhandle'));
+      }
+      placeHandle();
+      refreshPanel();
+    }
+    function refreshPanel(){
+      var on = sel !== null;
+      [fx, fy, fa].forEach(function(f){ f.disabled = !on; });
+      if (!on){
+        who.textContent = 'Выберите здание на плане';
+        fx.value = fy.value = fa.value = '';
+      } else {
+        var c = state.cur[sel];
+        who.innerHTML = '<b>' + sel + '</b> · ' + state.nodes[sel]._info.name;
+        fx.value = c.x.toFixed(1); fy.value = c.y.toFixed(1); fa.value = c.a.toFixed(1);
+      }
+      var n = 0;
+      for (var k in state.cur){
+        var a = state.cur[k], b = state.base[k];
+        if (Math.abs(a.x-b.x) > .05 || Math.abs(a.y-b.y) > .05 || Math.abs(a.a-b.a) > .05) n++;
+      }
+      stat.textContent = n ? ('Передвинуто объектов: ' + n +
+        '. Нажмите «Скопировать PLACE» и пришлите блок — я пересоберу генплан.')
+        : 'Тянуть объект — перенос, жёлтый кружок — поворот. Стрелки — на 1 м ' +
+          '(с Shift — 0.2 м), клавиши [ и ] — поворот на 1°.';
+    }
+    function setPos(n, x, y, a){
+      var c = state.cur[n];
+      c.x = Math.round(x * 2) / 2;
+      c.y = Math.round(y * 2) / 2;
+      c.a = ((Math.round(a * 10) / 10) % 360 + 360) % 360;
+      place(n);
+      if (sel === n) refreshPanel();
+    }
+
+    // ---- ввод -------------------------------------------------------------
+    function toPlan(ev){
+      var r = svg.getBoundingClientRect();
+      var k = Math.max(view.w / r.width, view.h / r.height);
+      var cx = view.x + view.w / 2, cy = view.y + view.h / 2;
+      var ux = cx + (ev.clientX - (r.left + r.width / 2)) * k;
+      var uy = cy + (ev.clientY - (r.top + r.height / 2)) * k;
+      return {x: ux, y: -uy};
+    }
+    var drag = null;
+    svg.addEventListener('pointerdown', function(ev){
+      if (!state) return;
+      var p = toPlan(ev);
+      svg.setPointerCapture(ev.pointerId);
+      if (ev.target.classList.contains('handle')){
+        drag = {mode: 'rot', n: sel};
+        return;
+      }
+      var g = ev.target.closest('.obj');
+      if (g){
+        var n = +g.dataset.n;
+        select(n);
+        drag = {mode: 'move', n: n, dx: state.cur[n].x - p.x, dy: state.cur[n].y - p.y};
+      } else {
+        select(null);
+        drag = {mode: 'pan', px: ev.clientX, py: ev.clientY, vx: view.x, vy: view.y};
+        svg.classList.add('drag');
+      }
+    });
+    svg.addEventListener('pointermove', function(ev){
+      if (!drag) return;
+      if (drag.mode === 'pan'){
+        var r = svg.getBoundingClientRect();
+        var k = Math.max(view.w / r.width, view.h / r.height);
+        view.x = drag.vx - (ev.clientX - drag.px) * k;
+        view.y = drag.vy - (ev.clientY - drag.py) * k;
+        applyView();
+        return;
+      }
+      var p = toPlan(ev), c = state.cur[drag.n];
+      if (drag.mode === 'move') setPos(drag.n, p.x + drag.dx, p.y + drag.dy, c.a);
+      else setPos(drag.n, c.x, c.y,
+                  Math.atan2(p.y - c.y, p.x - c.x) * 180 / Math.PI);
+    });
+    function endDrag(ev){
+      if (!drag) return;
+      drag = null; svg.classList.remove('drag');
+      try { svg.releasePointerCapture(ev.pointerId); } catch (e) {}
+    }
+    svg.addEventListener('pointerup', endDrag);
+    svg.addEventListener('pointercancel', endDrag);
+
+    svg.addEventListener('wheel', function(ev){
+      if (!state) return;
+      ev.preventDefault();
+      zoomAt(toPlan(ev), Math.exp(ev.deltaY * 0.0012));
+    }, {passive: false});
+    function zoomAt(p, k){
+      var w = Math.min(view.w0 * 1.4, Math.max(view.w0 * 0.08, view.w * k));
+      var f = w / view.w;
+      view.x = p.x - (p.x - view.x) * f;
+      view.y = (-p.y) - ((-p.y) - view.y) * f;
+      view.h *= f; view.w = w;
+      applyView();
+    }
+    fz.addEventListener('input', function(){
+      var k = 1 - fz.value / 100;
+      var c = {x: view.x + view.w / 2, y: -(view.y + view.h / 2)};
+      zoomAt(c, Math.max(0.08, k) * view.w0 / view.w);
+    });
+
+    [[fx, 'x'], [fy, 'y'], [fa, 'a']].forEach(function(pair){
+      pair[0].addEventListener('change', function(){
+        if (sel === null) return;
+        var c = state.cur[sel], v = parseFloat(pair[0].value);
+        if (!isFinite(v)) return;
+        setPos(sel, pair[1] === 'x' ? v : c.x, pair[1] === 'y' ? v : c.y,
+               pair[1] === 'a' ? v : c.a);
+      });
+    });
+    document.getElementById('edrotl').addEventListener('click', function(){
+      if (sel !== null){ var c = state.cur[sel]; setPos(sel, c.x, c.y, c.a + 5); }
+    });
+    document.getElementById('edrotr').addEventListener('click', function(){
+      if (sel !== null){ var c = state.cur[sel]; setPos(sel, c.x, c.y, c.a - 5); }
+    });
+    document.getElementById('edreset').addEventListener('click', function(){
+      if (sel === null) return;
+      var b = state.base[sel]; setPos(sel, b.x, b.y, b.a);
+    });
+    document.getElementById('edall').addEventListener('click', function(){
+      for (var k in state.base){
+        var b = state.base[k]; state.cur[k] = {x: b.x, y: b.y, a: b.a}; place(+k);
+      }
+      out.style.display = 'none'; refreshPanel();
+    });
+    document.addEventListener('keydown', function(ev){
+      if (!app.classList.contains('edit-on') || sel === null) return;
+      if (/^(INPUT|TEXTAREA)$/.test((ev.target.tagName || ''))) return;
+      var c = state.cur[sel], d = ev.shiftKey ? 0.2 : 1.0, done = true;
+      if (ev.key === 'ArrowLeft') setPos(sel, c.x - d, c.y, c.a);
+      else if (ev.key === 'ArrowRight') setPos(sel, c.x + d, c.y, c.a);
+      else if (ev.key === 'ArrowUp') setPos(sel, c.x, c.y + d, c.a);
+      else if (ev.key === 'ArrowDown') setPos(sel, c.x, c.y - d, c.a);
+      else if (ev.key === '[') setPos(sel, c.x, c.y, c.a + (ev.shiftKey ? 0.2 : 1));
+      else if (ev.key === ']') setPos(sel, c.x, c.y, c.a - (ev.shiftKey ? 0.2 : 1));
+      else if (ev.key === 'Escape') select(null);
+      else done = false;
+      if (done) ev.preventDefault();
+    });
+
+    document.getElementById('edcopy').addEventListener('click', function(){
+      var lines = ['PLACE = {'];
+      (DATA[state.v].edit || []).forEach(function(o){
+        var c = state.cur[o.n];
+        var b = state.base[o.n];
+        var mark = (Math.abs(c.x-b.x) > .05 || Math.abs(c.y-b.y) > .05 ||
+                    Math.abs(c.a-b.a) > .05) ? '   # <- передвинуто' : '';
+        lines.push('    ' + pad(o.n + ':', 4, 1) + ' (' +
+                   pad(c.x.toFixed(1), 6) + ', ' + pad(c.y.toFixed(1), 7) + ', ' +
+                   pad(c.a.toFixed(1), 6) + '),   # ' + o.name + mark);
+      });
+      lines.push('}');
+      var txt = lines.join('\n');
+      out.value = txt; out.style.display = 'block';
+      out.focus(); out.select();
+      var ok = function(){ showReadout('Блок PLACE скопирован'); };
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(ok, function(){});
+      } else { try { document.execCommand('copy'); ok(); } catch (e) {} }
+    });
+
+    document.getElementById('edClose').addEventListener('click', function(){
+      app.classList.remove('edit-on');
+      edBtn.setAttribute('aria-pressed', 'false');
+    });
+    edBtn.addEventListener('click', function(){
+      var on = !app.classList.contains('edit-on');
+      app.classList.toggle('edit-on', on);
+      edBtn.setAttribute('aria-pressed', String(on));
+      if (on){ setExpl(false); if (built !== current) build(current); }
+    });
+    EDITOR_SYNC = function(){ if (app.classList.contains('edit-on')) build(current); };
+  })();
+  // __EDITOR_END__
 
   (function loop(now){
     requestAnimationFrame(loop);
