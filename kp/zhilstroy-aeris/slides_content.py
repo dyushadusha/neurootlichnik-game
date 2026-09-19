@@ -2,6 +2,8 @@
 """Контент альбома: один элемент списка = один лист PDF."""
 
 LOGO = open('/tmp/claude-0/-home-user-neurootlichnik-game/518cd21a-79ba-5637-9ea0-1bbba0ce716f/scratchpad/kp/logo-inline.svg', encoding='utf-8').read().strip()
+MARK = (open('/home/user/neurootlichnik-game/assets/logo-icon.svg', encoding='utf-8').read().strip()
+        .replace('fill="#DBFC3B"', 'fill="currentColor"').replace('fill="#dbfc3b"', 'fill="currentColor"'))
 
 def li(items, cls="ul"):
     return '<ul class="%s">%s</ul>' % (cls, "".join('<li>%s</li>' % x for x in items))
@@ -28,7 +30,7 @@ def shot(idx, title, desc, tag, tag3d=False):
             % (idx, title, desc, ' tag--3d' if tag3d else '', tag))
 
 def cmp_block(label, vals):
-    names = ["1 · Улучшение", "2 · Гибрид", "3 · CGI-рендер"]
+    names = ["Вариант 1", "Вариант 2", "Вариант 3"]
     rows = "".join('<div class="cmp-row%s"><span class="cmp-v">%s</span><span class="cmp-val">%s</span></div>'
                    % (" cmp-row--pick" if i == 1 else "", names[i], vals[i]) for i in range(3))
     return '<div class="cmp-block"><div class="cmp-label">%s</div>%s</div>' % (label, rows)
@@ -84,7 +86,7 @@ S("С чего начнём", """
 # 3 — задача
 S("Задача, как мы её услышали", """
   <span class="eyebrow">Вводные</span>
-  <h2>Геометрия у вас уже есть. Нет <span class="hl">желания</span> купить</h2>
+  <h2>Рендеры показывают дом. Но не <span class="hl">продают</span> квартиры</h2>
   <div class="brief">
     <div class="brief-item"><div class="n">01</div><p>3D-модель квартала и рендеры проектировщика готовы — переделывать проект с нуля не нужно.</p></div>
     <div class="brief-item"><div class="n">02</div><p>Текущие кадры технически корректны, но не вызывают эмоции и не отрабатывают аргументы покупки.</p></div>
@@ -127,7 +129,7 @@ S("Статичные визуализации", """
   <div class="menu">
     <div class="menu-row"><div><span class="menu-n">Вариант 1</span><b>Улучшение существующего</b><span class="menu-d">Ваши рендеры полностью прогоняем через нейросети</span></div><span class="menu-p">50 000 ₽</span></div>
     <div class="menu-row menu-row--pick"><div><span class="menu-n">Вариант 2 · рекомендуем</span><b>Гибрид</b><span class="menu-d">Птичка и двор — заново в 3D, остальное подводим под них</span></div><span class="menu-p">от 96 000 ₽</span></div>
-    <div class="menu-row"><div><span class="menu-n">Вариант 3</span><b>Классический <span class="lat">CGI</span>-рендер</b><span class="menu-d">Все 10 кадров строим с нуля точно по ТЗ</span></div><span class="menu-p">275 000 ₽</span></div>
+    <div class="menu-row"><div><span class="menu-n">Вариант 3</span><b>Классический рендер</b><span class="menu-d">Все 10 кадров строим с нуля точно по ТЗ</span></div><span class="menu-p">275 000 ₽</span></div>
   </div>
   <p class="tiny">Цены указаны за весь объём из 10 кадров. Итоговую сумму фиксируем в смете после выбора варианта.</p>""")
 
@@ -157,7 +159,7 @@ S("Вариант 2 из 3", option(
 
 # 10 — вариант 3
 S("Вариант 3 из 3", option(
-    "Вариант 3", 'Классический <span class="lat">CGI</span>-рендер', "275 000 ₽", "все 10 кадров с нуля по ТЗ",
+    "Вариант 3", "Классический рендер", "275 000 ₽", "все 10 кадров с нуля по ТЗ",
     "Каждый кадр строим заново — ровно так, как написано в вашем ТЗ.",
     ["Птичка на весь ЖК — 50 000 ₽",
      "Остальные 9 кадров — 25 000 ₽ за кадр (цена снижена за счёт объёма серии)",
@@ -178,8 +180,8 @@ S("Условия", """
 # 12–13 — сравнение
 S("Сравнение · 1 из 2", """
   <h2>Что вы получаете в каждом варианте</h2>
-  <div class="cmp-print">%s</div>
-  <p class="tiny">Состав кадров и итоговую сумму фиксируем в смете после выбора варианта.</p>""" % "".join([
+  <p class="tiny">Вариант 1 — улучшение существующего, вариант 2 — гибрид, вариант 3 — классический рендер.</p>
+  <div class="cmp-print">%s</div>""" % "".join([
     cmp_block("Основа кадра", ["Ваши рендеры", "Новые 3D + ваши рендеры", "Всё новое 3D"]),
     cmp_block("Атмосфера и свет", ["Полностью новая", "Задаётся эталонными кадрами", "Точно по ТЗ"]),
     cmp_block("Новые ракурсы", ["Нет", "На ключевых кадрах", "На всех кадрах"]),
@@ -192,7 +194,8 @@ S("Сравнение · 2 из 2", """
     <div><span>Вариант 1</span><b>50 000 ₽</b></div>
     <div class="pick"><span>Вариант 2</span><b>от 96 000 ₽</b></div>
     <div><span>Вариант 3</span><b>275 000 ₽</b></div>
-  </div>""" % "".join([
+  </div>
+  <p class="tiny">Состав кадров и итоговую сумму фиксируем в смете после выбора варианта.</p>""" % "".join([
     cmp_block("Проработка двора", ["Косметическая", "Полная, в 3D", "Полная, в 3D"]),
     cmp_block("Контроль деталей", ["Ограниченный", "Высокий на главном", "Максимальный"]),
     cmp_block("Под крупные форматы", ["Ограниченно", "Ключевые кадры — да", "Все кадры — да"]),

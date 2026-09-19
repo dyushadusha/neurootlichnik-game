@@ -45,7 +45,7 @@ body{ font-size:13px; line-height:1.5; }
   flex:none; display:flex; justify-content:space-between; align-items:flex-end; gap:10px;
   padding-top:9px; border-top:2px solid var(--line);
 }
-.slide__bot .mark{ width:78px; color:var(--ink); }
+.slide__bot .mark{ width:34px; color:var(--ink); opacity:.85; }
 .slide__bot .mark svg{ width:100%; height:auto; display:block; }
 .slide__bot .where{ font-family:var(--font-num); font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-45); text-align:right; }
 
@@ -125,8 +125,8 @@ body{ font-size:13px; line-height:1.5; }
 .tag{ font-size:9.5px; }
 .cmp-print{ display:flex; flex-direction:column; gap:8px; }
 .cmp-label{ font-size:10px; padding:6px 11px; }
-.cmp-row{ grid-template-columns:96px 1fr; padding:5px 11px; font-size:11.5px; }
-.cmp-v{ font-size:9.5px; }
+.cmp-row{ grid-template-columns:76px 1fr; padding:5px 11px; font-size:11.5px; }
+.cmp-v{ font-size:9.5px; white-space:nowrap; }
 .cmp-val{ font-size:11.5px; }
 .steps{ display:flex; flex-direction:column; gap:10px; }
 .step{ padding:13px 14px; }
@@ -169,7 +169,7 @@ def build_html():
         top = ('<div class="slide__top"><span>%s</span><span class="num">%02d / %02d</span></div>'
                % (s['label'] or 'Нейро Отличник × ЖилСтрой Девелопмент', shown, n_total))
         bot = ('<div class="slide__bot"><span class="mark">%s</span>'
-               '<span class="where">Квартал «Аэрис» · дом 2 · Пенза</span></div>' % sc.LOGO)
+               '<span class="where">Квартал «Аэрис» · дом 2 · Пенза</span></div>' % sc.MARK)
         if s['nonum']:
             top, bot = '', ''
         parts.append('<section class="slide %s %s">%s<div class="slide__body">%s</div>%s</section>'
