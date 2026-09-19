@@ -1,0 +1,283 @@
+/* =========================================================
+   НЕЙРО СТЕЙДЖИНГ — оформление
+   Палитра и приёмы те же, что в игре: белая "бумага",
+   графитовая обводка, лаймовый акцент, плоская сдвинутая тень.
+   ========================================================= */
+
+@font-face { font-family: 'InterTight'; src: url('../../assets/fonts/InterTightSemiBold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'KicaBold';   src: url('../../assets/fonts/KicaBold.ttf') format('truetype');   font-weight: 700; font-display: swap; }
+@font-face { font-family: 'KicaLight';  src: url('../../assets/fonts/KicaLight.ttf') format('truetype');  font-weight: 300; font-display: swap; }
+
+:root {
+  --bg-primary: #ffffff;
+  --ink: #2a2a2a;
+  --text-primary: #2a2a2a;
+  --text-secondary: color-mix(in srgb, #2a2a2a 62%, white);
+  --text-muted: color-mix(in srgb, #2a2a2a 42%, white);
+  --accent: #dbfc3b;
+  --accent-contrast: #2a2a2a;
+  --border-color: #2a2a2a;
+  --border-width: 3px;
+  --doodle-shadow: 5px 5px 0 var(--ink);
+  --doodle-shadow-sm: 3px 3px 0 var(--ink);
+  --font-sans: 'InterTight', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'KicaBold', var(--font-sans);
+  --font-light: 'KicaLight', var(--font-sans);
+  --radius-md: 18px;
+  --radius-sm: 10px;
+  --screen-padding: 20px;
+  --screen-max-width: 440px;
+  --header-h: 58px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Атрибут hidden должен побеждать любой авторский display —
+   иначе экраны с display:flex (например, экран обработки)
+   остаются на странице и ломают вёрстку соседних экранов. */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  padding-top: var(--header-h);
+}
+
+/* ---------------- Шапка ---------------- */
+.app-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  height: var(--header-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--screen-padding);
+  background: var(--ink);
+  color: #f5f5f0;
+}
+.app-header__brand { display: flex; align-items: center; gap: 10px; }
+.app-header__logo { width: 28px; height: 28px; }
+.app-header__title { font-family: var(--font-display); font-size: 17px; letter-spacing: .01em; }
+
+.credits-chip {
+  font-family: var(--font-display);
+  font-size: 14px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.credits-chip:active { transform: translateY(1px); }
+
+/* ---------------- Экраны ---------------- */
+.screen {
+  max-width: var(--screen-max-width);
+  margin: 0 auto;
+  padding: 18px var(--screen-padding) 40px;
+  animation: fade .22s ease;
+}
+.screen--center { min-height: calc(100vh - var(--header-h)); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.hero__title { font-family: var(--font-display); font-size: 32px; line-height: 1.06; margin-bottom: 12px; }
+.hero__text { font-size: 15px; color: var(--text-secondary); line-height: 1.45; }
+
+.home-actions { display: flex; flex-direction: column; gap: 12px; margin: 24px 0 18px; }
+
+.section-title { font-family: var(--font-display); font-size: 19px; margin: 22px 0 10px; }
+.section-title--first { margin-top: 10px; }
+
+.hint { font-size: 13px; color: var(--text-muted); line-height: 1.4; margin-top: 8px; }
+.hint--center { text-align: center; }
+
+/* ---------------- Кнопки ---------------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 16px;
+  padding: 15px 20px;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: var(--doodle-shadow-sm);
+  cursor: pointer;
+  transition: transform .1s ease, box-shadow .1s ease;
+  text-align: center;
+}
+.btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.btn--primary { background: var(--accent); }
+.btn--block { width: 100%; }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+
+.text-link {
+  background: none; border: none; font-family: var(--font-sans); font-size: 15px;
+  color: var(--text-secondary); text-decoration: underline; cursor: pointer; padding: 6px;
+}
+.back-link {
+  background: none; border: none; font-family: var(--font-sans); font-size: 15px;
+  color: var(--text-secondary); cursor: pointer; padding: 0 0 10px;
+}
+
+/* ---------------- Главная ---------------- */
+.usp { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.usp li {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.35;
+  border-left: var(--border-width) solid var(--accent);
+  padding-left: 12px;
+}
+.usp b { color: var(--text-primary); }
+
+.demo-note {
+  margin-top: 22px; font-family: var(--font-light); font-size: 12.5px;
+  color: var(--text-muted); line-height: 1.45;
+  border: 2px dashed var(--text-muted); border-radius: var(--radius-sm); padding: 10px 12px;
+}
+
+/* ---------------- Настройка ---------------- */
+.preview {
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--doodle-shadow-sm);
+  overflow: hidden;
+  line-height: 0;
+}
+.preview img { width: 100%; height: 190px; object-fit: cover; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-family: var(--font-sans); font-size: 14px;
+  padding: 9px 14px;
+  border: 2px solid var(--border-color); border-radius: 999px;
+  background: var(--bg-primary); color: var(--text-primary); cursor: pointer;
+}
+.chip[aria-pressed='true'] { background: var(--accent); }
+
+.styles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.style-card {
+  text-align: left;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  padding: 12px;
+  cursor: pointer;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.style-card[aria-pressed='true'] { background: var(--accent); box-shadow: var(--doodle-shadow-sm); }
+.style-card__name { font-family: var(--font-display); font-size: 15px; }
+.style-card__hint { font-size: 12px; color: var(--text-secondary); line-height: 1.3; }
+.style-card[aria-pressed='true'] .style-card__hint { color: var(--ink); }
+.style-card__swatch { display: flex; gap: 4px; }
+.style-card__swatch i { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--ink); }
+
+.segmented {
+  display: flex; gap: 0;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.segmented__option {
+  flex: 1; font-family: var(--font-sans); font-size: 14px;
+  padding: 12px 8px; background: var(--bg-primary); border: none; cursor: pointer; color: var(--text-primary);
+}
+.segmented__option + .segmented__option { border-left: var(--border-width) solid var(--border-color); }
+.segmented__option[aria-pressed='true'] { background: var(--accent); font-family: var(--font-display); }
+
+.sticky-bar { position: sticky; bottom: 0; padding-top: 16px; margin-top: 20px; background: linear-gradient(to top, var(--bg-primary) 72%, transparent); }
+
+/* ---------------- Обработка ---------------- */
+.process__mascot { width: 130px; margin-bottom: 18px; }
+.process__stage { font-family: var(--font-display); font-size: 19px; margin-bottom: 14px; }
+.progress {
+  width: 100%; max-width: 320px; height: 20px;
+  border: var(--border-width) solid var(--border-color); border-radius: 999px;
+  overflow: hidden; background: var(--bg-primary);
+}
+.progress__fill { height: 100%; width: 0; background: var(--accent); transition: width .45s ease; }
+.process__percent { font-family: var(--font-display); font-size: 26px; margin-top: 12px; }
+.process__fact {
+  margin-top: 22px; font-family: var(--font-light); font-size: 13.5px;
+  color: var(--text-secondary); line-height: 1.45; max-width: 320px;
+}
+
+/* ---------------- Шторка "было/стало" ---------------- */
+.compare {
+  position: relative; width: 100%; aspect-ratio: 4 / 3;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--doodle-shadow-sm);
+  overflow: hidden; touch-action: none; user-select: none; background: #eee;
+}
+.compare__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.compare img { -webkit-user-drag: none; user-select: none; pointer-events: none; }
+/* Левая половина обрезается clip-path, а не шириной блока:
+   так кадр "было" остаётся в том же масштабе, что и "стало",
+   и половинки сходятся ровно по линии ползунка. */
+.compare__clip { position: absolute; inset: 0; clip-path: inset(0 50% 0 0); }
+.compare__handle {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: var(--border-width);
+  background: var(--ink); transform: translateX(-50%); pointer-events: none;
+}
+.compare__handle span {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent); border: var(--border-width) solid var(--ink);
+}
+.compare__handle span::before {
+  content: '‹ ›'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 15px; color: var(--ink);
+}
+.compare__tag {
+  position: absolute; top: 10px; font-family: var(--font-display); font-size: 12px;
+  background: var(--ink); color: #f5f5f0; padding: 4px 10px; border-radius: 999px;
+}
+.compare__tag--left { left: 10px; }
+.compare__tag--right { right: 10px; background: var(--accent); color: var(--ink); }
+
+.result-meta { margin-top: 14px; font-size: 14px; color: var(--text-secondary); }
+.result-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+
+/* ---------------- Тарифы ---------------- */
+.plans { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+.plan {
+  position: relative; text-align: left;
+  border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md);
+  background: var(--bg-primary); padding: 16px; cursor: pointer;
+  box-shadow: var(--doodle-shadow-sm);
+}
+.plan--popular { background: var(--accent); }
+.plan__badge {
+  position: absolute; top: -12px; right: 14px;
+  font-family: var(--font-display); font-size: 11px;
+  background: var(--ink); color: var(--accent); padding: 4px 10px; border-radius: 999px;
+}
+.plan__title { font-family: var(--font-display); font-size: 18px; }
+.plan__price { font-family: var(--font-display); font-size: 26px; margin: 4px 0; }
+.plan__per { font-size: 13px; color: var(--text-secondary); }
+.plan--popular .plan__per { color: var(--ink); }
+.plan__note { font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.35; }
+.plan--popular .plan__note { color: var(--ink); }
+
+/* ---------------- История ---------------- */
+.history { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.history-item {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md);
+  background: var(--bg-primary); padding: 10px; cursor: pointer; text-align: left;
+}
+.history-item img { width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); border: 2px solid var(--ink); }
+.history-item__name { font-family: var(--font-display); font-size: 15px; }
+.history-item__date { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+
+/* ---------------- Тост ---------------- */
+.toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  z-index: 50; max-width: 320px;
+  background: var(--ink); color: #f5f5f0;
+  font-size: 14px; padding: 12px 16px; border-radius: var(--radius-md);
+  box-shadow: var(--doodle-shadow-sm); text-align: center;
+  animation: fade .2s ease;
+}

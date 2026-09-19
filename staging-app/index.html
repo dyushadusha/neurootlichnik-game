@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Нейро Стейджинг — ремонт по фото за пару минут</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/logo-icon.svg" />
+
+  <!-- Тот же официальный SDK Telegram Mini Apps, что и в игре:
+       даёт вибрацию, кнопку «назад» и имя пользователя.
+       Вне Telegram просто не мешает. -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="src/style.css?v=1" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-header__brand">
+      <img class="app-header__logo" src="../assets/logo-icon.svg" alt="Нейро Отличник" />
+      <span class="app-header__title">Нейро Стейджинг</span>
+    </div>
+    <button class="credits-chip" id="creditsChip" type="button">
+      <span id="creditsValue">0</span> <span id="creditsWord">кадров</span>
+    </button>
+  </header>
+
+  <!-- ================= ЭКРАН 1 — ГЛАВНАЯ ================= -->
+  <section id="homeScreen" class="screen">
+    <div class="hero">
+      <h1 class="hero__title">Ремонт по фото<br />за пару минут</h1>
+      <p class="hero__text">
+        Загрузите снимок комнаты с телефона — вернём тот же ракурс с ремонтом,
+        мебелью и светом. Стены, окна и метраж останутся на своих местах.
+      </p>
+    </div>
+
+    <div class="home-actions">
+      <label class="btn btn--primary btn--block" for="photoInput">Загрузить фото</label>
+      <input type="file" id="photoInput" accept="image/*" hidden />
+      <button class="btn btn--outline btn--block" id="demoBtn">Посмотреть на примере</button>
+      <button class="text-link" id="openHistoryBtn">Мои кадры</button>
+    </div>
+
+    <ul class="usp">
+      <li><b>2–5 минут</b> вместо недели на дизайнера</li>
+      <li><b>От 40 ₽</b> за кадр против 15 000 ₽ за физический стейджинг</li>
+      <li><b>Геометрия не плывёт</b> — это не «нарисуй красиво», а ваша комната</li>
+    </ul>
+
+    <p class="demo-note">
+      Это демонстрационная версия: генерация имитируется прямо в телефоне,
+      чтобы показать механику. Кадры никуда не отправляются.
+    </p>
+  </section>
+
+  <!-- ================= ЭКРАН 2 — НАСТРОЙКА ================= -->
+  <section id="setupScreen" class="screen" hidden>
+    <button class="back-link" data-back="homeScreen">← Назад</button>
+    <div class="preview">
+      <img id="setupPreview" alt="Загруженное фото" />
+    </div>
+
+    <h2 class="section-title">Что на фото?</h2>
+    <div class="chips" id="roomChips"></div>
+
+    <h2 class="section-title">Стиль ремонта</h2>
+    <div class="styles" id="styleCards"></div>
+
+    <h2 class="section-title">Куда пойдёт кадр</h2>
+    <div class="segmented" id="modeSegmented"></div>
+    <p class="hint" id="modeHint"></p>
+
+    <div class="sticky-bar">
+      <button class="btn btn--primary btn--block" id="renderBtn">
+        Сделать ремонт · 1 кадр
+      </button>
+      <p class="hint hint--center" id="balanceHint"></p>
+    </div>
+  </section>
+
+  <!-- ================= ЭКРАН 3 — ОБРАБОТКА ================= -->
+  <section id="processScreen" class="screen screen--center" hidden>
+    <img class="process__mascot" src="../assets/mascot-hero.webp" alt="" />
+    <p class="process__stage" id="processStage">Готовим кадр</p>
+    <div class="progress"><div class="progress__fill" id="progressFill"></div></div>
+    <p class="process__percent" id="processPercent">0%</p>
+    <p class="process__fact" id="processFact"></p>
+  </section>
+
+  <!-- ================= ЭКРАН 4 — РЕЗУЛЬТАТ ================= -->
+  <section id="resultScreen" class="screen" hidden>
+    <button class="back-link" data-back="homeScreen">← В начало</button>
+    <h2 class="section-title section-title--first">Было и стало</h2>
+
+    <!-- Шторка: тянем ползунок и сравниваем два кадра -->
+    <div class="compare" id="compare">
+      <img class="compare__img compare__img--after" id="compareAfter" alt="После" />
+      <div class="compare__clip" id="compareClip">
+        <img class="compare__img" id="compareBefore" alt="До" />
+      </div>
+      <div class="compare__handle" id="compareHandle"><span></span></div>
+      <span class="compare__tag compare__tag--left">Было</span>
+      <span class="compare__tag compare__tag--right">Стало</span>
+    </div>
+    <p class="hint hint--center">Потяните ползунок, чтобы сравнить</p>
+
+    <p class="result-meta" id="resultMeta"></p>
+
+    <div class="result-actions">
+      <button class="btn btn--primary btn--block" id="downloadBtn">Скачать кадр</button>
+      <button class="btn btn--outline btn--block" id="shareBtn">Поделиться</button>
+      <button class="btn btn--outline btn--block" id="retryStyleBtn">Другой стиль</button>
+    </div>
+  </section>
+
+  <!-- ================= ЭКРАН 5 — ТАРИФЫ ================= -->
+  <section id="plansScreen" class="screen" hidden>
+    <button class="back-link" data-back="homeScreen">← Назад</button>
+    <h2 class="section-title section-title--first">Пакеты кадров</h2>
+    <p class="hint">Кадры не сгорают. Один кадр — одна генерация.</p>
+    <div class="plans" id="planCards"></div>
+    <button class="btn btn--outline btn--block" id="managerBtn">Нужен объём больше — обсудить</button>
+    <p class="demo-note">
+      В демоверсии оплата условная: нажатие просто начисляет кадры,
+      чтобы можно было пройти сценарий целиком.
+    </p>
+  </section>
+
+  <!-- ================= ЭКРАН 6 — ИСТОРИЯ ================= -->
+  <section id="historyScreen" class="screen" hidden>
+    <button class="back-link" data-back="homeScreen">← Назад</button>
+    <h2 class="section-title section-title--first">Мои кадры</h2>
+    <div class="history" id="historyList"></div>
+    <p class="hint hint--center" id="historyEmpty" hidden>Пока пусто — сделайте первый кадр.</p>
+  </section>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="src/config.js?v=1"></script>
+  <script src="src/presets.js?v=1"></script>
+  <script src="src/store.js?v=1"></script>
+  <script src="src/pipeline.js?v=1"></script>
+  <script src="src/app.js?v=1"></script>
+</body>
+</html>
