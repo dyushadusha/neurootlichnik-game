@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<title>Посты — Нейро Отличник</title>
+<!-- Рисует все слайды постов из data.js. PNG: npm run render-instagram -->
+<link rel="stylesheet" href="../brand.css" />
+<style>
+  body { background: #999; padding: 40px; font-family: sans-serif; }
+  h2 { margin: 50px 0 16px; font: 700 30px sans-serif; }
+  .row { display: flex; flex-wrap: wrap; gap: 20px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../engine.js"></script>
+<script src="data.js"></script>
+<script>
+  (async () => {
+    await IG.init();
+    let out = '';
+    for (const p of POSTS) {
+      out += `<h2>${p.id}${p.pin ? ' 📌' : ''} — ${p.pain}</h2><div class="row">`;
+      p.slides.forEach((s, i) => {
+        out += IG.slide(s, { id: `post-${p.id}-${String(i + 1).padStart(2, '0')}`, idx: i, total: p.slides.length });
+      });
+      out += '</div>';
+    }
+    document.getElementById('app').innerHTML = out;
+    await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+    await document.fonts.ready;
+    document.body.dataset.ready = '1';
+  })();
+</script>
+</body>
+</html>

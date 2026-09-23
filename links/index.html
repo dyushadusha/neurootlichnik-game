@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Нейро Отличник — ссылки</title>
+  <meta name="description" content="Студия нейровизуализации: рендер из вашей модели за часы, от 3 000 ₽ за кадр." />
+  <link rel="icon" type="image/svg+xml" href="../assets/logo-icon.svg" />
+  <!-- Страница для ссылки в шапке Instagram. Все ссылки — в массиве LINKS ниже. -->
+  <style>
+    @font-face { font-family: 'InterTight'; src: url('../assets/fonts/InterTightSemiBold.ttf'); font-weight: 600; }
+    @font-face { font-family: 'KicaBold'; src: url('../assets/fonts/KicaBold.ttf'); font-weight: 700; }
+    @font-face { font-family: 'Pershotravneva'; src: url('../assets/fonts/Pershotravneva55.ttf'); }
+    :root { --ink: #2a2a2a; --lime: #dbfc3b; --paper: #f5f5f0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; background: var(--ink); color: var(--paper); font-family: 'InterTight', -apple-system, sans-serif; display: flex; justify-content: center; }
+    main { width: 100%; max-width: 460px; padding: 36px 16px calc(40px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; }
+    .ava { width: 112px; height: 112px; border-radius: 50%; background: var(--lime); border: 3px solid var(--paper); box-shadow: 5px 5px 0 var(--paper); overflow: hidden; }
+    .ava img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+    .logo { width: 230px; margin-top: 26px; }
+    .logo img { width: 100%; display: block; }
+    .tag { margin-top: 12px; font: 21px 'Pershotravneva'; color: var(--lime); text-align: center; }
+    .facts { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .facts span { padding: 6px 12px; border-radius: 20px; background: #3a3a3a; font-size: 13px; }
+    nav { width: 100%; margin-top: 28px; display: flex; flex-direction: column; gap: 14px; }
+    a.btn { display: flex; align-items: center; gap: 14px; padding: 17px 20px; border-radius: 18px; border: 3px solid var(--paper); background: var(--ink); color: var(--paper); text-decoration: none; box-shadow: 4px 4px 0 var(--paper); transition: transform .1s, box-shadow .1s; }
+    a.btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--paper); }
+    a.btn--main { background: var(--lime); color: var(--ink); border-color: var(--lime); box-shadow: 4px 4px 0 var(--paper); }
+    .btn__ico { font-size: 24px; width: 30px; text-align: center; flex: none; }
+    .btn__t { font: 700 15px/1.25 'KicaBold'; }
+    .btn__s { font-size: 13px; opacity: .75; margin-top: 3px; }
+    footer { margin-top: 30px; font-size: 12px; opacity: .5; text-align: center; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="ava"><img src="../assets/mascot-avatar.webp" alt="Нейро" /></div>
+  <div class="logo"><img src="../assets/logo-full.svg" alt="Нейро Отличник" /></div>
+  <div class="tag">архитектурная визуализация со скоростью мысли</div>
+  <div class="facts"><span>⚡ от нескольких часов</span><span>💸 от 3 000 ₽/кадр</span><span>🎯 без ИИ-фантазий</span></div>
+  <nav id="links"></nav>
+  <footer>info@neurootlichnik.ru · neurootlichnik.ru</footer>
+</main>
+<script>
+  const LINKS = [
+    { main: true, ico: '📐', t: 'Оценить проект за 1 день', s: 'Пришлите модель или скриншоты в Telegram', href: 'https://t.me/studionobot' },
+    { ico: '💬', t: 'Написать в WhatsApp', s: '+7 916 288-02-24', href: 'https://wa.me/79162880224' },
+    { ico: '🖼', t: 'Портфолио и кейсы', s: 'neurootlichnik.ru', href: 'https://neurootlichnik.ru/' },
+    { ico: '🔍', t: 'Игра «Найди 5 отличий»', s: 'Пройдите — и получите промокод', href: '../' },
+    { ico: '📣', t: 'Telegram-канал', s: 'Кейсы, процесс, промокоды', href: 'https://t.me/NeuroOtlichnikArch' },
+    { ico: '✉️', t: 'Почта', s: 'info@neurootlichnik.ru', href: 'mailto:info@neurootlichnik.ru' }
+  ];
+  document.getElementById('links').innerHTML = LINKS.map(l =>
+    `<a class="btn ${l.main ? 'btn--main' : ''}" href="${l.href}" ${l.href.startsWith('http') ? 'target="_blank" rel="noopener"' : ''}>
+       <span class="btn__ico">${l.ico}</span><span><div class="btn__t">${l.t}</div><div class="btn__s">${l.s}</div></span></a>`).join('');
+</script>
+</body>
+</html>

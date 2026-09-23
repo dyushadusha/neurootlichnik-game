@@ -10,6 +10,7 @@
   Сохранить все картинки в PNG:
     npm run render-instagram   (см. tools/render-instagram.js)
 -->
+<link rel="stylesheet" href="../brand.css" />
 <style>
   @font-face { font-family: 'InterTight'; src: url('../../assets/fonts/InterTightSemiBold.ttf'); font-weight: 600; }
   @font-face { font-family: 'KicaBold'; src: url('../../assets/fonts/KicaBold.ttf'); font-weight: 700; }
@@ -112,6 +113,8 @@
 
 <script src="data.js"></script>
 <script src="icons.js"></script>
+<script src="../engine.js"></script>
+<script src="stories.js"></script>
 <script>
   const ASSETS = '../../assets/';
   const svgCache = {};
@@ -208,6 +211,18 @@
     out += '<h2>Заставки — первый слайд каждого кружка</h2><div class="row">';
     for (const [i, h] of HIGHLIGHTS.entries()) out += await introHtml(h, i);
     out += '</div><h2>Финальный слайд-призыв</h2><div class="row">' + await ctaHtml() + '</div>';
+    // Полные наборы сторис для каждого кружка: заставка → слайды → призыв
+    await IG.init();
+    const cta = await ctaHtml();
+    for (const [i, h] of HIGHLIGHTS.entries()) {
+      const slides = STORIES[h.id] || [];
+      const n = k => String(k).padStart(2, '0');
+      out += `<h2>Сторис: ${h.name}</h2><div class="row">`;
+      out += (await introHtml(h, i)).replace(`id="intro-${h.id}"`, `id="hs-${h.id}-01"`);
+      slides.forEach((sl, k) => { out += IG.slide(sl, { id: `hs-${h.id}-${n(k + 2)}`, story: true }); });
+      out += cta.replace('id="cta"', `id="hs-${h.id}-${n(slides.length + 2)}"`);
+      out += '</div>';
+    }
     document.getElementById('app').innerHTML = out;
     await Promise.all([...document.images].map(img => img.decode().catch(() => {})));
     await document.fonts.ready;
