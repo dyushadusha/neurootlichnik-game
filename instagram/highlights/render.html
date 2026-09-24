@@ -77,7 +77,7 @@
   .cta__btn {
     position: absolute; top: 820px; left: 80px; padding: 34px 56px;
     background: #fff; border: 8px solid var(--graphite); border-radius: 60px;
-    box-shadow: 14px 14px 0 var(--graphite); font: 700 44px 'KicaBold';
+    box-shadow: 14px 14px 0 var(--graphite); font: 700 38px 'KicaBold'; white-space: nowrap;
   }
   .cta__hand { position: absolute; top: 1010px; left: 90px; font: 56px/1.1 'Pershotravneva'; width: 520px; }
   .cta__mascot { position: absolute; right: -90px; bottom: 0; height: 900px; }
@@ -173,8 +173,8 @@
     return `<div class="cta" id="cta">
       <div class="bg-doodle" style="top:150px;right:90px;width:120px;height:120px">${sparkle}</div>
       <div class="cta__title">Хотите<br>так же?</div>
-      <div class="cta__text">Пришлите модель или скриншоты — оценим стоимость и сроки в тот же день</div>
-      <div class="cta__btn">Написать в директ</div>
+      <div class="cta__text">Пришлите исходники, желаемый результат и срок — ${CONTACTS.manager} рассчитает проект</div>
+      <div class="cta__btn">Telegram: ${CONTACTS.telegram}</div>
       <div class="cta__hand">или жмите на ссылку ниже</div>
       <div class="bg-doodle" style="top:1110px;left:200px;width:150px;height:150px;transform:rotate(100deg)">${arrow}</div>
       <img class="cta__mascot" src="${ASSETS}mascot-hero.webp" alt="">
@@ -188,7 +188,7 @@
         <div class="preview__ava"><img src="${ASSETS}mascot-avatar.webp" alt=""></div>
         <div>
           <div class="preview__nick">neurootlichnik</div>
-          <div class="preview__bio">Нейро Отличник · студия нейровизуализации<br>Рендеры из вашей модели за часы · от 3 000 ₽/кадр<br>👇 Ответы на все вопросы — в кружках</div>
+          <div class="preview__bio">Архитектурная нейровизуализация<br>ИИ-рендеры · обновление рендеров · AI-видео<br>Для архбюро, дизайнеров и девелоперов</div>
         </div>
       </div>
       <div class="preview__row">${items.join('')}</div>

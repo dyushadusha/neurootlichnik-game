@@ -13,17 +13,34 @@
      steps   — шаги: title, steps [[заголовок, текст]]
      qa      — вопрос-ответ: q, a
      cta     — призыв: title, text, keyword
+   Только для сторис: big (тезис), stat (цифра), quiz (квиз/опрос
+   с местом под стикер), split (до/после на весь экран), chat (переписка).
+   Любому слайду можно добавить doodles: [['spiral-a', 'top:..;left:..;width:..px;height:..px', поворот]]
    theme: 'dark' | 'lime' | 'white' (по умолчанию dark)
    ========================================================= */
 const IG = (() => {
   const A = '../../assets/';     // фирменные ассеты игры
   const SRC = '../source/';      // рендеры и маскоты с сайта студии
   let LOGO = '';                 // logo-full.svg, подгружается в init()
+  const DOODLE = {};             // фирменные дудлы из assets/doodles
+  const DOODLE_NAMES = ['spiral-a', 'spiral-b', 'sparkle', 'zigzag', 'arrow-curve', 'cross-a', 'dots', 'wave', 'check', 'loop-arrow', 'squiggle-v', 'hashtag', 'knot', 'scribble'];
+
+  const clean = svg => svg.replace(/\s(width|height)="[^"]*"/g, '')
+    .replace('<svg', '<svg style="width:100%;height:100%;display:block"');
 
   async function init() {
+    if (LOGO) return;
     LOGO = (await (await fetch(A + 'logo-full.svg')).text())
       .replace(/\s(width|height)="[^"]*"/g, '')
       .replace('<svg', '<svg style="width:100%;height:auto;display:block"');
+    await Promise.all(DOODLE_NAMES.map(async n => { DOODLE[n] = clean(await (await fetch(`${A}doodles/${n}.svg`)).text()); }));
+  }
+
+  // Дудлы: [['имя', 'top:..;left:..;width:..', поворот?], ...] — цвет берётся из темы
+  function doodles(list, theme) {
+    if (!list) return '';
+    const color = theme === 'lime' ? '#2a2a2a' : '#dbfc3b';
+    return list.map(([n, style, rot = 0]) => `<div class="s-doodle" style="${style};transform:rotate(${rot}deg)">${(DOODLE[n] || '').replace(/#dbfc3b/gi, color)}</div>`).join('');
   }
   const logo = color => LOGO.replace(/#dbfc3b/gi, color);
   const img = f => /\//.test(f) ? f : SRC + f;
@@ -103,7 +120,8 @@ const IG = (() => {
       return `<img class="s-bg" src="${img(s.img)}" alt="" style="${s.pos ? `object-position:${s.pos}` : ''}">
         <div class="s-shade s-shade--soft"></div>
         ${s.tag ? `<span class="s-tag s-tag--lime s-tag--corner">${md(s.tag)}</span>` : ''}
-        ${s.caption ? `<div class="s-photo-cap">${md(s.caption)}</div>` : ''}`;
+        ${s.caption ? `<div class="s-photo-cap">${md(s.caption)}</div>` : ''}
+        ${s.stamp ? `<div class="s-stamp">${md(s.stamp)}</div>` : ''}`;
     },
     grid(s) {
       return `<div class="s-body">
@@ -127,6 +145,53 @@ const IG = (() => {
           <div class="s-answer">${md(s.a)}</div>
         </div>${mascotHtml(s.mascot)}`;
     },
+    /* ---------- шаблоны для сторис ---------- */
+    // Крупный тезис-крючок
+    big(s) {
+      return `<div class="s-body s-body--big">
+          ${s.kicker ? `<div class="s-kicker">${md(s.kicker)}</div>` : ''}
+          <div class="s-big">${md(s.text)}</div>
+          ${s.sub ? `<div class="s-text">${md(s.sub)}</div>` : ''}
+          ${s.image ? `<img class="s-inline-img" src="${img(s.image)}" alt="" style="${s.imgPos ? `object-position:${s.imgPos}` : ''}">` : ''}
+        </div>${mascotHtml(s.mascot)}`;
+    },
+    // Большая цифра
+    stat(s) {
+      return `<div class="s-body s-body--big">
+          ${s.kicker ? `<div class="s-kicker">${md(s.kicker)}</div>` : ''}
+          <div class="s-stat ${String(s.big).length > 3 ? 's-stat--long' : ''}">${md(s.big)}</div>
+          <div class="s-stat-label">${md(s.label)}</div>
+          ${s.sub ? `<div class="s-text">${md(s.sub)}</div>` : ''}
+        </div>${mascotHtml(s.mascot)}`;
+    },
+    // Квиз/опрос: картинка + место под стикер Instagram
+    quiz(s) {
+      return `<div class="s-body">
+          ${s.kicker ? `<div class="s-kicker">${md(s.kicker)}</div>` : ''}
+          <div class="s-title">${md(s.title)}</div>
+          ${s.img ? `<img class="s-quiz-img" src="${img(s.img)}" alt="" style="${s.pos ? `object-position:${s.pos}` : ''}">` : ''}
+          ${s.text ? `<div class="s-text">${md(s.text)}</div>` : ''}
+          <div class="s-sticker-hint">${md(s.hint || 'голосуйте ↓')}</div>
+        </div>${mascotHtml(s.mascot)}`;
+    },
+    // До/после на весь экран: сверху «до», снизу «после»
+    split(s) {
+      return `<div class="s-split">
+          <div class="s-split__half"><img src="${img(s.before)}" alt=""><span class="s-tag">${s.beforeLabel || 'ДО'}</span></div>
+          <div class="s-split__half"><img src="${img(s.after)}" alt=""><span class="s-tag s-tag--lime">${s.afterLabel || 'ПОСЛЕ'}</span></div>
+          <div class="s-split__knob">↓</div>
+        </div>
+        ${s.caption ? `<div class="s-split__cap">${md(s.caption)}</div>` : ''}`;
+    },
+    // Переписка в директе: [['you' | 'us', 'текст'], ...]
+    chat(s) {
+      return `<div class="s-body">
+          ${s.kicker ? `<div class="s-kicker">${md(s.kicker)}</div>` : ''}
+          <div class="s-title">${md(s.title)}</div>
+          <div class="s-chat">${s.msgs.map(([who, t]) => `<div class="s-msg s-msg--${who}">${md(t)}</div>`).join('')}</div>
+          ${s.text ? `<div class="s-text s-text--sm">${md(s.text)}</div>` : ''}
+        </div>${mascotHtml(s.mascot)}`;
+    },
     cta(s) {
       return `<div class="s-body s-body--cta">
           <div class="s-title s-title--xl">${md(s.title)}</div>
@@ -140,6 +205,7 @@ const IG = (() => {
   function slide(s, o) {
     const theme = s.theme || 'dark';
     return `<div class="slide slide--${theme} ${o.story ? 'slide--story' : ''} slide--${s.type} ${s.mascot ? 'has-mascot' : ''}" id="${o.id}">
+      ${doodles(s.doodles, theme)}
       ${T[s.type](s)}
       ${footer(o, theme, s)}
     </div>`;

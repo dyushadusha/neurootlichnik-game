@@ -64,6 +64,24 @@ const ICONS = {
     <path d="M124 124 L166 166" stroke-width="20"/>
     <text x="86" y="110" text-anchor="middle" font-family="KicaBold" font-size="72" fill="currentColor" stroke="none">5</text>`,
 
+  // Старт — флажок на старте
+  start: `
+    <path d="M58 176 V30"/>
+    <path d="M58 38 Q84 26 108 38 Q132 50 160 40 V106 Q132 116 108 104 Q84 92 58 104" fill="currentColor"/>
+    <path d="M38 176 H90" stroke-width="10"/>`,
+
+  // Видео — плёнка/экран с кнопкой play
+  video: `
+    <rect x="26" y="52" width="148" height="104" rx="18"/>
+    <path d="M86 80 L126 104 L86 128 Z" fill="currentColor" stroke-width="8"/>
+    <path d="M60 36 L76 52 M140 36 L124 52" stroke-width="9"/>`,
+
+  // PDF — документ с загнутым углом
+  pdf: `
+    <path d="M52 26 H118 L152 60 V174 H52 Z"/>
+    <path d="M118 26 V60 H152" stroke-width="10"/>
+    <text x="100" y="138" text-anchor="middle" font-family="KicaBold" font-size="30" fill="currentColor" stroke="none">PDF</text>`,
+
   // Заявка — бумажный самолётик
   contact: `
     <path d="M28 98 L170 36 L138 164 L100 130 Z"/>
