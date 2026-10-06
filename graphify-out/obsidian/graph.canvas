@@ -1,0 +1,2136 @@
+{
+  "nodes": [
+    {
+      "id": "g0",
+      "type": "group",
+      "label": "Level Generation CLI",
+      "x": 0,
+      "y": 0,
+      "width": 1100,
+      "height": 620,
+      "color": "1"
+    },
+    {
+      "id": "n_tools_generate_level_assets_dir",
+      "type": "file",
+      "file": "ASSETS_DIR.md",
+      "x": 20,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_levels_path",
+      "type": "file",
+      "file": "LEVELS_PATH.md",
+      "x": 220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_repo_root",
+      "type": "file",
+      "file": "REPO_ROOT.md",
+      "x": 420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_boxdilate",
+      "type": "file",
+      "file": "boxDilate().md",
+      "x": 620,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_builddiffmask",
+      "type": "file",
+      "file": "buildDiffMask().md",
+      "x": 820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_clamp",
+      "type": "file",
+      "file": "clamp().md",
+      "x": 20,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_clusterize",
+      "type": "file",
+      "file": "clusterize().md",
+      "x": 220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_clusterstodifferences",
+      "type": "file",
+      "file": "clustersToDifferences().md",
+      "x": 420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_fs",
+      "type": "file",
+      "file": "fs_1.md",
+      "x": 620,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level",
+      "type": "file",
+      "file": "generate-level.js.md",
+      "x": 820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_loadlevelsfile",
+      "type": "file",
+      "file": "loadLevelsFile().md",
+      "x": 20,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_loadrgba",
+      "type": "file",
+      "file": "loadRGBA()_1.md",
+      "x": 220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_main",
+      "type": "file",
+      "file": "main()_1.md",
+      "x": 420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_nextlevelid",
+      "type": "file",
+      "file": "nextLevelId().md",
+      "x": 620,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_parseargs",
+      "type": "file",
+      "file": "parseArgs()_1.md",
+      "x": 820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_path",
+      "type": "file",
+      "file": "path_1.md",
+      "x": 20,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_printhelpandexit",
+      "type": "file",
+      "file": "printHelpAndExit().md",
+      "x": 220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_serializelevels",
+      "type": "file",
+      "file": "serializeLevels().md",
+      "x": 420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_sharp",
+      "type": "file",
+      "file": "sharp_3.md",
+      "x": 620,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_vm",
+      "type": "file",
+      "file": "vm.md",
+      "x": 820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_generate_level_writedebugimage",
+      "type": "file",
+      "file": "writeDebugImage().md",
+      "x": 20,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": "Game Bootstrap & MCP Tooling",
+      "x": 1180,
+      "y": 0,
+      "width": 1100,
+      "height": 520,
+      "color": "2"
+    },
+    {
+      "id": "n_src_results_achievements_list",
+      "type": "file",
+      "file": "ACHIEVEMENTS Definitions.md",
+      "x": 1200,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_config_config_object",
+      "type": "file",
+      "file": "CONFIG Object.md",
+      "x": 1400,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mcp_chromedevtools_server",
+      "type": "file",
+      "file": "Chrome DevTools MCP Server.md",
+      "x": 1600,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_main_script",
+      "type": "file",
+      "file": "Game Logic (game.js IIFE).md",
+      "x": 1800,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_audio_gameaudio_module",
+      "type": "file",
+      "file": "GameAudio Module.md",
+      "x": 2000,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_results_gameresults_module",
+      "type": "file",
+      "file": "GameResults Module.md",
+      "x": 1200,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_levels_levels_array",
+      "type": "file",
+      "file": "LEVELS Data Array.md",
+      "x": 1400,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_facts_mascot_facts",
+      "type": "file",
+      "file": "MASCOT_FACTS List.md",
+      "x": 1600,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_facts_mascot_intro",
+      "type": "file",
+      "file": "MASCOT_INTRO Text.md",
+      "x": 1800,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_facts_mascot_outro",
+      "type": "file",
+      "file": "MASCOT_OUTRO Text.md",
+      "x": 2000,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mcp_playwright_server",
+      "type": "file",
+      "file": "Playwright MCP Server.md",
+      "x": 1200,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_settings_settings_module",
+      "type": "file",
+      "file": "Settings Module.md",
+      "x": 1400,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_tg_telegram_webapp",
+      "type": "file",
+      "file": "Telegram WebApp Bridge.md",
+      "x": 1600,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_levels_weave_tool",
+      "type": "file",
+      "file": "Weave (Render Generator).md",
+      "x": 1800,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_facts",
+      "type": "file",
+      "file": "facts.js.md",
+      "x": 2000,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_indexhtml_page",
+      "type": "file",
+      "file": "index.html Page.md",
+      "x": 1200,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_audio_perceptualvolume_function",
+      "type": "file",
+      "file": "perceptualVolume Function.md",
+      "x": 1400,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_results_shareresultimage_function",
+      "type": "file",
+      "file": "shareResultImage Function.md",
+      "x": 1600,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": "Package Manifest",
+      "x": 2360,
+      "y": 0,
+      "width": 880,
+      "height": 420,
+      "color": "3"
+    },
+    {
+      "id": "n_package_description",
+      "type": "file",
+      "file": "description.md",
+      "x": 2380,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package_scripts_dev",
+      "type": "file",
+      "file": "dev.md",
+      "x": 2580,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package_devdependencies",
+      "type": "file",
+      "file": "devDependencies.md",
+      "x": 2780,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package_scripts_generate_level",
+      "type": "file",
+      "file": "generate-level.md",
+      "x": 2980,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package_name",
+      "type": "file",
+      "file": "name.md",
+      "x": 2380,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package",
+      "type": "file",
+      "file": "package.json.md",
+      "x": 2580,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package_private",
+      "type": "file",
+      "file": "private.md",
+      "x": 2780,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package_scripts",
+      "type": "file",
+      "file": "scripts.md",
+      "x": 2980,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package_devdependencies_sharp",
+      "type": "file",
+      "file": "sharp.md",
+      "x": 2380,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_sharp",
+      "type": "file",
+      "file": "sharp_1.md",
+      "x": 2580,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_package_version",
+      "type": "file",
+      "file": "version.md",
+      "x": 2780,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": "Game UI Setup & Telegram Bridge",
+      "x": 3320,
+      "y": 0,
+      "width": 660,
+      "height": 420,
+      "color": "4"
+    },
+    {
+      "id": "n_src_game_applyheaderheight",
+      "type": "file",
+      "file": "applyHeaderHeight().md",
+      "x": 3340,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_applystartlogotheme",
+      "type": "file",
+      "file": "applyStartLogoTheme().md",
+      "x": 3540,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_applytelegramsafearea",
+      "type": "file",
+      "file": "applyTelegramSafeArea().md",
+      "x": 3740,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game",
+      "type": "file",
+      "file": "game.js.md",
+      "x": 3340,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_getplayername",
+      "type": "file",
+      "file": "getPlayerName().md",
+      "x": 3540,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_showhint",
+      "type": "file",
+      "file": "showHint().md",
+      "x": 3740,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_showrandomfact",
+      "type": "file",
+      "file": "showRandomFact().md",
+      "x": 3340,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_syncsettingsui",
+      "type": "file",
+      "file": "syncSettingsUI().md",
+      "x": 3540,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_trystartaudio",
+      "type": "file",
+      "file": "tryStartAudio().md",
+      "x": 3740,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "label": "Level Compositing CLI",
+      "x": 4060,
+      "y": 0,
+      "width": 660,
+      "height": 420,
+      "color": "5"
+    },
+    {
+      "id": "n_tools_composite_level",
+      "type": "file",
+      "file": "composite-level.js.md",
+      "x": 4080,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_composite_level_fs",
+      "type": "file",
+      "file": "fs.md",
+      "x": 4280,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_composite_level_loadmaskgray",
+      "type": "file",
+      "file": "loadMaskGray().md",
+      "x": 4480,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_composite_level_loadrgba",
+      "type": "file",
+      "file": "loadRGBA().md",
+      "x": 4080,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_composite_level_main",
+      "type": "file",
+      "file": "main().md",
+      "x": 4280,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_composite_level_parseargs",
+      "type": "file",
+      "file": "parseArgs().md",
+      "x": 4480,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_composite_level_path",
+      "type": "file",
+      "file": "path.md",
+      "x": 4080,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_tools_composite_level_sharp",
+      "type": "file",
+      "file": "sharp_2.md",
+      "x": 4280,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g5",
+      "type": "group",
+      "label": "Level Play & Viewport Fitting",
+      "x": 0,
+      "y": 700,
+      "width": 660,
+      "height": 420,
+      "color": "6"
+    },
+    {
+      "id": "n_src_game_applyviewportheight",
+      "type": "file",
+      "file": "applyViewportHeight().md",
+      "x": 20,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_begingame",
+      "type": "file",
+      "file": "beginGame().md",
+      "x": 220,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_fitgameimages_computefit",
+      "type": "file",
+      "file": "computeFit().md",
+      "x": 420,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_fitgameimages",
+      "type": "file",
+      "file": "fitGameImages().md",
+      "x": 20,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_loadlevel",
+      "type": "file",
+      "file": "loadLevel().md",
+      "x": 220,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_startlevel",
+      "type": "file",
+      "file": "startLevel().md",
+      "x": 420,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_starttimer",
+      "type": "file",
+      "file": "startTimer().md",
+      "x": 20,
+      "y": 940,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g6",
+      "type": "group",
+      "label": "Level Asset Pipeline (MCP-adjacent)",
+      "x": 1180,
+      "y": 700,
+      "width": 660,
+      "height": 400,
+      "color": "1"
+    },
+    {
+      "id": "n_mcp_glif_server",
+      "type": "file",
+      "file": "Glif MCP Server.md",
+      "x": 1200,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_compositelevel_tool",
+      "type": "file",
+      "file": "composite-level.js Tool.md",
+      "x": 1400,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_packagejson_generatelevel_script",
+      "type": "file",
+      "file": "generate-level npm Script.md",
+      "x": 1600,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_generatelevel_tool",
+      "type": "file",
+      "file": "generate-level.js Tool.md",
+      "x": 1200,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_packagejson_project",
+      "type": "file",
+      "file": "neurootlichnik-game Package.md",
+      "x": 1400,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_packagejson_sharp_dependency",
+      "type": "file",
+      "file": "sharp Dependency.md",
+      "x": 1600,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g7",
+      "type": "group",
+      "label": "MCP Server Config",
+      "x": 2360,
+      "y": 700,
+      "width": 660,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_mcp",
+      "type": "file",
+      "file": "dot-mcp.json.md",
+      "x": 2380,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mcp_package_playwright_mcp",
+      "type": "file",
+      "file": "@playwrightmcp.md",
+      "x": 2580,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mcp_mcp_server_chrome_devtools",
+      "type": "file",
+      "file": "chrome-devtools.md",
+      "x": 2780,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mcp_mcp_server_glif",
+      "type": "file",
+      "file": "glif.md",
+      "x": 2380,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mcp_command_npx",
+      "type": "file",
+      "file": "npx.md",
+      "x": 2580,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mcp_mcp_server_playwright",
+      "type": "file",
+      "file": "playwright.md",
+      "x": 2780,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g8",
+      "type": "group",
+      "label": "Difference-Tap Interactions",
+      "x": 3320,
+      "y": 700,
+      "width": 660,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_src_game_addmarker",
+      "type": "file",
+      "file": "addMarker().md",
+      "x": 3340,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_handletap",
+      "type": "file",
+      "file": "handleTap().md",
+      "x": 3540,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_hapticcorrect",
+      "type": "file",
+      "file": "hapticCorrect().md",
+      "x": 3740,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_hapticwrong",
+      "type": "file",
+      "file": "hapticWrong().md",
+      "x": 3340,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_markfound",
+      "type": "file",
+      "file": "markFound().md",
+      "x": 3540,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_shake",
+      "type": "file",
+      "file": "shake().md",
+      "x": 3740,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g9",
+      "type": "group",
+      "label": "Game Timer",
+      "x": 4060,
+      "y": 700,
+      "width": 600,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_src_game_finishlevel",
+      "type": "file",
+      "file": "finishLevel().md",
+      "x": 4080,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_formattime",
+      "type": "file",
+      "file": "formatTime().md",
+      "x": 4280,
+      "y": 780,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_stoptimer",
+      "type": "file",
+      "file": "stopTimer().md",
+      "x": 4080,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_updatetimer",
+      "type": "file",
+      "file": "updateTimer().md",
+      "x": 4280,
+      "y": 860,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g10",
+      "type": "group",
+      "label": "Screen & Intro Flow",
+      "x": 0,
+      "y": 1200,
+      "width": 600,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "n_src_game_maybeshowintro",
+      "type": "file",
+      "file": "maybeShowIntro().md",
+      "x": 20,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_showscreen",
+      "type": "file",
+      "file": "showScreen().md",
+      "x": 220,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_updateplaybuttonlabel",
+      "type": "file",
+      "file": "updatePlayButtonLabel().md",
+      "x": 20,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_game_updateprogressline",
+      "type": "file",
+      "file": "updateProgressLine().md",
+      "x": 220,
+      "y": 1360,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g11",
+      "type": "group",
+      "label": "Meta-Skills (graphify + llm-council)",
+      "x": 1180,
+      "y": 1200,
+      "width": 600,
+      "height": 400,
+      "color": "6"
+    },
+    {
+      "id": "n_claude_skills_graphify_skill",
+      "type": "file",
+      "file": "Graphify Skill.md",
+      "x": 1200,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_llmcouncil_skill",
+      "type": "file",
+      "file": "LLM Council Skill.md",
+      "x": 1400,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g12",
+      "type": "group",
+      "label": "Meta-Skills (grilling)",
+      "x": 2360,
+      "y": 1200,
+      "width": 600,
+      "height": 400,
+      "color": "1"
+    },
+    {
+      "id": "n_grillme_skill",
+      "type": "file",
+      "file": "Grill-Me Skill.md",
+      "x": 2380,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_skills_grilling_skill",
+      "type": "file",
+      "file": "Grilling Skill.md",
+      "x": 2580,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g13",
+      "type": "group",
+      "label": "Audio Module",
+      "x": 3320,
+      "y": 1200,
+      "width": 600,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_src_audio_gameaudio",
+      "type": "file",
+      "file": "GameAudio.md",
+      "x": 3340,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_audio",
+      "type": "file",
+      "file": "audio.js.md",
+      "x": 3540,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g14",
+      "type": "group",
+      "label": "Config Module",
+      "x": 4060,
+      "y": 1200,
+      "width": 600,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_src_config_config",
+      "type": "file",
+      "file": "CONFIG.md",
+      "x": 4080,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_config",
+      "type": "file",
+      "file": "config.js.md",
+      "x": 4280,
+      "y": 1280,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g15",
+      "type": "group",
+      "label": "Levels Data Module",
+      "x": 0,
+      "y": 1680,
+      "width": 600,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_src_levels_levels",
+      "type": "file",
+      "file": "LEVELS.md",
+      "x": 20,
+      "y": 1760,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_levels",
+      "type": "file",
+      "file": "levels.js.md",
+      "x": 220,
+      "y": 1760,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g16",
+      "type": "group",
+      "label": "Results Module",
+      "x": 1180,
+      "y": 1680,
+      "width": 600,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "n_src_results_gameresults",
+      "type": "file",
+      "file": "GameResults.md",
+      "x": 1200,
+      "y": 1760,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_results",
+      "type": "file",
+      "file": "results.js.md",
+      "x": 1400,
+      "y": 1760,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g17",
+      "type": "group",
+      "label": "Settings Module",
+      "x": 2360,
+      "y": 1680,
+      "width": 600,
+      "height": 400,
+      "color": "6"
+    },
+    {
+      "id": "n_src_settings_settings",
+      "type": "file",
+      "file": "Settings.md",
+      "x": 2380,
+      "y": 1760,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_src_settings",
+      "type": "file",
+      "file": "settings.js.md",
+      "x": 2580,
+      "y": 1760,
+      "width": 180,
+      "height": 60
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_mcp_mcp_mcp_server_chrome_devtools",
+      "fromNode": "n_mcp",
+      "toNode": "n_mcp_mcp_server_chrome_devtools",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_mcp_mcp_mcp_server_glif",
+      "fromNode": "n_mcp",
+      "toNode": "n_mcp_mcp_server_glif",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_mcp_mcp_mcp_server_playwright",
+      "fromNode": "n_mcp",
+      "toNode": "n_mcp_mcp_server_playwright",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_mcp_mcp_server_playwright_mcp_command_npx",
+      "fromNode": "n_mcp_mcp_server_playwright",
+      "toNode": "n_mcp_command_npx",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_mcp_mcp_server_playwright_mcp_package_playwright_mcp",
+      "fromNode": "n_mcp_mcp_server_playwright",
+      "toNode": "n_mcp_package_playwright_mcp",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_mcp_command_npx_mcp_mcp_server_chrome_devtools",
+      "fromNode": "n_mcp_command_npx",
+      "toNode": "n_mcp_mcp_server_chrome_devtools",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_package_package_description",
+      "fromNode": "n_package",
+      "toNode": "n_package_description",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_package_devdependencies",
+      "fromNode": "n_package",
+      "toNode": "n_package_devdependencies",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_package_name",
+      "fromNode": "n_package",
+      "toNode": "n_package_name",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_package_private",
+      "fromNode": "n_package",
+      "toNode": "n_package_private",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_package_scripts",
+      "fromNode": "n_package",
+      "toNode": "n_package_scripts",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_package_version",
+      "fromNode": "n_package",
+      "toNode": "n_package_version",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_scripts_package_scripts_dev",
+      "fromNode": "n_package_scripts",
+      "toNode": "n_package_scripts_dev",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_scripts_package_scripts_generate_level",
+      "fromNode": "n_package_scripts",
+      "toNode": "n_package_scripts_generate_level",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_devdependencies_package_devdependencies_sharp",
+      "fromNode": "n_package_devdependencies",
+      "toNode": "n_package_devdependencies_sharp",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_package_devdependencies_sharp_sharp",
+      "fromNode": "n_package_devdependencies_sharp",
+      "toNode": "n_sharp",
+      "label": "imports [EXTRACTED]"
+    },
+    {
+      "id": "e_src_audio_src_audio_gameaudio",
+      "fromNode": "n_src_audio",
+      "toNode": "n_src_audio_gameaudio",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_config_src_config_config",
+      "fromNode": "n_src_config",
+      "toNode": "n_src_config_config",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_facts_src_facts_mascot_facts",
+      "fromNode": "n_src_facts",
+      "toNode": "n_src_facts_mascot_facts",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_facts_mascot_facts_indexhtml_page",
+      "fromNode": "n_src_facts_mascot_facts",
+      "toNode": "n_indexhtml_page",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_facts_mascot_facts_src_game_main_script",
+      "fromNode": "n_src_facts_mascot_facts",
+      "toNode": "n_src_game_main_script",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_addmarker",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_addmarker",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_applyheaderheight",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_applyheaderheight",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_applystartlogotheme",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_applystartlogotheme",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_applytelegramsafearea",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_applytelegramsafearea",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_applyviewportheight",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_applyviewportheight",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_begingame",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_begingame",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_finishlevel",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_finishlevel",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_fitgameimages",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_fitgameimages",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_formattime",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_formattime",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_getplayername",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_getplayername",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_handletap",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_handletap",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_hapticcorrect",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_hapticcorrect",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_hapticwrong",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_hapticwrong",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_loadlevel",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_loadlevel",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_markfound",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_markfound",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_maybeshowintro",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_maybeshowintro",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_shake",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_shake",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_showhint",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_showhint",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_showrandomfact",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_showrandomfact",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_showscreen",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_showscreen",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_startlevel",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_startlevel",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_starttimer",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_starttimer",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_stoptimer",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_stoptimer",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_syncsettingsui",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_syncsettingsui",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_trystartaudio",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_trystartaudio",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_updateplaybuttonlabel",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_updateplaybuttonlabel",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_updateprogressline",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_updateprogressline",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_src_game_updatetimer",
+      "fromNode": "n_src_game",
+      "toNode": "n_src_game_updatetimer",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_applyviewportheight_src_game_fitgameimages",
+      "fromNode": "n_src_game_applyviewportheight",
+      "toNode": "n_src_game_fitgameimages",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_fitgameimages_src_game_begingame",
+      "fromNode": "n_src_game_fitgameimages",
+      "toNode": "n_src_game_begingame",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_fitgameimages_src_game_fitgameimages_computefit",
+      "fromNode": "n_src_game_fitgameimages",
+      "toNode": "n_src_game_fitgameimages_computefit",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_applyheaderheight_src_game_applytelegramsafearea",
+      "fromNode": "n_src_game_applyheaderheight",
+      "toNode": "n_src_game_applytelegramsafearea",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_showscreen_src_game_begingame",
+      "fromNode": "n_src_game_showscreen",
+      "toNode": "n_src_game_begingame",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_showscreen_src_game_finishlevel",
+      "fromNode": "n_src_game_showscreen",
+      "toNode": "n_src_game_finishlevel",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_showscreen_src_game_maybeshowintro",
+      "fromNode": "n_src_game_showscreen",
+      "toNode": "n_src_game_maybeshowintro",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_showscreen_src_game_updateplaybuttonlabel",
+      "fromNode": "n_src_game_showscreen",
+      "toNode": "n_src_game_updateplaybuttonlabel",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_showscreen_src_game_updateprogressline",
+      "fromNode": "n_src_game_showscreen",
+      "toNode": "n_src_game_updateprogressline",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_loadlevel_src_game_startlevel",
+      "fromNode": "n_src_game_loadlevel",
+      "toNode": "n_src_game_startlevel",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_startlevel_src_game_begingame",
+      "fromNode": "n_src_game_startlevel",
+      "toNode": "n_src_game_begingame",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_startlevel_src_game_starttimer",
+      "fromNode": "n_src_game_startlevel",
+      "toNode": "n_src_game_starttimer",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_starttimer_src_game_updatetimer",
+      "fromNode": "n_src_game_starttimer",
+      "toNode": "n_src_game_updatetimer",
+      "label": "indirect_call [INFERRED]"
+    },
+    {
+      "id": "e_src_game_updatetimer_src_game_formattime",
+      "fromNode": "n_src_game_updatetimer",
+      "toNode": "n_src_game_formattime",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_stoptimer_src_game_finishlevel",
+      "fromNode": "n_src_game_stoptimer",
+      "toNode": "n_src_game_finishlevel",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_formattime_src_game_finishlevel",
+      "fromNode": "n_src_game_formattime",
+      "toNode": "n_src_game_finishlevel",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_handletap_src_game_hapticwrong",
+      "fromNode": "n_src_game_handletap",
+      "toNode": "n_src_game_hapticwrong",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_handletap_src_game_markfound",
+      "fromNode": "n_src_game_handletap",
+      "toNode": "n_src_game_markfound",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_handletap_src_game_shake",
+      "fromNode": "n_src_game_handletap",
+      "toNode": "n_src_game_shake",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_markfound_src_game_addmarker",
+      "fromNode": "n_src_game_markfound",
+      "toNode": "n_src_game_addmarker",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_markfound_src_game_finishlevel",
+      "fromNode": "n_src_game_markfound",
+      "toNode": "n_src_game_finishlevel",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_markfound_src_game_hapticcorrect",
+      "fromNode": "n_src_game_markfound",
+      "toNode": "n_src_game_hapticcorrect",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_levels_src_levels_levels",
+      "fromNode": "n_src_levels",
+      "toNode": "n_src_levels_levels",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_results_src_results_gameresults",
+      "fromNode": "n_src_results",
+      "toNode": "n_src_results_gameresults",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_src_settings_src_settings_settings",
+      "fromNode": "n_src_settings",
+      "toNode": "n_src_settings_settings",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_tools_composite_level_fs",
+      "fromNode": "n_tools_composite_level",
+      "toNode": "n_tools_composite_level_fs",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_tools_composite_level_loadmaskgray",
+      "fromNode": "n_tools_composite_level",
+      "toNode": "n_tools_composite_level_loadmaskgray",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_tools_composite_level_loadrgba",
+      "fromNode": "n_tools_composite_level",
+      "toNode": "n_tools_composite_level_loadrgba",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_tools_composite_level_main",
+      "fromNode": "n_tools_composite_level",
+      "toNode": "n_tools_composite_level_main",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_tools_composite_level_parseargs",
+      "fromNode": "n_tools_composite_level",
+      "toNode": "n_tools_composite_level_parseargs",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_tools_composite_level_path",
+      "fromNode": "n_tools_composite_level",
+      "toNode": "n_tools_composite_level_path",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_tools_composite_level_sharp",
+      "fromNode": "n_tools_composite_level",
+      "toNode": "n_tools_composite_level_sharp",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_sharp_tools_composite_level_loadmaskgray",
+      "fromNode": "n_tools_composite_level_sharp",
+      "toNode": "n_tools_composite_level_loadmaskgray",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_sharp_tools_composite_level_loadrgba",
+      "fromNode": "n_tools_composite_level_sharp",
+      "toNode": "n_tools_composite_level_loadrgba",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_sharp_tools_composite_level_main",
+      "fromNode": "n_tools_composite_level_sharp",
+      "toNode": "n_tools_composite_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_parseargs_tools_composite_level_main",
+      "fromNode": "n_tools_composite_level_parseargs",
+      "toNode": "n_tools_composite_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_loadrgba_tools_composite_level_main",
+      "fromNode": "n_tools_composite_level_loadrgba",
+      "toNode": "n_tools_composite_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_composite_level_loadmaskgray_tools_composite_level_main",
+      "fromNode": "n_tools_composite_level_loadmaskgray",
+      "toNode": "n_tools_composite_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_assets_dir",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_assets_dir",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_boxdilate",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_boxdilate",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_builddiffmask",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_builddiffmask",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_clamp",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_clamp",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_clusterize",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_clusterize",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_clusterstodifferences",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_clusterstodifferences",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_fs",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_fs",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_levels_path",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_levels_path",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_loadlevelsfile",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_loadlevelsfile",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_loadrgba",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_loadrgba",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_main",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_nextlevelid",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_nextlevelid",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_parseargs",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_parseargs",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_path",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_path",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_printhelpandexit",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_printhelpandexit",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_repo_root",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_repo_root",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_serializelevels",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_serializelevels",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_sharp",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_sharp",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_vm",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_vm",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_tools_generate_level_writedebugimage",
+      "fromNode": "n_tools_generate_level",
+      "toNode": "n_tools_generate_level_writedebugimage",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_sharp_tools_generate_level_loadrgba",
+      "fromNode": "n_tools_generate_level_sharp",
+      "toNode": "n_tools_generate_level_loadrgba",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_sharp_tools_generate_level_writedebugimage",
+      "fromNode": "n_tools_generate_level_sharp",
+      "toNode": "n_tools_generate_level_writedebugimage",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_printhelpandexit_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_printhelpandexit",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_parseargs_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_parseargs",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_clamp_tools_generate_level_clusterstodifferences",
+      "fromNode": "n_tools_generate_level_clamp",
+      "toNode": "n_tools_generate_level_clusterstodifferences",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_loadlevelsfile_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_loadlevelsfile",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_nextlevelid_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_nextlevelid",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_serializelevels_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_serializelevels",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_loadrgba_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_loadrgba",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_builddiffmask_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_builddiffmask",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_boxdilate_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_boxdilate",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_clusterize_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_clusterize",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_clusterstodifferences_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_clusterstodifferences",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_tools_generate_level_writedebugimage_tools_generate_level_main",
+      "fromNode": "n_tools_generate_level_writedebugimage",
+      "toNode": "n_tools_generate_level_main",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_packagejson_project_packagejson_generatelevel_script",
+      "fromNode": "n_packagejson_project",
+      "toNode": "n_packagejson_generatelevel_script",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_packagejson_project_packagejson_sharp_dependency",
+      "fromNode": "n_packagejson_project",
+      "toNode": "n_packagejson_sharp_dependency",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_packagejson_sharp_dependency_compositelevel_tool",
+      "fromNode": "n_packagejson_sharp_dependency",
+      "toNode": "n_compositelevel_tool",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_packagejson_sharp_dependency_generatelevel_tool",
+      "fromNode": "n_packagejson_sharp_dependency",
+      "toNode": "n_generatelevel_tool",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_packagejson_generatelevel_script_generatelevel_tool",
+      "fromNode": "n_packagejson_generatelevel_script",
+      "toNode": "n_generatelevel_tool",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_audio_gameaudio_module_indexhtml_page",
+      "fromNode": "n_src_audio_gameaudio_module",
+      "toNode": "n_indexhtml_page",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_audio_gameaudio_module_src_audio_perceptualvolume_function",
+      "fromNode": "n_src_audio_gameaudio_module",
+      "toNode": "n_src_audio_perceptualvolume_function",
+      "label": "implements [EXTRACTED]"
+    },
+    {
+      "id": "e_src_audio_gameaudio_module_src_settings_settings_module",
+      "fromNode": "n_src_audio_gameaudio_module",
+      "toNode": "n_src_settings_settings_module",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_audio_gameaudio_module_src_game_main_script",
+      "fromNode": "n_src_audio_gameaudio_module",
+      "toNode": "n_src_game_main_script",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_config_config_object_indexhtml_page",
+      "fromNode": "n_src_config_config_object",
+      "toNode": "n_indexhtml_page",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_config_config_object_src_game_main_script",
+      "fromNode": "n_src_config_config_object",
+      "toNode": "n_src_game_main_script",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_facts_mascot_intro_src_game_main_script",
+      "fromNode": "n_src_facts_mascot_intro",
+      "toNode": "n_src_game_main_script",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_facts_mascot_outro_src_game_main_script",
+      "fromNode": "n_src_facts_mascot_outro",
+      "toNode": "n_src_game_main_script",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_main_script_indexhtml_page",
+      "fromNode": "n_src_game_main_script",
+      "toNode": "n_indexhtml_page",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_main_script_src_game_tg_telegram_webapp",
+      "fromNode": "n_src_game_main_script",
+      "toNode": "n_src_game_tg_telegram_webapp",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_main_script_src_levels_levels_array",
+      "fromNode": "n_src_game_main_script",
+      "toNode": "n_src_levels_levels_array",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_main_script_src_results_gameresults_module",
+      "fromNode": "n_src_game_main_script",
+      "toNode": "n_src_results_gameresults_module",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_main_script_src_results_shareresultimage_function",
+      "fromNode": "n_src_game_main_script",
+      "toNode": "n_src_results_shareresultimage_function",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_game_main_script_src_settings_settings_module",
+      "fromNode": "n_src_game_main_script",
+      "toNode": "n_src_settings_settings_module",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_src_levels_levels_array_generatelevel_tool",
+      "fromNode": "n_src_levels_levels_array",
+      "toNode": "n_generatelevel_tool",
+      "label": "implements [EXTRACTED]"
+    },
+    {
+      "id": "e_src_levels_levels_array_indexhtml_page",
+      "fromNode": "n_src_levels_levels_array",
+      "toNode": "n_indexhtml_page",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_levels_levels_array_src_levels_weave_tool",
+      "fromNode": "n_src_levels_levels_array",
+      "toNode": "n_src_levels_weave_tool",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_results_gameresults_module_indexhtml_page",
+      "fromNode": "n_src_results_gameresults_module",
+      "toNode": "n_indexhtml_page",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_src_results_gameresults_module_src_results_achievements_list",
+      "fromNode": "n_src_results_gameresults_module",
+      "toNode": "n_src_results_achievements_list",
+      "label": "implements [EXTRACTED]"
+    },
+    {
+      "id": "e_src_results_gameresults_module_src_results_shareresultimage_function",
+      "fromNode": "n_src_results_gameresults_module",
+      "toNode": "n_src_results_shareresultimage_function",
+      "label": "implements [EXTRACTED]"
+    },
+    {
+      "id": "e_src_settings_settings_module_indexhtml_page",
+      "fromNode": "n_src_settings_settings_module",
+      "toNode": "n_indexhtml_page",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_grillme_skill_claude_skills_grilling_skill",
+      "fromNode": "n_grillme_skill",
+      "toNode": "n_claude_skills_grilling_skill",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_claude_skills_graphify_skill_llmcouncil_skill",
+      "fromNode": "n_claude_skills_graphify_skill",
+      "toNode": "n_llmcouncil_skill",
+      "label": "semantically_similar_to [INFERRED]"
+    },
+    {
+      "id": "e_compositelevel_tool_generatelevel_tool",
+      "fromNode": "n_compositelevel_tool",
+      "toNode": "n_generatelevel_tool",
+      "label": "semantically_similar_to [INFERRED]"
+    },
+    {
+      "id": "e_src_results_gameresults_module_src_settings_settings_module",
+      "fromNode": "n_src_results_gameresults_module",
+      "toNode": "n_src_settings_settings_module",
+      "label": "shares_data_with [INFERRED]"
+    },
+    {
+      "id": "e_mcp_playwright_server_indexhtml_page",
+      "fromNode": "n_mcp_playwright_server",
+      "toNode": "n_indexhtml_page",
+      "label": "conceptually_related_to [AMBIGUOUS]"
+    },
+    {
+      "id": "e_mcp_chromedevtools_server_indexhtml_page",
+      "fromNode": "n_mcp_chromedevtools_server",
+      "toNode": "n_indexhtml_page",
+      "label": "conceptually_related_to [AMBIGUOUS]"
+    },
+    {
+      "id": "e_mcp_glif_server_generatelevel_tool",
+      "fromNode": "n_mcp_glif_server",
+      "toNode": "n_generatelevel_tool",
+      "label": "conceptually_related_to [AMBIGUOUS]"
+    }
+  ]
+}
