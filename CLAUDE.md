@@ -83,6 +83,18 @@
 `ponytail-audit` (аудит всего проекта), `ponytail-debt`, `ponytail-gain`, `ponytail-help`.
 Применять при любой работе с кодом игры.
 
+**Agent Skills — инженерный процесс от идеи до запуска** (установлено 18.10.2026 из
+github.com/addyosmani/agent-skills, коммит `aeac41d`, MIT; 25 скиллов в `.claude/skills/`,
+справочники в `.claude/references/`, 4 помощника в `.claude/agents/`: code-reviewer, security-auditor,
+test-engineer, web-performance-auditor). Главное для владельца:
+- `idea-refine`, `interview-me` — довести сырую идею до чёткого плана (вопросами)
+- `spec-driven-development`, `planning-and-task-breakdown` — описание и план перед кодом
+- `debugging-and-error-recovery` — разобраться, почему что-то сломалось
+- `security-and-hardening`, `performance-optimization`, `shipping-and-launch` — безопасность, скорость, запуск
+- `frontend-ui-engineering`, `browser-testing-with-devtools` — интерфейс игры и проверка в браузере
+- `using-agent-skills` — карта всего набора, если неясно, что выбрать
+Для кода сочетать с `ponytail` (минимум кода).
+
 **Данные и код:**
 - `graphify` — построение графа знаний по коду/докам/картинкам
   ⚠️ ТОЛЬКО по явной команде `/graphify` — не включать автоматически (дорого по токенам)
