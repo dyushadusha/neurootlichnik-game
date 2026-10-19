@@ -90,6 +90,15 @@ legalzoom) стоят в аккаунте; в обычном чате подтв
   `remotion-multimedia`, `remotion-maps`, `remotion-docs`, `remotion-upgrade`, `remotion-interactivity`
 - `ffmpeg` — шпаргалка по конвертации, сжатию, обрезке, смене формата 16:9 → 9:16, извлечению звука
 
+- `huashu-motion` — рекламные ролики продукта и объясняющие видео как код (HTML + GSAP), сам пишет к ним
+  музыку; открывает локальную «студию», где владелец тычет в кадр и говорит, что поменять.
+  Установлено 19.10.2026 из github.com/alchaincyf/huashu-motion (коммит `5f2608c`, MIT, автор «花叔»).
+  В репозитории: программа целиком в `tools/huashu-motion/`, скилл — ссылка `.claude/skills/huashu-motion`
+  на `tools/huashu-motion/skills/huashu-motion` (так скилл находит свою программу и не качает её из npm).
+  В аккаунте — отдельный плагин `huashu-motion` (не внутри `neuro-otlichnik`: программа должна лежать
+  в корне плагина). Нужны Node 22+, Chrome и ffmpeg. Из интернета качает только по команде:
+  звуки инструментов (`om samples build`) и модели голоса (`om voice`).
+
 Выбор движка: для рилсов с нуля — HyperFrames (по умолчанию); если правим `social-video/` — Remotion;
 если есть сырое видео с речью — `video-use`. Всегда соблюдать дизайн-систему бренда
 (цвета только `#2A2A2A` / `#DBFC3B` / `#FFFFFF`, шрифты Kica / Inter Tight / Pershotravneva55).
