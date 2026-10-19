@@ -1,0 +1,98 @@
+{
+  "/home/user/neurootlichnik-game/.mcp.json": {
+    "mtime": 1788432169.3768902,
+    "seen": 1788433030.3337874,
+    "ast_hash": "9ee9dfbfede20986f03ffac3bc3ff622",
+    "semantic_hash": "9ee9dfbfede20986f03ffac3bc3ff622"
+  },
+  "/home/user/neurootlichnik-game/package.json": {
+    "mtime": 1788430891.6568143,
+    "seen": 1788433030.3337905,
+    "ast_hash": "680815cffaaea37db1e950ac1f725400",
+    "semantic_hash": "680815cffaaea37db1e950ac1f725400"
+  },
+  "/home/user/neurootlichnik-game/src/audio.js": {
+    "mtime": 1788430891.6568143,
+    "seen": 1788433030.3337917,
+    "ast_hash": "d8e46c99fba3483452e2671f1332186c",
+    "semantic_hash": "d8e46c99fba3483452e2671f1332186c"
+  },
+  "/home/user/neurootlichnik-game/src/config.js": {
+    "mtime": 1788348349.626848,
+    "seen": 1788433030.3337927,
+    "ast_hash": "8d89b7a4e43dad8e39dd9af9115834de",
+    "semantic_hash": "8d89b7a4e43dad8e39dd9af9115834de"
+  },
+  "/home/user/neurootlichnik-game/src/facts.js": {
+    "mtime": 1788430891.6568143,
+    "seen": 1788433030.3337939,
+    "ast_hash": "b15be109d2c1f83cfb2cd790625bce5e",
+    "semantic_hash": "b15be109d2c1f83cfb2cd790625bce5e"
+  },
+  "/home/user/neurootlichnik-game/src/game.js": {
+    "mtime": 1788430891.6568143,
+    "seen": 1788433030.3337948,
+    "ast_hash": "9ddd04a75677a5eeba5ce4743d244481",
+    "semantic_hash": "9ddd04a75677a5eeba5ce4743d244481"
+  },
+  "/home/user/neurootlichnik-game/src/levels.js": {
+    "mtime": 1788430891.6568143,
+    "seen": 1788433030.3337958,
+    "ast_hash": "0939b8f17f99d3c1e9bef4b546cf9a68",
+    "semantic_hash": "0939b8f17f99d3c1e9bef4b546cf9a68"
+  },
+  "/home/user/neurootlichnik-game/src/results.js": {
+    "mtime": 1788430891.6568143,
+    "seen": 1788433030.3338041,
+    "ast_hash": "12155a8b32b0ee726f875f82fcba3a28",
+    "semantic_hash": "12155a8b32b0ee726f875f82fcba3a28"
+  },
+  "/home/user/neurootlichnik-game/src/settings.js": {
+    "mtime": 1788430891.6568143,
+    "seen": 1788433030.333806,
+    "ast_hash": "f35d1e823af3d9ef4ab04c143566aba2",
+    "semantic_hash": "f35d1e823af3d9ef4ab04c143566aba2"
+  },
+  "/home/user/neurootlichnik-game/tools/composite-level.js": {
+    "mtime": 1788430891.6608143,
+    "seen": 1788433030.3338068,
+    "ast_hash": "17cbf5a4d86c03b4a28a812779b2a9eb",
+    "semantic_hash": "17cbf5a4d86c03b4a28a812779b2a9eb"
+  },
+  "/home/user/neurootlichnik-game/tools/generate-level.js": {
+    "mtime": 1788430891.663742,
+    "seen": 1788433030.3338077,
+    "ast_hash": "b4d49a324470f27f47a352fc8ba29cf3",
+    "semantic_hash": "b4d49a324470f27f47a352fc8ba29cf3"
+  },
+  "/home/user/neurootlichnik-game/.claude/skills/graphify/SKILL.md": {
+    "mtime": 1788431060.2158024,
+    "seen": 1788433030.3338087,
+    "ast_hash": "f534ed06dff8de17e7a44eda76be8255",
+    "semantic_hash": "f534ed06dff8de17e7a44eda76be8255"
+  },
+  "/home/user/neurootlichnik-game/.claude/skills/grill-me/SKILL.md": {
+    "mtime": 1788431408.722844,
+    "seen": 1788433030.3338094,
+    "ast_hash": "51ba9306293963bb76680d5e41525aea",
+    "semantic_hash": "51ba9306293963bb76680d5e41525aea"
+  },
+  "/home/user/neurootlichnik-game/.claude/skills/grilling/SKILL.md": {
+    "mtime": 1788431408.7244315,
+    "seen": 1788433030.33381,
+    "ast_hash": "284efe9cf334900d08230e572fc6db90",
+    "semantic_hash": "284efe9cf334900d08230e572fc6db90"
+  },
+  "/home/user/neurootlichnik-game/.claude/skills/llm-council/SKILL.md": {
+    "mtime": 1788430928.9736464,
+    "seen": 1788433030.333811,
+    "ast_hash": "b6ca7a1338db1e1afd5ce4e6f2cefb8c",
+    "semantic_hash": "b6ca7a1338db1e1afd5ce4e6f2cefb8c"
+  },
+  "/home/user/neurootlichnik-game/index.html": {
+    "mtime": 1788430891.6568143,
+    "seen": 1788433030.3338115,
+    "ast_hash": "077cb55fa1e93d045486fc7c0acc3ffa",
+    "semantic_hash": "077cb55fa1e93d045486fc7c0acc3ffa"
+  }
+}
